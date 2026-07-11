@@ -129,15 +129,15 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: include protocol version constant and reload envelope.
 
 ### STEP-003: packages/scenario — schema, graph + media validators
-- status: todo
-- owner: —
+- status: in-progress
+- owner: claude
 - tier: complex
 - depends-on: STEP-001
 - files: packages/scenario/**
 - acceptance: rejects all invalid cases in §5 (missing IDs/media, bad durations/axes, incomplete quadrant maps, bad counted statuses, broken targets); reports unreachable phases; cycles allowed only when marked; media manifest byte-size check with 2 GiB ceiling; quadrant boundary convention (x=0.5→right, y=0.5→bottom, center→q4) implemented here as shared utility
 - verify: pnpm --filter scenario test
 - reviewer: codex
-- notes: —
+- notes: doing 003 before 002: protocol's PhaseSnapshot schema will import Phase from scenario, so STEP-002 gains a dependency on STEP-003 (recorded here to avoid surprising the reviewer).
 
 ### STEP-004: Fake dev scenario + validate-scenario script
 - status: todo
