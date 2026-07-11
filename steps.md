@@ -88,10 +88,10 @@ until git is initialized). Claude lane: `claude -p --permission-mode acceptEdits
 ## Slices
 
 Source plan: `smartphonecracy-installation-implementation-plan.md` (v1, 2026-07-11).
-Proposed feature slices (pending codex review):
+Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED amendments applied; slices accepted unchanged):
 - **claude**: foundation packages (001–004), display client (013–016), phone client (017)
-- **codex**: server core (005–012), persistence + admin (018–019), deployment (021)
-- greedy queue for the rest (020, 022, 023) once dependencies clear.
+- **codex**: server core (005–012), persistence + admin (018–019), deployment (021, 024)
+- greedy queue for the rest (020, 022, 023, 025) once dependencies clear.
 
 ## Backlog
 
@@ -104,11 +104,11 @@ Proposed feature slices (pending codex review):
 - acceptance: director confirms policy values (§15 Phase 0): timings, axis wording, quadrant/boundary convention, counted statuses, empty targets, content graph, media inventory ≤ 2 GiB, privacy package
 - verify: n/a (user/director input)
 - reviewer: none
-- notes: BLOCKER: needs the user/director. Engineering proceeds against the fake dev scenario; production.json lands here later.
+- notes: BLOCKER: needs the user/director. Four separable deliverable groups: (a) director decisions (timings, axes, quadrant convention, counted statuses, empty targets), (b) content production (graph, media inventory ≤ 2 GiB), (c) hardware procurement (venue-spec mini PC), (d) privacy package approval. Engineering proceeds against the fake dev scenario; production.json lands here later.
 
 ### STEP-001: Monorepo scaffold
-- status: todo
-- owner: —
+- status: in-progress
+- owner: claude
 - tier: complex
 - depends-on: —
 - files: package.json, pnpm-workspace.yaml, tsconfig*, apps/*/ (stubs), packages/*/ (stubs), .gitignore, vitest config
@@ -154,7 +154,7 @@ Proposed feature slices (pending codex review):
 - status: todo
 - owner: —
 - tier: complex
-- depends-on: STEP-001, STEP-002
+- depends-on: STEP-001, STEP-002, STEP-003, STEP-004
 - files: apps/server/** (http, ws wiring, config)
 - acceptance: Fastify + ws boot; /healthz, /readyz (fails on invalid scenario), /api/status; env/config module; serves display/phone/admin bundles; graceful shutdown
 - verify: pnpm --filter server test
@@ -176,9 +176,9 @@ Proposed feature slices (pending codex review):
 - status: todo
 - owner: —
 - tier: complex
-- depends-on: STEP-005, STEP-003
+- depends-on: STEP-005, STEP-006, STEP-003
 - files: apps/server/src/engine/**
-- acceptance: scenario-driven state machine; phase epochs reject stale input/events; lobby countdown, interactive-idle timeout, max-session cap; checkpoint hook on transitions; safe crash recovery → abort to idle (§6)
+- acceptance: scenario-driven state machine; phase epochs reject stale input/events; lobby countdown, interactive-idle timeout, max-session cap; checkpoint hook on transitions; safe crash recovery → abort to idle (§6); display-disconnect policy (abort to idle after display timeout); no-participant grace-period return to idle; phones may join but cannot start a session without a connected healthy display
 - verify: pnpm --filter server test (engine suite)
 - reviewer: claude
 - notes: —
@@ -209,7 +209,7 @@ Proposed feature slices (pending codex review):
 - status: todo
 - owner: —
 - tier: simple
-- depends-on: STEP-006
+- depends-on: STEP-006, STEP-007
 - files: apps/server/src/admission/qr.ts
 - acceptance: qr_grant on display_join / qr_grant_request / every 60 s; large vs corner placement by phase; qr_hidden when admission closed; allowLateJoin=false ⇒ hidden after lobby
 - verify: pnpm --filter server test (qr suite)
@@ -231,7 +231,7 @@ Proposed feature slices (pending codex review):
 - status: todo
 - owner: —
 - tier: complex
-- depends-on: STEP-006, STEP-007, STEP-008, STEP-009, STEP-010, STEP-011
+- depends-on: STEP-004, STEP-006, STEP-007, STEP-008, STEP-009, STEP-010, STEP-011
 - files: apps/server/test/integration/**
 - acceptance: Phase 2 exit criteria — automated tests drive the entire fake scenario without a browser (join→lobby→video→questions→resolution→idle, incl. late join, disconnects, solo-abandon, recovery)
 - verify: pnpm --filter server test
@@ -288,7 +288,7 @@ Proposed feature slices (pending codex review):
 - tier: complex
 - depends-on: STEP-002
 - files: apps/phone/**
-- acceptance: QR join flow; expired-grant/room-full/rate-limited states; fullscreen relative trackpad (touch-action none, throttled 20–30 Hz); identity marker matching cursor; lease in localStorage; reconnect + identity restore; input ignored outside question phases
+- acceptance: QR join flow; expired-grant/room-full/rate-limited states; fullscreen relative trackpad (touch-action none, throttled 20–30 Hz); identity marker matching cursor; lease in localStorage; reconnect + identity restore; input ignored outside question phases; build-version mismatch reload handling (service-worker app-shell update + rejoin)
 - verify: pnpm --filter phone test + Playwright mobile emulation
 - reviewer: codex
 - notes: real iOS/Android sensitivity tuning deferred to Phase 7 hardware pass.
@@ -299,7 +299,7 @@ Proposed feature slices (pending codex review):
 - tier: complex
 - depends-on: STEP-007, STEP-008
 - files: infra/migrations/**, apps/server/src/persistence/**
-- acceptance: §11 tables; write queue w/ retry buffer + shutdown flush; gameplay never blocks on DB; checkpoints on transitions; outcome_json completeness; recovery events; no raw movement traces; retention-policy fields
+- acceptance: §11 tables; write queue w/ retry buffer + shutdown flush; gameplay never blocks on DB; checkpoints on transitions; outcome_json completeness; recovery events; no raw movement traces; retention-policy fields AND testable retention-deletion behavior (participant-level records expire per §11 policy)
 - verify: pnpm --filter server test (persistence suite w/ local pg or pglite)
 - reviewer: claude
 - notes: —
@@ -308,7 +308,7 @@ Proposed feature slices (pending codex review):
 - status: todo
 - owner: —
 - tier: complex
-- depends-on: STEP-018
+- depends-on: STEP-007, STEP-009, STEP-018
 - files: apps/server/src/admin/**, apps/admin/**
 - acceptance: §12 — status (health, heartbeat age, counts, session/phase), controls (start, idle, skip, restart), recent errors, CSV/JSON export; token-protected; audit-logged
 - verify: pnpm --filter server test (admin suite) + admin UI smoke
@@ -319,7 +319,7 @@ Proposed feature slices (pending codex review):
 - status: todo
 - owner: —
 - tier: simple
-- depends-on: STEP-002, STEP-005
+- depends-on: STEP-002, STEP-006, STEP-009
 - files: scripts/simulate-clients.ts, tests/load/**
 - acceptance: 30 simulated phones join, move at 20–30 Hz, disconnect/reconnect; reports latency + drop stats
 - verify: pnpm simulate-clients --count 30 against local server
@@ -330,12 +330,12 @@ Proposed feature slices (pending codex review):
 - status: todo
 - owner: —
 - tier: complex
-- depends-on: STEP-012
-- files: Dockerfile, infra/fly.toml, CI workflow, docs snippets
-- acceptance: versioned container serving all bundles; fly.toml (min_machines_running=1, health checks); CI runs tests + scenario validation + build; manual production deploy gate + deploy-window check; rollback instructions
+- depends-on: STEP-012, STEP-016, STEP-017, STEP-019
+- files: Dockerfile, infra/fly.toml, CI workflow
+- acceptance: versioned container serving all bundles (display/phone/admin); fly.toml (min_machines_running=1, health checks); CI runs tests + scenario validation + build; manual production deploy gate + deploy-window check; rollback instructions
 - verify: docker build + CI green
 - reviewer: claude
-- notes: actual Fly/Supabase provisioning needs user credentials — flag when reached.
+- notes: provisioning/secrets moved to STEP-024. Split from venue hardening per codex review.
 
 ### STEP-022: Operations + venue docs
 - status: todo
@@ -352,9 +352,31 @@ Proposed feature slices (pending codex review):
 - status: todo
 - owner: —
 - tier: complex
-- depends-on: STEP-012, STEP-013, STEP-014, STEP-015, STEP-016, STEP-017
+- depends-on: STEP-012, STEP-013, STEP-014, STEP-015, STEP-016, STEP-017, STEP-018
 - files: tests/e2e/**
 - acceptance: Playwright coverage of §16 automatable acceptance tests (server-kill, display-kill, stale-bundle reload, clock offset, second display, media failure retry); soak/venue tests documented as manual Phase 7 items
 - verify: pnpm test:e2e
 - reviewer: cross (both)
 - notes: —
+
+### STEP-024: Venue hardening, monitoring, provisioning
+- status: todo
+- owner: —
+- tier: complex
+- depends-on: STEP-021
+- files: infra/**, scripts/kiosk/**, docs snippets
+- acceptance: Fly/Supabase/CDN/domain provisioning (needs user credentials — flag when reached); secrets in host secret manager; kiosk watchdog script + boot config; monitoring + §14 alert set (server, display heartbeat, venue domains); alert on media-retry >2 min, abort frequency, memory/restart spikes
+- verify: alerts fire in staged failure drills
+- reviewer: claude
+- notes: split from STEP-021 per codex review.
+
+### STEP-025: Launch gate — reliability, soak, handoff
+- status: todo
+- owner: —
+- tier: complex
+- depends-on: STEP-000, STEP-020, STEP-023, STEP-024
+- files: docs/**, tests/load/**
+- acceptance: §16 acceptance list green: 30-client load test, server-kill/display-kill drills, stale-bundle reload, 48 h soak on the exact production mini PC with production media, venue acceptance test, approved privacy/visitor-notice package present, production content lock, §18 handoff package delivered
+- verify: acceptance checklist signed off
+- reviewer: cross (both)
+- notes: largely manual/on-hardware; blocked until STEP-000 deliverables exist.
