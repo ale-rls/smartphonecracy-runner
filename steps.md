@@ -118,10 +118,10 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: APPROVED by codex 2026-07-11. Layout, workspace manifests, TypeScript configs, React/Vite stubs, Fastify/ws stub, and shared quadrantOf boundary-convention utility/tests match the plan. Keep quadrantOf in shared; STEP-003/008 should consume it rather than duplicate server-side logic.
 
 ### STEP-002: packages/protocol — message types + Zod schemas
-- status: todo
-- owner: —
+- status: in-progress
+- owner: claude
 - tier: complex
-- depends-on: STEP-001
+- depends-on: STEP-001, STEP-003
 - files: packages/protocol/**
 - acceptance: every §7 message (phone→server, display→server, server→clients/display/phone) has a type + Zod schema + discriminated-union parser; invalid messages fail with useful errors
 - verify: pnpm --filter protocol test
@@ -129,7 +129,7 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: include protocol version constant and reload envelope.
 
 ### STEP-003: packages/scenario — schema, graph + media validators
-- status: review
+- status: done
 - owner: claude
 - tier: complex
 - depends-on: STEP-001
@@ -137,7 +137,7 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - acceptance: rejects all invalid cases in §5 (missing IDs/media, bad durations/axes, incomplete quadrant maps, bad counted statuses, broken targets); reports unreachable phases; cycles allowed only when marked; media manifest byte-size check with 2 GiB ceiling; quadrant boundary convention (x=0.5→right, y=0.5→bottom, center→q4) implemented here as shared utility
 - verify: pnpm --filter scenario test → PASS (17 tests) + typecheck PASS (2026-07-11)
 - reviewer: codex
-- notes: structural checks in Zod (schema.ts), graph checks in validate.ts (dup ids, idle required, entry/broken targets, unreachable=warning, unmarked cycles=error w/ scenario-level cyclesAllowed flag), media in media.ts (injectable stat, 2 GiB budget). quadrantOf consumed from shared. Ready for codex review. Note: doing 003 before 002: protocol's PhaseSnapshot schema will import Phase from scenario, so STEP-002 gains a dependency on STEP-003 (recorded here to avoid surprising the reviewer).
+- notes: APPROVED by codex 2026-07-11. Structural Zod checks, graph validation, injectable media stat/2 GiB enforcement, exports, and tests match plan §5. Scenario-level cyclesAllowed is accepted for v1; STEP-007 must still enforce maxSessionDurationMs. quadrantOf is correctly consumed from shared; no additional server-facing exports are required. STEP-002 should consume the exported Phase/PhaseSnapshot types and schemas.
 
 ### STEP-004: Fake dev scenario + validate-scenario script
 - status: in-progress
