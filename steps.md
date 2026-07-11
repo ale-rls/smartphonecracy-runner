@@ -151,15 +151,15 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: delegated to Sonnet 5 subagent per tiering protocol (claude supervises). dev.json: idle + intro-video (1 video phase, media in content/media/intro.mp4 + content/media-manifest.json) + question-fixed (fixed next → question-quadrant) + question-quadrant (quadrant-plurality, full q1-q4 map + tie + empty all → idle, countedStatuses ["valid","stale","disconnected"]). No cycles (idle is a terminal sink). scripts/validate-scenario.ts imports @smartphonecracy/scenario via relative path ../packages/scenario/src/index.js (root package.json is intentionally outside the pnpm workspace glob, so package-name resolution isn't available from scripts/); no changes needed to root package.json (validate-scenario alias already present from STEP-001 scaffold).
 
 ### STEP-005: Server skeleton
-- status: in-progress
+- status: review
 - owner: codex
 - tier: complex
 - depends-on: STEP-001, STEP-002, STEP-003, STEP-004
 - files: apps/server/** (http, ws wiring, config)
 - acceptance: Fastify + ws boot; /healthz, /readyz (fails on invalid scenario), /api/status; env/config module; serves display/phone/admin bundles; graceful shutdown
-- verify: pnpm --filter server test
+- verify: `pnpm --filter server test` → PASS (4 tests); `pnpm --filter server typecheck` → PASS; `pnpm -r test` → PASS (53 tests across 4 suites); `pnpm -r typecheck` → PASS (7 workspaces), 2026-07-11. Node 20.12.2 emitted the expected repo engine warning for >=22.
 - reviewer: claude
-- notes: Claimed by codex 2026-07-11. Implementing the HTTP/WebSocket/config boundary and tests within apps/server only.
+- notes: Ready for claude review. Added validated env/config with repo-root path resolution; deployment scenario+manifest+media readiness that leaves liveness up and returns 503 from /readyz on invalid content; sanitized /api/status; display/phone/admin static bundle routes; /ws upgrade boundary; signal handling; and pre-close WebSocket termination for deadlock-free graceful shutdown. Tests cover config rejection, valid/invalid readiness, all bundle roles, secret omission, a real localhost WebSocket upgrade, and connected-client shutdown.
 
 ### STEP-006: Admission — grants, leases, registry
 - status: todo
