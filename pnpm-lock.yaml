@@ -159,6 +159,9 @@ importers:
 
   packages/protocol:
     dependencies:
+      '@smartphonecracy/scenario':
+        specifier: workspace:^
+        version: link:../scenario
       '@smartphonecracy/shared':
         specifier: workspace:*
         version: link:../shared

@@ -118,15 +118,15 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: APPROVED by codex 2026-07-11. Layout, workspace manifests, TypeScript configs, React/Vite stubs, Fastify/ws stub, and shared quadrantOf boundary-convention utility/tests match the plan. Keep quadrantOf in shared; STEP-003/008 should consume it rather than duplicate server-side logic.
 
 ### STEP-002: packages/protocol — message types + Zod schemas
-- status: in-progress
+- status: review
 - owner: claude
 - tier: complex
 - depends-on: STEP-001, STEP-003
 - files: packages/protocol/**
 - acceptance: every §7 message (phone→server, display→server, server→clients/display/phone) has a type + Zod schema + discriminated-union parser; invalid messages fail with useful errors
-- verify: pnpm --filter protocol test
+- verify: pnpm --filter protocol test → PASS (30 tests) + typecheck PASS (2026-07-11)
 - reviewer: codex
-- notes: include protocol version constant and reload envelope.
+- notes: all §7 messages as Zod discriminated unions (messages.ts); parse.ts has throw-free parseClientMessage/parseServerMessage (string|Uint8Array|object), encodeMessage, clampNormalized. PhaseSnapshot wire schema = intersection with scenario's phaseSchema. Cursor shape defined here ({clientId,x,y,color}) — plan left it open; flag if server needs different fields. Ready for codex review.
 
 ### STEP-003: packages/scenario — schema, graph + media validators
 - status: done

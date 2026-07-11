@@ -1,6 +1,6 @@
 /**
- * WebSocket protocol types and Zod schemas (plan §7).
- * Scaffold stub — implemented in STEP-002.
+ * WebSocket protocol types, Zod schemas, and encoders (plan §7).
  */
 
-export const PROTOCOL_VERSION = 1;
+export * from "./messages.js";
+export * from "./parse.js";
