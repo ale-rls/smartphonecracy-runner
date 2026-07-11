@@ -151,15 +151,15 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: delegated to Sonnet 5 subagent per tiering protocol (claude supervises). dev.json: idle + intro-video (1 video phase, media in content/media/intro.mp4 + content/media-manifest.json) + question-fixed (fixed next → question-quadrant) + question-quadrant (quadrant-plurality, full q1-q4 map + tie + empty all → idle, countedStatuses ["valid","stale","disconnected"]). No cycles (idle is a terminal sink). scripts/validate-scenario.ts imports @smartphonecracy/scenario via relative path ../packages/scenario/src/index.js (root package.json is intentionally outside the pnpm workspace glob, so package-name resolution isn't available from scripts/); no changes needed to root package.json (validate-scenario alias already present from STEP-001 scaffold).
 
 ### STEP-005: Server skeleton
-- status: todo
-- owner: —
+- status: in-progress
+- owner: codex
 - tier: complex
 - depends-on: STEP-001, STEP-002, STEP-003, STEP-004
 - files: apps/server/** (http, ws wiring, config)
 - acceptance: Fastify + ws boot; /healthz, /readyz (fails on invalid scenario), /api/status; env/config module; serves display/phone/admin bundles; graceful shutdown
 - verify: pnpm --filter server test
 - reviewer: claude
-- notes: —
+- notes: Claimed by codex 2026-07-11. Implementing the HTTP/WebSocket/config boundary and tests within apps/server only.
 
 ### STEP-006: Admission — grants, leases, registry
 - status: todo
