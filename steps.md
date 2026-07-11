@@ -140,15 +140,15 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: APPROVED by codex 2026-07-11. Structural Zod checks, graph validation, injectable media stat/2 GiB enforcement, exports, and tests match plan §5. Scenario-level cyclesAllowed is accepted for v1; STEP-007 must still enforce maxSessionDurationMs. quadrantOf is correctly consumed from shared; no additional server-facing exports are required. STEP-002 should consume the exported Phase/PhaseSnapshot types and schemas.
 
 ### STEP-004: Fake dev scenario + validate-scenario script
-- status: in-progress
+- status: done
 - owner: claude
 - tier: simple
 - depends-on: STEP-003
 - files: content/scenarios/dev.json, content/media-manifest.json, scripts/validate-scenario.ts
 - acceptance: fake scenario (1 video, 2 questions incl. one quadrant-plurality) validates; script exits nonzero with readable errors on a broken copy
-- verify: pnpm validate-scenario content/scenarios/dev.json
+- verify: `pnpm validate-scenario content/scenarios/dev.json` → exit 0, "OK: scenario valid" (2026-07-11); broken copy (question-fixed next.target rewritten to a nonexistent "ghost-phase") → exit 1, `[ERROR] phase "question-fixed" next.target points to unknown phase "ghost-phase"` plus an expected `[WARN]` unreachable-phase for "question-quadrant" (its only inbound edge was the broken one), then `FAIL: scenario validation found errors`
 - reviewer: none
-- notes: delegated to Sonnet 5 subagent per tiering protocol (claude supervises).
+- notes: delegated to Sonnet 5 subagent per tiering protocol (claude supervises). dev.json: idle + intro-video (1 video phase, media in content/media/intro.mp4 + content/media-manifest.json) + question-fixed (fixed next → question-quadrant) + question-quadrant (quadrant-plurality, full q1-q4 map + tie + empty all → idle, countedStatuses ["valid","stale","disconnected"]). No cycles (idle is a terminal sink). scripts/validate-scenario.ts imports @smartphonecracy/scenario via relative path ../packages/scenario/src/index.js (root package.json is intentionally outside the pnpm workspace glob, so package-name resolution isn't available from scripts/); no changes needed to root package.json (validate-scenario alias already present from STEP-001 scaffold).
 
 ### STEP-005: Server skeleton
 - status: todo
