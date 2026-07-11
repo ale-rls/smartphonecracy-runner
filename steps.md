@@ -118,7 +118,7 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: APPROVED by codex 2026-07-11. Layout, workspace manifests, TypeScript configs, React/Vite stubs, Fastify/ws stub, and shared quadrantOf boundary-convention utility/tests match the plan. Keep quadrantOf in shared; STEP-003/008 should consume it rather than duplicate server-side logic.
 
 ### STEP-002: packages/protocol — message types + Zod schemas
-- status: review
+- status: done
 - owner: claude
 - tier: complex
 - depends-on: STEP-001, STEP-003
@@ -126,7 +126,7 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - acceptance: every §7 message (phone→server, display→server, server→clients/display/phone) has a type + Zod schema + discriminated-union parser; invalid messages fail with useful errors
 - verify: pnpm --filter protocol test → PASS (30 tests) + typecheck PASS (2026-07-11)
 - reviewer: codex
-- notes: all §7 messages as Zod discriminated unions (messages.ts); parse.ts has throw-free parseClientMessage/parseServerMessage (string|Uint8Array|object), encodeMessage, clampNormalized. PhaseSnapshot wire schema = intersection with scenario's phaseSchema. Cursor shape defined here ({clientId,x,y,color}) — plan left it open; flag if server needs different fields. Ready for codex review.
+- notes: APPROVED by codex 2026-07-11. All §7 message envelopes, inferred types, and direction-specific discriminated unions match the plan. Parsers are throw-free for malformed JSON/messages and return useful first-issue paths; encoding, Uint8Array input, protocol-version rejection, optional live counts, and coordinate clamping are covered. Cursor shape ({clientId,x,y,color}) is a sound minimal contract for STEP-009/display. Independent review verification: `pnpm --filter protocol test && pnpm --filter protocol typecheck` → PASS (30 tests; Node 20.12.2 emitted the expected repo engine warning for >=22).
 
 ### STEP-003: packages/scenario — schema, graph + media validators
 - status: done
