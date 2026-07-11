@@ -1,0 +1,360 @@
+# steps.md — shared execution plan
+
+Single source of truth for the two-agent implementation effort.
+Agents: **claude** (Claude Code, Fable 5) and **codex** (Codex CLI, GPT-5.6).
+Protocol agreed between both agents on 2026-07-11 (Codex session `019f52da-e20d-7e90-9475-51ee60a4659b`).
+
+## Protocol
+
+**Claiming.** Before editing this file: create the lock dir `.steps.lock/` (mkdir is
+atomic), write `owner` and ISO timestamp into `.steps.lock/info`, re-read steps.md,
+make your change, remove the lock. A lock older than 10 minutes may be broken —
+verify no active writer if feasible, and record the break in the step's notes.
+
+**Ownership.** Claim a step (set `owner` + `in-progress`) before touching code.
+One implementation owner per active step. Never edit files reserved by another
+agent's in-progress step. Expected-file lists are reservations, not guarantees —
+on newly discovered overlap, stop and coordinate before editing.
+
+**Statuses.** `todo → in-progress → review → done`, plus `blocked`.
+Complex steps require cross-review: the *other* agent reviews and flips
+`review → done`. Reviewers request changes via `notes`; they never edit the
+owner's files directly. Simple steps may go straight to `done` after
+self-verification (`reviewer: none`), but verification results are mandatory
+for every step. Blocked steps must name the exact blocker and what unblocks it.
+
+**Model tiering (execution hint).** `tier: simple` steps run on cheaper models —
+claude routes them to Sonnet 5 subagents; codex runs them with a lighter/
+lower-effort config. `tier: complex` steps run on the frontier models.
+Neither agent blocks on tiering if the cheaper path is unavailable.
+
+**Division.** Feature slices first: when several steps touch the same files or
+concepts, one agent owns the whole slice. Everything else is a greedy queue —
+pull the next unblocked `todo` you're not colliding with.
+
+**Commits (once git is initialized).** One completed step per commit, staged by
+explicit paths (never `git add .`), message prefixed with the step ID
+(`STEP-012: …`). Never reset or rewrite the other agent's work.
+
+**Plan changes.** Work discovered mid-step becomes a *new* step — never silently
+expand the current one. Full test suite runs once after all steps are done.
+
+**Decomposition.** When the implementation plan lands, whichever agent is invoked
+first decomposes it into steps below (with tiers and `depends-on`); the other
+agent reviews the decomposition before any implementation starts.
+
+## Resume / watchdog
+
+Credit or usage-limit outages are expected. Resumption is stateless-safe because
+this file is the durable state — so retries always start a **fresh session**
+(no `resume --last`; agreed with codex 2026-07-11: "last" is fragile across
+repos/lanes, and fresh sessions that re-read steps.md are safer).
+
+`scripts/resume-work.sh claude|codex` is the watchdog, one independent lane per
+agent so one side being out of credits never stalls the other. Per invocation
+the agent must: re-read steps.md → recover its own unexpired claim or claim the
+next unblocked step → do **at most one step** → update status/verification under
+the lock → end its final message with the sentinel
+`BACKLOG_STATUS: remaining|empty|blocked`.
+
+Watchdog classification (coarse — no stable exit codes are documented on either CLI):
+- clean exit + `remaining` → run again immediately; `empty`/`blocked` → lane done.
+- quota/rate-limit text match → sleep until parsed reset time if available,
+  else exponential backoff (60 s → 30 min cap), then retry.
+- any other failure → log and **stop the lane**. Never mark a step `blocked`
+  from retry exhaustion; `blocked` means a confirmed task blocker only.
+- per-lane process lock (`.watchdog/<lane>.lock`) prevents overlapping cron/
+  launchd runs; logs are kept per run under `.watchdog/logs/<lane>/`.
+
+Codex lane invocation: `codex exec --cd <repo> --sandbox workspace-write --json
+--output-last-message <run>/final.txt "<prompt>"` (plus `--skip-git-repo-check`
+until git is initialized). Claude lane: `claude -p --permission-mode acceptEdits "<prompt>"`.
+
+## Step template
+
+```
+### STEP-NNN: <short title>
+- status: todo | in-progress | review | done | blocked
+- owner: claude | codex | —
+- tier: simple | complex
+- depends-on: STEP-NNN, … | —
+- files: <expected files to touch>
+- acceptance: <criteria that define done>
+- verify: <command> → <result once run>
+- reviewer: claude | codex | none
+- notes: <handoffs, blockers, review requests>
+```
+
+## Slices
+
+Source plan: `smartphonecracy-installation-implementation-plan.md` (v1, 2026-07-11).
+Proposed feature slices (pending codex review):
+- **claude**: foundation packages (001–004), display client (013–016), phone client (017)
+- **codex**: server core (005–012), persistence + admin (018–019), deployment (021)
+- greedy queue for the rest (020, 022, 023) once dependencies clear.
+
+## Backlog
+
+### STEP-000: Phase 0 director decisions
+- status: blocked
+- owner: —
+- tier: —
+- depends-on: —
+- files: content/scenarios/production.json (later)
+- acceptance: director confirms policy values (§15 Phase 0): timings, axis wording, quadrant/boundary convention, counted statuses, empty targets, content graph, media inventory ≤ 2 GiB, privacy package
+- verify: n/a (user/director input)
+- reviewer: none
+- notes: BLOCKER: needs the user/director. Engineering proceeds against the fake dev scenario; production.json lands here later.
+
+### STEP-001: Monorepo scaffold
+- status: todo
+- owner: —
+- tier: complex
+- depends-on: —
+- files: package.json, pnpm-workspace.yaml, tsconfig*, apps/*/ (stubs), packages/*/ (stubs), .gitignore, vitest config
+- acceptance: pnpm install + typecheck + empty vitest run pass across all workspaces; repo layout matches plan §3
+- verify: pnpm -r typecheck && pnpm -r test
+- reviewer: codex
+- notes: —
+
+### STEP-002: packages/protocol — message types + Zod schemas
+- status: todo
+- owner: —
+- tier: complex
+- depends-on: STEP-001
+- files: packages/protocol/**
+- acceptance: every §7 message (phone→server, display→server, server→clients/display/phone) has a type + Zod schema + discriminated-union parser; invalid messages fail with useful errors
+- verify: pnpm --filter protocol test
+- reviewer: codex
+- notes: include protocol version constant and reload envelope.
+
+### STEP-003: packages/scenario — schema, graph + media validators
+- status: todo
+- owner: —
+- tier: complex
+- depends-on: STEP-001
+- files: packages/scenario/**
+- acceptance: rejects all invalid cases in §5 (missing IDs/media, bad durations/axes, incomplete quadrant maps, bad counted statuses, broken targets); reports unreachable phases; cycles allowed only when marked; media manifest byte-size check with 2 GiB ceiling; quadrant boundary convention (x=0.5→right, y=0.5→bottom, center→q4) implemented here as shared utility
+- verify: pnpm --filter scenario test
+- reviewer: codex
+- notes: —
+
+### STEP-004: Fake dev scenario + validate-scenario script
+- status: todo
+- owner: —
+- tier: simple
+- depends-on: STEP-003
+- files: content/scenarios/dev.json, content/media-manifest.json, scripts/validate-scenario.ts
+- acceptance: fake scenario (1 video, 2 questions incl. one quadrant-plurality) validates; script exits nonzero with readable errors on a broken copy
+- verify: pnpm validate-scenario content/scenarios/dev.json
+- reviewer: none
+- notes: —
+
+### STEP-005: Server skeleton
+- status: todo
+- owner: —
+- tier: complex
+- depends-on: STEP-001, STEP-002
+- files: apps/server/** (http, ws wiring, config)
+- acceptance: Fastify + ws boot; /healthz, /readyz (fails on invalid scenario), /api/status; env/config module; serves display/phone/admin bundles; graceful shutdown
+- verify: pnpm --filter server test
+- reviewer: claude
+- notes: —
+
+### STEP-006: Admission — grants, leases, registry
+- status: todo
+- owner: —
+- tier: complex
+- depends-on: STEP-005
+- files: apps/server/src/admission/**, room registry
+- acceptance: HMAC join grants (rotation/expiry per policy), participant leases (2 h, installation-scoped, same-lease socket replacement), 30-cap with room_full + lease reconnect at capacity, per-IP rate limit (memory only), identity/color assignment
+- verify: pnpm --filter server test (admission suite)
+- reviewer: claude
+- notes: —
+
+### STEP-007: Phase engine
+- status: todo
+- owner: —
+- tier: complex
+- depends-on: STEP-005, STEP-003
+- files: apps/server/src/engine/**
+- acceptance: scenario-driven state machine; phase epochs reject stale input/events; lobby countdown, interactive-idle timeout, max-session cap; checkpoint hook on transitions; safe crash recovery → abort to idle (§6)
+- verify: pnpm --filter server test (engine suite)
+- reviewer: claude
+- notes: —
+
+### STEP-008: Vote engine + transition resolver
+- status: todo
+- owner: —
+- tier: complex
+- depends-on: STEP-007
+- files: apps/server/src/votes/**
+- acceptance: final-snapshot semantics (§8): statuses valid/never-moved/stale/disconnected; heartbeat-based staleness; fixed + quadrant-plurality resolution with tie/empty; countedStatuses filtering provably excludes; freezeMs hold; immutable snapshot enqueued before resolution
+- verify: pnpm --filter server test (vote suite incl. boundary cases x=0.5/y=0.5/center)
+- reviewer: claude
+- notes: —
+
+### STEP-009: Input pipeline + cursor tick loop
+- status: todo
+- owner: —
+- tier: complex
+- depends-on: STEP-006, STEP-007
+- files: apps/server/src/cursors/**
+- acceptance: input validation/clamping, latest-position store, fixed 20–30 Hz cursor batch tick to display, presence counts, ping/pong with serverTime
+- verify: pnpm --filter server test (cursor suite)
+- reviewer: claude
+- notes: —
+
+### STEP-010: QR grant push loop
+- status: todo
+- owner: —
+- tier: simple
+- depends-on: STEP-006
+- files: apps/server/src/admission/qr.ts
+- acceptance: qr_grant on display_join / qr_grant_request / every 60 s; large vs corner placement by phase; qr_hidden when admission closed; allowLateJoin=false ⇒ hidden after lobby
+- verify: pnpm --filter server test (qr suite)
+- reviewer: none
+- notes: —
+
+### STEP-011: Video phase handling
+- status: todo
+- owner: —
+- tier: complex
+- depends-on: STEP-007
+- files: apps/server/src/engine/video.ts
+- acceptance: video_ended accepted only from authenticated display with matching phase+epoch; expectedDurationMs+5 s fallback; idempotent (late video_ended cannot double-advance)
+- verify: pnpm --filter server test (video suite)
+- reviewer: claude
+- notes: —
+
+### STEP-012: Server integration tests over fake scenario
+- status: todo
+- owner: —
+- tier: complex
+- depends-on: STEP-006, STEP-007, STEP-008, STEP-009, STEP-010, STEP-011
+- files: apps/server/test/integration/**
+- acceptance: Phase 2 exit criteria — automated tests drive the entire fake scenario without a browser (join→lobby→video→questions→resolution→idle, incl. late join, disconnects, solo-abandon, recovery)
+- verify: pnpm --filter server test
+- reviewer: claude
+- notes: —
+
+### STEP-013: Display client core
+- status: todo
+- owner: —
+- tier: complex
+- depends-on: STEP-002, STEP-004
+- files: apps/display/**
+- acceptance: three layers (§9); phase renderer from snapshots; server-time-corrected countdowns; reconnect w/ backoff + snapshot re-request; build-version reload handling; kiosk basics (hidden cursor, no context menu, wake lock attempt)
+- verify: pnpm --filter display test + Playwright smoke
+- reviewer: codex
+- notes: —
+
+### STEP-014: Display media pipeline
+- status: todo
+- owner: —
+- tier: complex
+- depends-on: STEP-013
+- files: apps/display/src/media/**
+- acceptance: manifest fetch + byte/hash verify before ready; Cache Storage by content hash; Blob URLs only for active/next videos w/ revocation; visible retry state on failure; app-shell-only service worker; preload next during questions
+- verify: pnpm --filter display test + Playwright media suite
+- reviewer: codex
+- notes: —
+
+### STEP-015: Display cursors + question rendering
+- status: todo
+- owner: —
+- tier: complex
+- depends-on: STEP-013
+- files: apps/display/src/cursors/**, question UI
+- acceptance: canvas cursor field w/ ~100 ms interpolation; axis cross + pinned quadrant labels; optional live counts (only when server sends them); join halo; freeze + winner/tie/empty highlight for freezeMs on corrected time
+- verify: pnpm --filter display test + Playwright
+- reviewer: codex
+- notes: —
+
+### STEP-016: Display QR + heartbeat
+- status: todo
+- owner: —
+- tier: simple
+- depends-on: STEP-013
+- files: apps/display/src/qr/**, heartbeat
+- acceptance: renders latest qr_grant (large/corner), hides at expiresAt on corrected time; display_heartbeat loop; display_replaced notice handling
+- verify: pnpm --filter display test
+- reviewer: none
+- notes: —
+
+### STEP-017: Phone client
+- status: todo
+- owner: —
+- tier: complex
+- depends-on: STEP-002
+- files: apps/phone/**
+- acceptance: QR join flow; expired-grant/room-full/rate-limited states; fullscreen relative trackpad (touch-action none, throttled 20–30 Hz); identity marker matching cursor; lease in localStorage; reconnect + identity restore; input ignored outside question phases
+- verify: pnpm --filter phone test + Playwright mobile emulation
+- reviewer: codex
+- notes: real iOS/Android sensitivity tuning deferred to Phase 7 hardware pass.
+
+### STEP-018: Persistence layer
+- status: todo
+- owner: —
+- tier: complex
+- depends-on: STEP-007, STEP-008
+- files: infra/migrations/**, apps/server/src/persistence/**
+- acceptance: §11 tables; write queue w/ retry buffer + shutdown flush; gameplay never blocks on DB; checkpoints on transitions; outcome_json completeness; recovery events; no raw movement traces; retention-policy fields
+- verify: pnpm --filter server test (persistence suite w/ local pg or pglite)
+- reviewer: claude
+- notes: —
+
+### STEP-019: Admin API + UI
+- status: todo
+- owner: —
+- tier: complex
+- depends-on: STEP-018
+- files: apps/server/src/admin/**, apps/admin/**
+- acceptance: §12 — status (health, heartbeat age, counts, session/phase), controls (start, idle, skip, restart), recent errors, CSV/JSON export; token-protected; audit-logged
+- verify: pnpm --filter server test (admin suite) + admin UI smoke
+- reviewer: claude
+- notes: —
+
+### STEP-020: simulate-clients load script
+- status: todo
+- owner: —
+- tier: simple
+- depends-on: STEP-002, STEP-005
+- files: scripts/simulate-clients.ts, tests/load/**
+- acceptance: 30 simulated phones join, move at 20–30 Hz, disconnect/reconnect; reports latency + drop stats
+- verify: pnpm simulate-clients --count 30 against local server
+- reviewer: none
+- notes: —
+
+### STEP-021: Deployment + CI
+- status: todo
+- owner: —
+- tier: complex
+- depends-on: STEP-012
+- files: Dockerfile, infra/fly.toml, CI workflow, docs snippets
+- acceptance: versioned container serving all bundles; fly.toml (min_machines_running=1, health checks); CI runs tests + scenario validation + build; manual production deploy gate + deploy-window check; rollback instructions
+- verify: docker build + CI green
+- reviewer: claude
+- notes: actual Fly/Supabase provisioning needs user credentials — flag when reached.
+
+### STEP-022: Operations + venue docs
+- status: todo
+- owner: —
+- tier: simple
+- depends-on: STEP-021
+- files: docs/operations.md, docs/venue-installation.md
+- acceptance: §13 venue checklist (kiosk flags, watchdog, BIOS, VPN), staff power-cycle procedure, monitoring/alert list (§14), handoff package checklist (§18)
+- verify: review pass
+- reviewer: codex
+- notes: —
+
+### STEP-023: E2E + reliability test suite
+- status: todo
+- owner: —
+- tier: complex
+- depends-on: STEP-012, STEP-013, STEP-014, STEP-015, STEP-016, STEP-017
+- files: tests/e2e/**
+- acceptance: Playwright coverage of §16 automatable acceptance tests (server-kill, display-kill, stale-bundle reload, clock offset, second display, media failure retry); soak/venue tests documented as manual Phase 7 items
+- verify: pnpm test:e2e
+- reviewer: cross (both)
+- notes: —
