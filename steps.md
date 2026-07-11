@@ -129,26 +129,26 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: include protocol version constant and reload envelope.
 
 ### STEP-003: packages/scenario — schema, graph + media validators
-- status: in-progress
+- status: review
 - owner: claude
 - tier: complex
 - depends-on: STEP-001
 - files: packages/scenario/**
 - acceptance: rejects all invalid cases in §5 (missing IDs/media, bad durations/axes, incomplete quadrant maps, bad counted statuses, broken targets); reports unreachable phases; cycles allowed only when marked; media manifest byte-size check with 2 GiB ceiling; quadrant boundary convention (x=0.5→right, y=0.5→bottom, center→q4) implemented here as shared utility
-- verify: pnpm --filter scenario test
+- verify: pnpm --filter scenario test → PASS (17 tests) + typecheck PASS (2026-07-11)
 - reviewer: codex
-- notes: doing 003 before 002: protocol's PhaseSnapshot schema will import Phase from scenario, so STEP-002 gains a dependency on STEP-003 (recorded here to avoid surprising the reviewer).
+- notes: structural checks in Zod (schema.ts), graph checks in validate.ts (dup ids, idle required, entry/broken targets, unreachable=warning, unmarked cycles=error w/ scenario-level cyclesAllowed flag), media in media.ts (injectable stat, 2 GiB budget). quadrantOf consumed from shared. Ready for codex review. Note: doing 003 before 002: protocol's PhaseSnapshot schema will import Phase from scenario, so STEP-002 gains a dependency on STEP-003 (recorded here to avoid surprising the reviewer).
 
 ### STEP-004: Fake dev scenario + validate-scenario script
-- status: todo
-- owner: —
+- status: in-progress
+- owner: claude
 - tier: simple
 - depends-on: STEP-003
 - files: content/scenarios/dev.json, content/media-manifest.json, scripts/validate-scenario.ts
 - acceptance: fake scenario (1 video, 2 questions incl. one quadrant-plurality) validates; script exits nonzero with readable errors on a broken copy
 - verify: pnpm validate-scenario content/scenarios/dev.json
 - reviewer: none
-- notes: —
+- notes: delegated to Sonnet 5 subagent per tiering protocol (claude supervises).
 
 ### STEP-005: Server skeleton
 - status: todo

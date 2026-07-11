@@ -1,0 +1,224 @@
+import { describe, expect, it } from "vitest";
+import {
+  mediaManifestSchema,
+  scenarioSchema,
+  validateMediaManifest,
+  validateScenario,
+} from "./index.js";
+import type { MediaManifest, Scenario } from "./index.js";
+
+const question = (id: string, next: Scenario["phases"][number]) => ({
+  kind: "position-question" as const,
+  id,
+  text: "Where do you stand?",
+  xAxis: { minLabel: "left", maxLabel: "right" },
+  yAxis: { minLabel: "up", maxLabel: "down" },
+  durationMs: 60_000,
+  freezeMs: 3_000,
+  connectionStaleAfterMs: 30_000,
+  showLiveCounts: false,
+  next: { type: "fixed" as const, target: next.id },
+});
+
+const idle = { kind: "idle" as const, id: "idle" as const };
+
+const baseScenario = {
+  version: "test-1",
+  entryPhaseId: "intro",
+  cyclesAllowed: false,
+  phases: [
+    idle,
+    {
+      kind: "video" as const,
+      id: "intro",
+      src: "intro.mp4",
+      expectedDurationMs: 10_000,
+      next: "q1",
+    },
+    {
+      kind: "position-question" as const,
+      id: "q1",
+      text: "Choose",
+      xAxis: { minLabel: "a", maxLabel: "b" },
+      yAxis: { minLabel: "c", maxLabel: "d" },
+      durationMs: 60_000,
+      freezeMs: 3_000,
+      connectionStaleAfterMs: 30_000,
+      showLiveCounts: true,
+      next: {
+        type: "quadrant-plurality" as const,
+        map: { q1: "idle", q2: "idle", q3: "idle", q4: "idle" },
+        tie: "idle",
+        empty: "idle",
+        countedStatuses: ["valid" as const, "stale" as const, "disconnected" as const],
+      },
+    },
+  ],
+} satisfies Scenario;
+
+const parse = (mutate: (s: typeof baseScenario) => unknown) =>
+  scenarioSchema.safeParse(mutate(structuredClone(baseScenario)));
+
+describe("scenarioSchema structural rejection", () => {
+  it("accepts the base scenario", () => {
+    expect(scenarioSchema.safeParse(baseScenario).success).toBe(true);
+  });
+
+  it("rejects a missing phase id", () => {
+    expect(parse((s) => ({ ...s, phases: [idle, { ...s.phases[1], id: "" }] })).success).toBe(false);
+  });
+
+  it("rejects non-positive durations", () => {
+    expect(parse((s) => {
+      (s.phases[1] as { expectedDurationMs: number }).expectedDurationMs = 0;
+      return s;
+    }).success).toBe(false);
+    expect(parse((s) => {
+      (s.phases[2] as { durationMs: number }).durationMs = -1;
+      return s;
+    }).success).toBe(false);
+  });
+
+  it("rejects malformed axes", () => {
+    expect(parse((s) => {
+      (s.phases[2] as { xAxis: object }).xAxis = { minLabel: "", maxLabel: "b" };
+      return s;
+    }).success).toBe(false);
+  });
+
+  it("rejects an incomplete quadrant map", () => {
+    expect(parse((s) => {
+      const q = s.phases[2] as { next: { map: Record<string, string> } };
+      delete q.next.map["q3"];
+      return s;
+    }).success).toBe(false);
+  });
+
+  it("rejects invalid or duplicate counted statuses", () => {
+    expect(parse((s) => {
+      (s.phases[2] as { next: { countedStatuses: string[] } }).next.countedStatuses = ["never-moved"];
+      return s;
+    }).success).toBe(false);
+    expect(parse((s) => {
+      (s.phases[2] as { next: { countedStatuses: string[] } }).next.countedStatuses = ["valid", "valid"];
+      return s;
+    }).success).toBe(false);
+    expect(parse((s) => {
+      (s.phases[2] as { next: { countedStatuses: string[] } }).next.countedStatuses = [];
+      return s;
+    }).success).toBe(false);
+  });
+});
+
+describe("validateScenario graph checks", () => {
+  it("passes the base scenario", () => {
+    const result = validateScenario(baseScenario);
+    expect(result.ok).toBe(true);
+    expect(result.errors).toEqual([]);
+  });
+
+  it("rejects duplicate phase ids", () => {
+    const s = structuredClone(baseScenario);
+    s.phases.push(structuredClone(s.phases[1]!));
+    const result = validateScenario(s);
+    expect(result.errors.some((e) => e.code === "duplicate-phase-id")).toBe(true);
+  });
+
+  it("requires the idle phase", () => {
+    const s = structuredClone(baseScenario);
+    s.phases = s.phases.filter((p) => p.id !== "idle") as typeof s.phases;
+    // quadrant map still points at idle, so broken targets are also reported
+    const result = validateScenario(s);
+    expect(result.errors.some((e) => e.code === "missing-idle-phase")).toBe(true);
+  });
+
+  it("rejects an unknown entry phase", () => {
+    const s = structuredClone(baseScenario);
+    s.entryPhaseId = "nope";
+    const result = validateScenario(s);
+    expect(result.errors.some((e) => e.code === "unknown-entry-phase")).toBe(true);
+  });
+
+  it("rejects broken fixed, quadrant, tie, and empty targets", () => {
+    const s = structuredClone(baseScenario);
+    const q = s.phases[2] as Extract<Scenario["phases"][number], { kind: "position-question" }>;
+    if (q.next.type === "quadrant-plurality") {
+      q.next.map.q2 = "ghost-a";
+      q.next.tie = "ghost-b";
+      q.next.empty = "ghost-c";
+    }
+    const result = validateScenario(s);
+    const broken = result.errors.filter((e) => e.code === "broken-target");
+    expect(broken).toHaveLength(3);
+  });
+
+  it("rejects media referenced by videos but missing from the manifest", () => {
+    const manifest: MediaManifest = { files: [] };
+    const result = validateScenario(baseScenario, manifest);
+    expect(result.errors.some((e) => e.code === "missing-media")).toBe(true);
+  });
+
+  it("warns on unreachable phases", () => {
+    const s: Scenario = structuredClone(baseScenario);
+    s.phases.push(question("orphan", idle));
+    const result = validateScenario(s);
+    expect(result.ok).toBe(true); // warning, not error
+    expect(result.warnings.some((w) => w.code === "unreachable-phase" && w.phaseId === "orphan")).toBe(true);
+  });
+
+  it("rejects unmarked cycles and allows marked ones", () => {
+    const s = structuredClone(baseScenario);
+    const q = s.phases[2] as Extract<Scenario["phases"][number], { kind: "position-question" }>;
+    if (q.next.type === "quadrant-plurality") q.next.tie = "intro"; // intro -> q1 -> intro
+    expect(validateScenario(s).errors.some((e) => e.code === "unmarked-cycle")).toBe(true);
+
+    const marked = { ...structuredClone(s), cyclesAllowed: true };
+    expect(validateScenario(marked).errors.some((e) => e.code === "unmarked-cycle")).toBe(false);
+  });
+});
+
+describe("validateMediaManifest", () => {
+  const manifest = mediaManifestSchema.parse({
+    files: [
+      { src: "intro.mp4", bytes: 1_000, hash: "abc" },
+      { src: "other.mp4", bytes: 2_000, hash: "def" },
+    ],
+  });
+
+  const statFrom = (sizes: Record<string, number>) => async (src: string) => {
+    const size = sizes[src];
+    if (size === undefined) throw new Error("missing");
+    return size;
+  };
+
+  it("passes when declared sizes match", async () => {
+    const result = await validateMediaManifest(
+      manifest,
+      statFrom({ "intro.mp4": 1_000, "other.mp4": 2_000 }),
+    );
+    expect(result.ok).toBe(true);
+    expect(result.totalBytes).toBe(3_000);
+  });
+
+  it("rejects missing files and size mismatches", async () => {
+    const result = await validateMediaManifest(
+      manifest,
+      statFrom({ "intro.mp4": 999 }),
+    );
+    expect(result.errors.map((e) => e.code).sort()).toEqual([
+      "file-missing",
+      "size-mismatch",
+    ]);
+  });
+
+  it("rejects totals above the 2 GiB budget", async () => {
+    const big = mediaManifestSchema.parse({
+      files: [{ src: "huge.mp4", bytes: 2 * 1024 * 1024 * 1024 + 1, hash: "x" }],
+    });
+    const result = await validateMediaManifest(
+      big,
+      statFrom({ "huge.mp4": 2 * 1024 * 1024 * 1024 + 1 }),
+    );
+    expect(result.errors.some((e) => e.code === "budget-exceeded")).toBe(true);
+  });
+});
