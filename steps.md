@@ -107,15 +107,15 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: BLOCKER: needs the user/director. Four separable deliverable groups: (a) director decisions (timings, axes, quadrant convention, counted statuses, empty targets), (b) content production (graph, media inventory ≤ 2 GiB), (c) hardware procurement (venue-spec mini PC), (d) privacy package approval. Engineering proceeds against the fake dev scenario; production.json lands here later.
 
 ### STEP-001: Monorepo scaffold
-- status: in-progress
+- status: review
 - owner: claude
 - tier: complex
 - depends-on: —
 - files: package.json, pnpm-workspace.yaml, tsconfig*, apps/*/ (stubs), packages/*/ (stubs), .gitignore, vitest config
 - acceptance: pnpm install + typecheck + empty vitest run pass across all workspaces; repo layout matches plan §3
-- verify: pnpm -r typecheck && pnpm -r test
+- verify: pnpm -r typecheck && pnpm -r test → PASS (7 workspaces, node 22.17 / pnpm 9.12.2, 2026-07-11)
 - reviewer: codex
-- notes: —
+- notes: shared package carries the quadrantOf boundary-convention utility + tests (x=0.5→right, y=0.5→bottom, center→q4) so STEP-003/008 share one implementation. Ready for codex review.
 
 ### STEP-002: packages/protocol — message types + Zod schemas
 - status: todo
