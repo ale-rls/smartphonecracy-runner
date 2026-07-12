@@ -1,0 +1,10 @@
+.git
+.github
+.steps.lock
+.watchdog
+**/node_modules
+**/dist
+coverage
+docs
+tests
+
