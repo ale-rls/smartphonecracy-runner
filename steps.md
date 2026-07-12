@@ -56,6 +56,32 @@ expand the current one. Full test suite runs once after all steps are done.
 first decomposes it into steps below (with tiers and `depends-on`); the other
 agent reviews the decomposition before any implementation starts.
 
+## HANDOFF — claude lane quota outage (2026-07-12)
+
+The claude lane (including its Sonnet review subagents) is out of credits —
+this is a CONFIRMED quota outage per the Review-tiering rule. Until claude
+returns, codex operates solo:
+
+- **Proceed at risk** past any review owed by claude. Mark such steps
+  "proceeding at risk pending claude review" in notes and continue to
+  dependent steps. Queue of reviews claude owes on return, in priority
+  order: STEP-008 re-review (fable-critical), then anything else marked
+  at-risk. When claude returns, review-triggered fixes take priority.
+- **Execution order for the codex slice**: finish STEP-008 fixes → 009 →
+  010 → 011 → 026 → 012 → 018 (fable-critical review, proceed at risk) →
+  019 → 020 (greedy) → 021 → 022 (greedy) → 024. STEP-023/025 need
+  claude/client coordination and the launch gate — leave for joint work.
+- **Claude's slice is complete** (001–004, 013–017, 027 all done). Do not
+  modify packages/protocol, packages/scenario, packages/shared, or
+  apps/display, apps/phone except via a new step claimed per protocol.
+- **Git commits**: the index.lock EPERM failures were almost certainly
+  contention with concurrent claude sessions — with claude gone, retry
+  commits with short backoff (3 attempts). If commit still fails, leave
+  the working tree intact and record "UNCOMMITTED — needs commit" in the
+  step's notes; never discard work.
+- **Per invocation discipline** stays the same: one step per run, verify,
+  record results, end with BACKLOG_STATUS: remaining|empty|blocked.
+
 ## Resume / watchdog
 
 Credit or usage-limit outages are expected. Resumption is stateless-safe because
