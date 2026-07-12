@@ -11,6 +11,8 @@ import { Inspector } from "./inspector/Inspector.js";
 import { SessionHistory } from "./inspector/history.js";
 import { DiagnosticsPanel } from "./diagnostics/DiagnosticsPanel.js";
 import { diagnostics, exportBlocked } from "./diagnostics/diagnostics.js";
+import { PreviewPanel } from "./preview/PreviewPanel.js";
+import { assembleDeploymentPackage } from "./export/deployment.js";
 import "./style.css";
 
 const download = (name: string, value: unknown) => {
@@ -30,6 +32,7 @@ export function App() {
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [selectedId, setSelectedId] = useState<string>();
   const [acknowledged, setAcknowledged] = useState<Set<string>>(new Set());
+  const [previewing, setPreviewing] = useState(false);
   type HistoryState = { draft: Draft; edges: Edge[] };
   const history = useRef<SessionHistory<HistoryState>>();
 
@@ -149,10 +152,23 @@ export function App() {
 
   const currentDiagnostics = diagnostics(draft.project);
   const blocked = exportBlocked(currentDiagnostics, acknowledged);
-  return <main className="editor"><header><button onClick={() => setDraft(undefined)}>Projects</button><input aria-label="Show name" value={draft.name} onChange={(event) => save({ ...draft, name: event.target.value, updatedAt: Date.now() })} /><span className={`status ${status}`}>{status}</span><button disabled={!history.current?.canUndo} onClick={() => { if (history.current) applyHistory(history.current.undo()); }}>Undo</button><button disabled={!history.current?.canRedo} onClick={() => { if (history.current) applyHistory(history.current.redo()); }}>Redo</button><button onClick={() => {
+  const exportDeployment = () => {
+    try {
+      const deployment = assembleDeploymentPackage(draft, acknowledged, { generatedAt: new Date().toISOString(), studioBuild: "0.0.1" });
+      for (const [name, value] of Object.entries(deployment.files)) {
+        if (name === "README.txt") {
+          const url = URL.createObjectURL(new Blob([value as string], { type: "text/plain" }));
+          const link = Object.assign(document.createElement("a"), { href: url, download: `${deployment.packageName}-${name}` });
+          link.click(); URL.revokeObjectURL(url);
+        } else download(`${deployment.packageName}-${name}`, value);
+      }
+    } catch (error) { alert(error instanceof Error ? error.message : "Deployment export failed"); }
+  };
+  if (previewing) return <PreviewPanel project={draft.project} onClose={() => setPreviewing(false)} />;
+  return <main className="editor"><header><button onClick={() => setDraft(undefined)}>Projects</button><input aria-label="Show name" value={draft.name} onChange={(event) => save({ ...draft, name: event.target.value, updatedAt: Date.now() })} /><span className={`status ${status}`}>{status}</span><button disabled={!history.current?.canUndo} onClick={() => { if (history.current) applyHistory(history.current.undo()); }}>Undo</button><button disabled={!history.current?.canRedo} onClick={() => { if (history.current) applyHistory(history.current.redo()); }}>Redo</button><button onClick={() => setPreviewing(true)}>Preview</button><button onClick={() => {
     const current = { ...draft, document: { ...draft.document, nodes: nodes.map((node) => ({ id: node.id, x: node.position.x, y: node.position.y })) }, updatedAt: Date.now() };
     save(current);
-  }}>Save layout</button><button disabled={blocked} title={blocked ? "Resolve errors and acknowledge warnings first" : undefined} onClick={() => Object.entries(exportArtifacts(draft)).forEach(([name, value]) => download(name, value))}>Export files</button><button onClick={() => download(`${draft.name}.studio-backup.json`, exportBackup(draft))}>Backup</button></header>
+  }}>Save layout</button><button disabled={blocked} title={blocked ? "Resolve errors and acknowledge warnings first" : undefined} onClick={() => Object.entries(exportArtifacts(draft)).forEach(([name, value]) => download(name, value))}>Export files</button><button disabled={blocked} title={blocked ? "Resolve errors and acknowledge warnings first" : undefined} onClick={exportDeployment}>Export for deployment</button><button onClick={() => download(`${draft.name}.studio-backup.json`, exportBackup(draft))}>Backup</button></header>
     <aside className="palette" aria-label="Node palette"><strong>Add node</strong><button onClick={() => addPhase("idle")}>Idle</button><button onClick={() => addPhase("video")}>Video</button><button onClick={() => addPhase("position-question")}>Position question</button></aside>
     <section className="canvas"><ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} onNodeClick={(_, node) => setSelectedId(node.id)} onConnect={connect} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onEdgesDelete={(deleted) => { const ids = new Set(deleted.map((edge) => edge.id)); const next = edges.filter((edge) => !ids.has(edge.id)); setEdges(next); persistGraph(next); }} onNodesDelete={(deleted) => { const removed = new Set(deleted.map((node) => node.id)); const nodeIds = new Set(nodes.filter((node) => !removed.has(node.id)).map((node) => node.id)); const nextEdges = pruneEdges(edges, nodeIds); setEdges(nextEdges); const phases = draft.project.scenario.phases.filter((phase) => !removed.has(phase.id)) as Draft["project"]["scenario"]["phases"]; save({ ...draft, project: { ...draft.project, scenario: { ...draft.project.scenario, phases } }, document: { ...draft.document, edges: nextEdges }, updatedAt: Date.now() }); }} fitView onMoveEnd={(_, viewport) => save({ ...draft, document: { ...draft.document, viewport }, updatedAt: Date.now() })}><Background /></ReactFlow></section>
     <Inspector project={draft.project} selectedId={selectedId} onRename={renameSelected} onChange={updatePhase} onKindChange={changeSelectedKind} onTransitionChange={changeTransition} />
