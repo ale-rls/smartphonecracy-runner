@@ -294,15 +294,15 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: —
 
 ### STEP-017: Phone client
-- status: review
+- status: done
 - owner: claude
 - tier: complex
 - depends-on: STEP-002
 - files: apps/phone/**
 - acceptance: QR join flow; expired-grant/room-full/rate-limited states; fullscreen relative trackpad (touch-action none, throttled 20–30 Hz); identity marker matching cursor; lease in localStorage; reconnect + identity restore; input ignored outside question phases; build-version mismatch reload handling (service-worker app-shell update + rejoin)
-- verify: pnpm --filter phone test → PASS (11 tests) + typecheck PASS + vite build PASS (2026-07-12). Playwright mobile emulation deferred to STEP-023 (same deferral as STEP-013 — no e2e harness yet).
+- verify: `pnpm --filter phone test` → PASS (11 tests); `pnpm --filter phone typecheck` → PASS; `pnpm --filter phone build` → PASS (2026-07-12). Playwright mobile emulation explicitly accepted as deferred to STEP-023 because no e2e harness exists yet.
 - reviewer: codex
-- notes: real iOS/Android sensitivity tuning deferred to Phase 7 hardware pass. Implementation: PhoneConnection (join w/ grant from ?g= + stored lease, lease persisted from identity, ping/10s, backoff reconnect); installation-scoped localStorage lease w/ private-mode fallback; relative trackpad (applyDelta w/ sensitivity 1.4 placeholder for Phase 0, clamped 0..1) + 25 Hz latest-wins throttle; reducer opens input only in position-question phases w/ stale-epoch guard; rejection screens for expired_grant/room_full/rate_limited; reload → SW update + reload.
+- notes: APPROVED by codex 2026-07-12. Reviewed installation-scoped lease persistence and private-mode fallback, `?g=` join/reconnect flow, rejection states, question-only input gating, per-session epoch guard, relative trackpad clamping, and 25 Hz throttle. Real iOS/Android sensitivity tuning remains a Phase 7 hardware pass. Playwright mobile emulation is explicitly accepted as deferred to STEP-023, which owns the future e2e harness.
 
 ### STEP-018: Persistence layer
 - status: todo
