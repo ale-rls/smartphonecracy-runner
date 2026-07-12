@@ -22,22 +22,22 @@ describe("production persistence runtime", () => {
 
   it("migrates, records crash recovery, and closes its held database client", async () => {
     const queries: Array<{ text: string; values?: readonly unknown[] }> = [];
-    let released = false;
-    let ended = false;
+    let releaseCalls = 0;
+    let endCalls = 0;
     const client = {
       async query(text: string, values?: readonly unknown[]) {
         queries.push({ text, ...(values === undefined ? {} : { values }) });
         if (text.startsWith("select id from sessions")) return { rows: [{ id: "active-session" }] };
         return { rows: [] };
       },
-      release() { released = true; },
+      release(destroy?: boolean) { if (destroy === true) releaseCalls += 1; },
     };
     const runtime = await createPersistenceRuntime(loadConfig({
       NODE_ENV: "test",
       DATABASE_URL: "postgres://example.invalid/db",
       INSTALLATION_CLOSES_AT: "2026-12-31T23:00:00+00:00",
     }), scenario, {
-      createPool: () => ({ connect: async () => client, end: async () => { ended = true; } }),
+      createPool: () => ({ connect: async () => client, end: async () => { endCalls += 1; } }),
       readMigration: async () => "-- migration marker",
       now: () => Date.parse("2026-07-12T15:00:00Z"),
     });
@@ -48,7 +48,8 @@ describe("production persistence runtime", () => {
     expect(queries.some(({ text }) => text.startsWith("update sessions set status='ended'"))).toBe(true);
     expect(queries.some(({ text }) => text.includes("'recovery'"))).toBe(true);
     await runtime?.close();
-    expect(released).toBe(true);
-    expect(ended).toBe(true);
+    await runtime?.close();
+    expect(releaseCalls).toBe(1);
+    expect(endCalls).toBe(1);
   });
 });

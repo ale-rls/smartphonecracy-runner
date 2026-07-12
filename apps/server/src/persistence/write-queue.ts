@@ -8,7 +8,13 @@ export interface PersistenceExecutor {
 export type PersistenceQueueHealthEvent =
   | { status: "degraded"; bufferedWrites: number; consecutiveFailures: number; error: unknown }
   | { status: "recovered"; bufferedWrites: number; consecutiveFailures: number }
-  | { status: "buffer-full"; bufferedWrites: number; droppedWrites: number };
+  | { status: "buffer-full"; bufferedWrites: number; droppedWrites: number }
+  | { status: "stopped"; bufferedWrites: number; abandonedWrites: number; reason: "shutdown-timeout" | "shutdown-failure" | "enqueue-after-stop" };
+
+export type PersistenceShutdownResult = {
+  timedOut: boolean;
+  abandonedWrites: number;
+};
 
 export type WriteQueueOptions = {
   retryDelayMs?: number;
@@ -27,16 +33,19 @@ export class PersistenceWriteQueue {
   private readonly maxRetryDelayMs: number;
   private readonly maxBufferedWrites: number;
   private readonly sustainedFailureThreshold: number;
-  private readonly sleep: (ms: number) => Promise<void>;
+  private readonly sleep: ((ms: number) => Promise<void>) | undefined;
   private consecutiveFailures = 0;
   private degraded = false;
+  private stopped = false;
+  private readonly stopController = new AbortController();
+  private shutdownPromise: Promise<PersistenceShutdownResult> | null = null;
 
   constructor(private readonly executor: PersistenceExecutor, options: WriteQueueOptions = {}) {
     this.retryDelayMs = options.retryDelayMs ?? 100;
     this.maxRetryDelayMs = options.maxRetryDelayMs ?? 5_000;
     this.maxBufferedWrites = options.maxBufferedWrites ?? 10_000;
     this.sustainedFailureThreshold = options.sustainedFailureThreshold ?? 5;
-    this.sleep = options.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
+    this.sleep = options.sleep;
     this.onHealthEvent = options.onHealthEvent ?? (() => undefined);
   }
 
@@ -46,6 +55,10 @@ export class PersistenceWriteQueue {
 
   enqueue(statements: readonly SqlStatement[]): void {
     if (statements.length === 0) return;
+    if (this.stopped) {
+      this.emitHealth({ status: "stopped", bufferedWrites: 0, abandonedWrites: 1, reason: "enqueue-after-stop" });
+      return;
+    }
     if (this.pending.length >= this.maxBufferedWrites) {
       this.emitHealth({ status: "buffer-full", bufferedWrites: this.pending.length, droppedWrites: 1 });
       return;
@@ -55,9 +68,46 @@ export class PersistenceWriteQueue {
   }
 
   async flush(): Promise<void> {
+    if (this.stopped) throw new Error("persistence queue stopped");
     this.kick();
     await this.draining;
     if (this.pending.length > 0) throw new Error(`persistence flush incomplete: ${this.pending.length} write(s) buffered`);
+  }
+
+  async shutdown(timeoutMs: number): Promise<PersistenceShutdownResult> {
+    this.shutdownPromise ??= this.performShutdown(timeoutMs);
+    return this.shutdownPromise;
+  }
+
+  private async performShutdown(timeoutMs: number): Promise<PersistenceShutdownResult> {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let flushError: unknown;
+    let completed: boolean;
+    try {
+      completed = await Promise.race([
+        this.flush().then(() => true, (error: unknown) => { flushError = error; return false; }),
+        new Promise<false>((resolve) => { timer = setTimeout(() => resolve(false), timeoutMs); }),
+      ]);
+    } finally {
+      if (timer !== undefined) clearTimeout(timer);
+    }
+    if (completed) {
+      this.stopped = true;
+      this.stopController.abort();
+      return { timedOut: false, abandonedWrites: 0 };
+    }
+    const abandonedWrites = this.pending.length;
+    this.stopped = true;
+    this.pending = [];
+    this.stopController.abort();
+    this.emitHealth({
+      status: "stopped",
+      bufferedWrites: 0,
+      abandonedWrites,
+      reason: flushError === undefined ? "shutdown-timeout" : "shutdown-failure",
+    });
+    if (flushError !== undefined) throw flushError;
+    return { timedOut: true, abandonedWrites };
   }
 
   query<T extends object>(statement: SqlStatement): Promise<readonly T[]> {
@@ -72,7 +122,7 @@ export class PersistenceWriteQueue {
       this.emitHealth({ status: "degraded", bufferedWrites: this.pending.length, consecutiveFailures: this.consecutiveFailures, error });
     }).finally(() => {
       this.draining = null;
-      if (this.pending.length > 0) this.kick();
+      if (!this.stopped && this.pending.length > 0) this.kick();
     });
   }
 
@@ -95,9 +145,32 @@ export class PersistenceWriteQueue {
           this.emitHealth({ status: "degraded", bufferedWrites: this.pending.length, consecutiveFailures: this.consecutiveFailures, error });
         }
         const exponent = Math.min(this.consecutiveFailures - 1, 30);
-        await this.sleep(Math.min(this.maxRetryDelayMs, this.retryDelayMs * 2 ** exponent));
+        await this.waitForRetry(Math.min(this.maxRetryDelayMs, this.retryDelayMs * 2 ** exponent));
       }
     }
+  }
+
+  private waitForRetry(delayMs: number): Promise<void> {
+    const signal = this.stopController.signal;
+    if (signal.aborted) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const finish = (callback: () => void) => {
+        if (timer !== undefined) clearTimeout(timer);
+        signal.removeEventListener("abort", onStop);
+        callback();
+      };
+      const onStop = () => finish(resolve);
+      signal.addEventListener("abort", onStop, { once: true });
+      if (this.sleep === undefined) {
+        timer = setTimeout(() => finish(resolve), delayMs);
+      } else {
+        void this.sleep(delayMs).then(
+          () => finish(resolve),
+          (error: unknown) => finish(() => reject(error)),
+        );
+      }
+    });
   }
 
   private emitHealth(event: PersistenceQueueHealthEvent): void {

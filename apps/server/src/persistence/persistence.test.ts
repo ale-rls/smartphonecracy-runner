@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import scenarioJson from "../../../../content/scenarios/dev.json";
 import type { Scenario } from "@smartphonecracy/scenario";
 import type { FinalVoteSnapshot } from "../votes/index.js";
@@ -19,6 +19,8 @@ class RecordingExecutor implements PersistenceExecutor {
 
 const scenario = scenarioJson as Scenario;
 const expires = Date.UTC(2027, 0, 1);
+
+afterEach(() => vi.useRealTimers());
 
 describe("persistence", () => {
   it("commits batches atomically and rolls back partial failures", async () => {
@@ -72,6 +74,47 @@ describe("persistence", () => {
     expect(health).toContainEqual({ status: "buffer-full", bufferedWrites: 2, droppedWrites: 1 });
     release();
     await queue.flush();
+  });
+
+  it("cancels permanent retry backoff and reports abandoned writes on shutdown timeout", async () => {
+    vi.useFakeTimers();
+    let attempts = 0;
+    const health: PersistenceQueueHealthEvent[] = [];
+    const executor: PersistenceExecutor = {
+      execute: async () => { attempts += 1; throw new Error("offline"); },
+      query: async <T extends object>() => [] as T[],
+    };
+    const queue = new PersistenceWriteQueue(executor, {
+      retryDelayMs: 60_000,
+      onHealthEvent: (event) => health.push(event),
+    });
+    queue.enqueue([{ text: "never-written" }]);
+    const shutdown = queue.shutdown(10);
+    await vi.advanceTimersByTimeAsync(10);
+    const result = await shutdown;
+    const attemptsAtShutdown = attempts;
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(result).toEqual({ timedOut: true, abandonedWrites: 1 });
+    await expect(queue.shutdown(10)).resolves.toEqual(result);
+    expect(queue.bufferedWrites).toBe(0);
+    expect(attempts).toBe(attemptsAtShutdown);
+    expect(health).toContainEqual({
+      status: "stopped",
+      bufferedWrites: 0,
+      abandonedWrites: 1,
+      reason: "shutdown-timeout",
+    });
+    expect(() => queue.enqueue([{ text: "after-stop" }])).not.toThrow();
+    expect(queue.bufferedWrites).toBe(0);
+    expect(health).toContainEqual({
+      status: "stopped",
+      bufferedWrites: 0,
+      abandonedWrites: 1,
+      reason: "enqueue-after-stop",
+    });
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it("persists transition checkpoints and explicit recovery events", async () => {

@@ -128,18 +128,13 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Ser
     for (const socket of webSockets.clients) socket.terminate();
     await new Promise<void>((resolve) => webSockets.close(() => resolve()));
     if (options.persistence !== undefined) {
-      let timer: ReturnType<typeof setTimeout> | undefined;
       try {
-        await Promise.race([
-          options.persistence.flush(),
-          new Promise<never>((_resolve, reject) => {
-            timer = setTimeout(() => reject(new Error("persistence shutdown flush timed out")), config.persistenceFlushTimeoutMs);
-          }),
-        ]);
+        const result = await options.persistence.shutdown(config.persistenceFlushTimeoutMs);
+        if (result.timedOut) {
+          app.log.error({ abandonedWrites: result.abandonedWrites }, "persistence shutdown flush timed out");
+        }
       } catch (error) {
         app.log.error({ error }, "persistence shutdown flush failed");
-      } finally {
-        if (timer !== undefined) clearTimeout(timer);
       }
     }
   });
