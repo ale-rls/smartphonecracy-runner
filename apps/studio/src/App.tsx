@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Background, ReactFlow, type Edge, type Node, useEdgesState, useNodesState } from "@xyflow/react";
+import { addEdge, Background, ReactFlow, type Connection, type Edge, type Node, useEdgesState, useNodesState } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Autosave, IndexedDbDraftDatabase, recoverDraft, type SaveStatus } from "./drafts.js";
 import { exportArtifacts, exportBackup, importBackup, importRuntime } from "./io.js";
 import type { Draft } from "./model.js";
+import { applyEdges, END_NODE_ID, ENTRY_NODE_ID, graphEdges, pruneEdges, validateConnection } from "./canvas/graph.js";
+import { nodeTypes } from "./canvas/nodes.js";
 import "./style.css";
 
 const download = (name: string, value: unknown) => {
@@ -25,8 +27,10 @@ export function App() {
   useEffect(() => void db.list().then(setRecent), [db]);
   useEffect(() => {
     if (!draft) return;
-    setNodes(draft.document.nodes.map((node) => ({ id: node.id, position: { x: node.x, y: node.y }, data: { label: node.id } })));
-    setEdges(draft.document.edges);
+    const layout = new Map(draft.document.nodes.map((node) => [node.id, node]));
+    const phaseNodes: Node[] = draft.project.scenario.phases.map((phase, index) => ({ id: phase.id, type: "phase", position: layout.get(phase.id) ?? { x: 360 + (index % 3) * 300, y: 80 + Math.floor(index / 3) * 220 }, data: { label: phase.kind === "position-question" ? phase.text : phase.id, kind: phase.kind, outcome: phase.kind === "position-question" && phase.next.type === "quadrant-plurality" } }));
+    setNodes([{ id: ENTRY_NODE_ID, type: "entry", position: layout.get(ENTRY_NODE_ID) ?? { x: 30, y: 80 }, data: {} }, ...phaseNodes, { id: END_NODE_ID, type: "end", position: layout.get(END_NODE_ID) ?? { x: 1250, y: 500 }, data: {} }]);
+    setEdges(graphEdges(draft.project));
   }, [draft?.id, setEdges, setNodes]);
 
   const save = (next: Draft) => {
@@ -53,6 +57,32 @@ export function App() {
     if (draft?.id === source.id) setDraft(undefined);
     setRecent(await db.list());
   };
+  const persistGraph = (nextEdges: Edge[]) => {
+    if (!draft) return;
+    let project = draft.project;
+    try { project = applyEdges(project, nextEdges); } catch { /* Incomplete wiring remains visible until repaired. */ }
+    save({ ...draft, project, document: { ...draft.document, edges: nextEdges }, updatedAt: Date.now() });
+  };
+  const connect = (connection: Connection) => {
+    if (!draft) return;
+    const problem = validateConnection(draft.project, edges, connection);
+    if (problem) return void alert(problem);
+    const next = addEdge({ ...connection, id: `${connection.source}:${connection.sourceHandle ?? "next"}` }, edges);
+    setEdges(next);
+    persistGraph(next);
+  };
+  const addPhase = (kind: "idle" | "video" | "position-question") => {
+    if (!draft) return;
+    if (kind === "idle" && draft.project.scenario.phases.some((phase) => phase.kind === "idle")) return void alert("A show already has its idle phase.");
+    const id = kind === "idle" ? "idle" : `${kind}-${crypto.randomUUID().slice(0, 6)}`;
+    const phase = kind === "idle" ? { kind, id: "idle" as const } : kind === "video"
+      ? { kind, id, src: "media/new-video.mp4", expectedDurationMs: 1000, next: "idle" }
+      : { kind, id, text: "New position question", xAxis: { minLabel: "Left", maxLabel: "Right" }, yAxis: { minLabel: "Top", maxLabel: "Bottom" }, durationMs: 60000, freezeMs: 5000, connectionStaleAfterMs: 10000, showLiveCounts: true, next: { type: "fixed" as const, target: "idle" } };
+    const phases = [...draft.project.scenario.phases, phase] as Draft["project"]["scenario"]["phases"];
+    save({ ...draft, project: { ...draft.project, scenario: { ...draft.project.scenario, phases } }, updatedAt: Date.now() });
+    setNodes((current) => [...current, { id, type: "phase", position: { x: 400, y: 200 }, data: { label: kind === "position-question" ? phase.text : id, kind } }]);
+    if (kind !== "idle") setEdges((current) => [...current, { id: `${id}:next`, source: id, sourceHandle: "next", target: END_NODE_ID }]);
+  };
 
   if (!draft) return <main className="home"><h1>Show Studio</h1><p>Create and safely round-trip Smartphonecracy shows.</p>
     <label className="button">Import show or backup<input hidden multiple type="file" accept="application/json" onChange={(event) => void importFiles(event.target.files)} /></label>
@@ -63,5 +93,6 @@ export function App() {
     const current = { ...draft, document: { ...draft.document, nodes: nodes.map((node) => ({ id: node.id, x: node.position.x, y: node.position.y })) }, updatedAt: Date.now() };
     save(current);
   }}>Save layout</button><button onClick={() => Object.entries(exportArtifacts(draft)).forEach(([name, value]) => download(name, value))}>Export files</button><button onClick={() => download(`${draft.name}.studio-backup.json`, exportBackup(draft))}>Backup</button></header>
-    <section className="canvas"><ReactFlow nodes={nodes} edges={edges} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} fitView onMoveEnd={(_, viewport) => save({ ...draft, document: { ...draft.document, viewport }, updatedAt: Date.now() })}><Background /></ReactFlow></section></main>;
+    <aside className="palette" aria-label="Node palette"><strong>Add node</strong><button onClick={() => addPhase("idle")}>Idle</button><button onClick={() => addPhase("video")}>Video</button><button onClick={() => addPhase("position-question")}>Position question</button></aside>
+    <section className="canvas"><ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} onConnect={connect} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onEdgesDelete={(deleted) => { const ids = new Set(deleted.map((edge) => edge.id)); const next = edges.filter((edge) => !ids.has(edge.id)); setEdges(next); persistGraph(next); }} onNodesDelete={(deleted) => { const removed = new Set(deleted.map((node) => node.id)); const nodeIds = new Set(nodes.filter((node) => !removed.has(node.id)).map((node) => node.id)); const nextEdges = pruneEdges(edges, nodeIds); setEdges(nextEdges); const phases = draft.project.scenario.phases.filter((phase) => !removed.has(phase.id)) as Draft["project"]["scenario"]["phases"]; save({ ...draft, project: { ...draft.project, scenario: { ...draft.project.scenario, phases } }, document: { ...draft.document, edges: nextEdges }, updatedAt: Date.now() }); }} fitView onMoveEnd={(_, viewport) => save({ ...draft, document: { ...draft.document, viewport }, updatedAt: Date.now() })}><Background /></ReactFlow></section></main>;
 }

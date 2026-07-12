@@ -6,7 +6,7 @@ export type StudioDocument = {
   runtimeScenarioVersion: string;
   showId: string;
   nodes: StudioNodeLayout[];
-  edges: Array<{ id: string; source: string; target: string }>;
+  edges: Array<{ id: string; source: string; target: string; sourceHandle?: string | null; targetHandle?: string | null }>;
   viewport: { x: number; y: number; zoom: number };
   notes?: Record<string, string>;
 };
