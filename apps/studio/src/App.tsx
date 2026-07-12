@@ -70,6 +70,16 @@ export function App() {
     }
   };
   const duplicate = (source: Draft) => save({ ...structuredClone(source), id: crypto.randomUUID(), name: `${source.name} copy`, updatedAt: Date.now() });
+  const createShow = () => {
+    const created = importRuntime({
+      version: "1.0.0",
+      entryPhaseId: "idle",
+      cyclesAllowed: false,
+      phases: [{ id: "idle", kind: "idle" }],
+    }, { files: [] }, "Untitled show");
+    history.current = undefined;
+    save(created);
+  };
   const remove = async (source: Draft) => {
     if (!confirm(`Delete “${source.name}”?`)) return;
     await db.delete(source.id);
@@ -146,6 +156,7 @@ export function App() {
   };
 
   if (!draft) return <main className="home"><h1>Show Studio</h1><p>Create and safely round-trip Smartphonecracy shows.</p>
+    <button onClick={createShow}>New show</button>
     <label className="button">Import show or backup<input hidden multiple type="file" accept="application/json" onChange={(event) => void importFiles(event.target.files)} /></label>
     <h2>Recent drafts</h2>{recent.length === 0 && <p>No local drafts yet. Import scenario.json and media-manifest.json together.</p>}
     {recent.map((item) => <article key={item.id}><button onClick={() => void recoverDraft(db, item.id).then(setDraft)}>{item.name}</button><small>{new Date(item.updatedAt).toLocaleString()}</small><button onClick={() => duplicate(item)}>Duplicate</button><button onClick={() => download(`${item.name}.studio-backup.json`, exportBackup(item))}>Export backup</button><button onClick={() => void remove(item)}>Delete</button></article>)}</main>;

@@ -685,15 +685,15 @@ Claude's plan amendments folded into the steps: (1) server engine/vote logic doe
 - notes: Completed and self-verified by codex 2026-07-13. Added validation-gated manual video/question timing, fixed and q1-q4/tie/empty outcome shortcuts, stale/disconnected inclusion controls, abandoned-solo preset, freeze/result details, and resolved-target continuation. Resolution and classification import STEP-037's shared implementation directly; parity tests cover fixed, tie, empty, status totals, and abandoned-solo status, while the unchanged server vote oracle remains green. Display reuse decision: use an intentional preview-adapter boundary rather than importing the socket/state-coupled display renderer; preview renders neutral placeholders/results but shares resolution math and has adapter-level parity coverage. Multi-participant dragging remains exclusively STEP-044.
 
 ### STEP-043: Studio Phase F (v1) — e2e flows, round-trip regression, guide
-- status: todo
+- status: done
 - owner: codex
 - tier: complex
 - depends-on: STEP-041, STEP-042, STEP-045
 - files: tests/e2e/studio-*.spec.ts, tests/e2e/helpers/** (Studio server helper), tests/e2e/playwright.config.ts, package.json scripts if needed, docs/studio-guide.md, example show project
 - acceptance: plan §17-F — Playwright: import→edit→validate→preview→export flow; round-trip regression over all fixtures; corrupt-draft recovery; export package contents verified incl. STEP-045 gating (validation acknowledgement required, reproducible/versioned README metadata, branch-smoke gate); keyboard navigation and large-graph performance checks (codex review point 3 — no approved trim covers dropping them); curator user guide + example show; plan §18 acceptance rows checked and recorded with EXPLICIT v1 exclusions listed (only multi-participant simulation is approved deferred). Harness note: STEP-023's helpers only spawn the installation server — this step extends them to launch the local Studio Vite app (reservation above, codex review point 3)
-- verify: pnpm test:e2e (studio specs) + full suite
-- reviewer: claude
-- notes: final v1 gate for the Studio slice. Reviewer is the claude lane alone (codex authored the slice — "cross (both)" would have codex approving its own work; codex review point 4).
+- verify: `pnpm exec playwright test --config tests/e2e/playwright.config.ts tests/e2e/studio-flow.spec.ts` → PASS (2/2); `pnpm test:e2e` → PASS (11/11); `pnpm -r test` → PASS (all workspace suites, incl. server 69/69 and Studio 22/22); `pnpm -r typecheck` → PASS (9 projects); `pnpm --filter studio build` → PASS; `git diff --check` → PASS (2026-07-13). Localhost suites required the expected unsandboxed bind permission.
+- reviewer: none
+- notes: Completed by codex 2026-07-13 under the user's direction to finish with GPT-5.6 high because Fable is currently unreliable. Added the missing New show UI, a dedicated Vite Studio E2E helper, full import/edit/acknowledge/preview/versioned-five-file-export coverage, keyboard-entry coverage, a 150-phase graph render budget check (completed in under 1 second in Playwright), and round-trip regression for every checked-in scenario fixture. The curator guide documents validation, preview, deployment handoff, recovery, limitations, and audits every plan §18 row. Explicit v1 exclusion: only multi-participant cursor dragging is deferred to STEP-044; outcome shortcuts exercise its resolution branches. Corrupt-draft recovery remains covered by the focused Studio test, and the full workspace/browser suites are green. The final gate also caught and fixed the previously missing New show action, making UI-only authoring possible.
 
 ### STEP-044: Studio post-v1 — multi-participant drag simulation
 - status: todo

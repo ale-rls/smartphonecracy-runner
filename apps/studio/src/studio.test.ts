@@ -5,6 +5,7 @@ import { exportArtifacts, importBackup, importRuntime } from "./io.js";
 import { autoLayout, type Draft } from "./model.js";
 import scenario from "../../../content/scenarios/dev.json";
 import manifest from "../../../content/media-manifest.json";
+import e2eScenario from "../../../tests/e2e/fixtures/scenario.json";
 
 class MemoryDb implements DraftDatabase {
   latest: Draft[] = [];
@@ -23,6 +24,13 @@ describe("Studio shell", () => {
     expect(artifacts["media-manifest.json"]).toEqual(manifest);
     expect(draft.document.nodes).toHaveLength(scenario.phases.length);
     expect(JSON.stringify(artifacts["scenario.json"])).not.toContain("viewport");
+  });
+
+  it.each([
+    ["content dev", scenario],
+    ["installation e2e", e2eScenario],
+  ])("round-trips every checked-in scenario fixture: %s", (_name, fixture) => {
+    expect(exportArtifacts(importRuntime(fixture, manifest))["scenario.json"]).toEqual(fixture);
   });
 
   it("round-trips a versioned Studio backup", () => {
