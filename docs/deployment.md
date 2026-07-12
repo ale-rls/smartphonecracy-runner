@@ -15,9 +15,10 @@ release history needed for rollback.
 ## Rollback
 
 1. Stop new sessions and confirm the venue remains closed.
-2. Inspect releases with `fly releases --app <app>` and identify the last known
-   good version.
-3. Run `fly releases rollback <version> --app <app>`.
+2. Inspect releases with `fly releases --app <app> --image`, identify the last
+   known good version, and copy its exact `registry.fly.io/...` image reference.
+3. Redeploy that image with
+   `fly deploy --app <app> --image registry.fly.io/<app>:<image-tag>`.
 4. Wait for both `/healthz` and `/readyz` to return HTTP 200, then verify the
    display, phone, and admin routes load and `/api/status` reports the expected
    `buildVersion`.
@@ -25,3 +26,6 @@ release history needed for rollback.
 
 Rollback briefly interrupts the single WebSocket server and aborts an active
 session, which is why the same closed-venue deploy window is mandatory.
+Fly has no separate rollback command: this procedure creates a new release from
+the previously working image. It does not revert database schema, secrets, or
+`fly.toml`; verify those remain compatible before reopening the venue.
