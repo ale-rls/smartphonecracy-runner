@@ -391,3 +391,14 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - verify: acceptance checklist signed off
 - reviewer: cross (both)
 - notes: largely manual/on-hardware; blocked until STEP-000 deliverables exist.
+
+### STEP-026: Public video phase map API
+- status: todo
+- owner: —
+- tier: simple
+- depends-on: STEP-005
+- files: apps/server/** (public phases API route)
+- acceptance: `GET /api/phases` returns a sanitized public map of video phase IDs to media `src` values for display preloading, without exposing private configuration or scenario internals
+- verify: pnpm --filter server test (phases API suite)
+- reviewer: claude
+- notes: Requested during STEP-014 display media pipeline work; display snapshots carry next-phase IDs but not their video sources. Backlog entry only; no implementation in this session.
