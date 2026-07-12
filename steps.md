@@ -252,15 +252,15 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: Added defensive finite input validation/clamping, monotonic per-client sequence filtering, latest-position storage, full cursor batches at a fixed 25 Hz, membership-driven presence updates, immediate display presence sync, and replacement-safe participant cleanup. Existing admission parser/ping path supplies validated ping/pong with echoClientTime and serverTime. Ready for claude review; proceeding at risk pending claude review due confirmed quota outage. STEP-027 protocol/display edits remain separately owned and preserved.
 
 ### STEP-010: QR grant push loop
-- status: todo
-- owner: —
+- status: done
+- owner: codex
 - tier: simple
 - depends-on: STEP-006, STEP-007
-- files: apps/server/src/admission/qr.ts
+- files: apps/server/src/admission/qr.ts, apps/server/src/admission/qr.test.ts, apps/server/src/admission/index.ts, apps/server/src/engine/phase-engine.ts, apps/server/src/engine/phase-engine.test.ts, apps/server/src/server.ts
 - acceptance: qr_grant on display_join / qr_grant_request / every 60 s; large vs corner placement by phase; qr_hidden when admission closed; allowLateJoin=false ⇒ hidden after lobby
-- verify: pnpm --filter server test (qr suite)
+- verify: `pnpm --filter @smartphonecracy/server exec vitest run src/admission/qr.test.ts src/engine/phase-engine.test.ts` → PASS (15 tests); `pnpm --filter @smartphonecracy/server typecheck` → PASS; `pnpm -r typecheck` → PASS (7 workspaces); full server suite → 36/37 PASS with only the pre-existing sandbox-blocked localhost WebSocket test (`listen EPERM 127.0.0.1`), 2026-07-12.
 - reviewer: none
-- notes: —
+- notes: Added a QR grant push loop with signed URL construction, 60-second rotation while a display is connected, large idle/lobby and corner active placement, and active-policy hiding. Authenticated display join, refresh requests, and lifecycle transitions now push current QR state; unauthenticated refresh requests are ignored. Discovered QR delivery required PhaseEngine/server integration and expanded the reservation after coordinating that STEP-011 was unclaimed.
 
 ### STEP-011: Video phase handling
 - status: todo

@@ -46,6 +46,10 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Ser
       installationId: config.installationId,
       roomId: config.roomId,
       displayToken: config.displayToken,
+      qr: {
+        phoneJoinBaseUrl: config.phoneJoinBaseUrl,
+        issueGrant: (now) => admission.issueJoinGrant(now),
+      },
     });
     engine.start();
   }

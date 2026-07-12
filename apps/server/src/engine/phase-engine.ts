@@ -8,6 +8,7 @@ import type { Scenario, Phase } from "@smartphonecracy/scenario";
 import type { IncomingMessage } from "node:http";
 import type { WebSocket } from "ws";
 import type { ParticipantRecord, ParticipantRegistry } from "../admission/index.js";
+import { QrGrantPushLoop, type QrGrantPushLoopOptions } from "../admission/qr.js";
 import { CursorPipeline } from "../cursors/index.js";
 import { VoteEngine, type FinalVoteSnapshot, type VoteParticipantSeed } from "../votes/index.js";
 
@@ -61,6 +62,7 @@ export type PhaseEngineOptions = {
   onCheckpoint?: (checkpoint: PhaseCheckpoint) => void;
   onPhaseDeadline?: (event: PhaseDeadlineEvent) => void;
   onVoteSnapshotEnqueued?: (snapshot: FinalVoteSnapshot) => void;
+  qr?: Omit<QrGrantPushLoopOptions, "send" | "lifecycle" | "hasDisplay" | "now">;
 };
 
 export type TransitionResult = { ok: true } | { ok: false; reason: "stale" | "invalid-target" | "wrong-phase" };
@@ -82,6 +84,7 @@ export class PhaseEngine {
   private readonly onPhaseDeadline: ((event: PhaseDeadlineEvent) => void) | undefined;
   private readonly votes: VoteEngine;
   private readonly cursors: CursorPipeline;
+  private readonly qr: QrGrantPushLoop | null;
   private readonly clients = new Set<WebSocket>();
   private readonly participantSockets = new Set<WebSocket>();
 
@@ -121,6 +124,13 @@ export class PhaseEngine {
     this.cursors = new CursorPipeline({
       sendCursors: (message) => this.sendToDisplay(message),
       sendPresence: (message) => this.broadcast(message),
+    });
+    this.qr = options.qr === undefined ? null : new QrGrantPushLoop({
+      ...options.qr,
+      send: (message) => this.sendToDisplay(message),
+      lifecycle: () => this.lifecycle,
+      hasDisplay: () => this.displaySocket !== undefined,
+      now: this.now,
     });
     this.phaseStartedAt = this.now();
     this.requirePhase("idle");
@@ -175,12 +185,14 @@ export class PhaseEngine {
     if (this.timer !== null) return;
     this.timer = setInterval(() => this.tick(), 250);
     this.cursors.start();
+    this.qr?.start();
   }
 
   stop(): void {
     if (this.timer !== null) clearInterval(this.timer);
     this.timer = null;
     this.cursors.stop();
+    this.qr?.stop();
   }
 
   tick(now = this.now()): void {
@@ -312,6 +324,9 @@ export class PhaseEngine {
           this.displayDisconnectedAt = null;
         }
         return;
+      case "qr_grant_request":
+        if (socket === this.displaySocket) this.qr?.push();
+        return;
       case "ping": {
         const participantId = this.participantIds.get(socket);
         if (participantId !== undefined) {
@@ -417,6 +432,8 @@ export class PhaseEngine {
     this.send(socket, { t: "presence", v: 1, count: this.registry.connectedCount });
     if (this.lifecycle === "idle" && this.registry.connectedCount >= 1) {
       this.startLobby(this.now());
+    } else {
+      this.qr?.push();
     }
   }
 
@@ -511,6 +528,7 @@ export class PhaseEngine {
       phase: this.getSnapshot(),
       serverTime: this.now(),
     });
+    this.qr?.push();
   }
 
   private emitCheckpoint(kind: "transition" | "recovery", reason: string): void {
