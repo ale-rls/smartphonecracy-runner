@@ -184,15 +184,15 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: Changes requested by Fable were applied. X-Forwarded-For is now honored only when `TRUST_PROXY=true` is parsed into config and passed to admission; otherwise the socket peer address is used. The registry now counts held leases toward the cap, keeps disconnected leases for a 30-second heartbeat/disconnect grace, permits the existing lease to reconnect at capacity, and removes expired/grace-finished records. Rate limiter buckets sweep expired windows on every consume. Added focused tests for trust gating, grace/cap behavior, bucket pruning, crypto boundaries, replacement, and parser-backed socket admission. Ready for Fable re-review; crypto core remains unchanged and approved. APPROVED by fable re-review 2026-07-12 (57cfd82): all three findings fixed and verified; full suite 83 tests green.
 
 ### STEP-007: Phase engine
-- status: todo
-- owner: —
+- status: in-progress
+- owner: codex
 - tier: complex
 - depends-on: STEP-005, STEP-006, STEP-003
 - files: apps/server/src/engine/**
 - acceptance: scenario-driven state machine; phase epochs reject stale input/events; lobby countdown, interactive-idle timeout, max-session cap; checkpoint hook on transitions; safe crash recovery → abort to idle (§6); display-disconnect policy (abort to idle after display timeout); no-participant grace-period return to idle; phones may join but cannot start a session without a connected healthy display
 - verify: pnpm --filter server test (engine suite)
 - reviewer: claude
-- notes: —
+- notes: Claimed by codex 2026-07-12. Implementing the scenario-driven lifecycle, timers, epochs, transition checkpoints, recovery, display/participant policies, and admission-registry WebSocket wiring within apps/server/src/engine plus required server/admission seams.
 
 ### STEP-008: Vote engine + transition resolver
 - status: todo
