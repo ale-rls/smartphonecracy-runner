@@ -18,4 +18,12 @@ export class PostgresPersistenceExecutor implements PersistenceExecutor {
       throw error;
     }
   }
+
+  async query<T extends object>(statement: SqlStatement): Promise<readonly T[]> {
+    const result = await this.client.query(statement.text, statement.values);
+    if (typeof result !== "object" || result === null || !("rows" in result) || !Array.isArray(result.rows)) {
+      throw new Error("postgres query did not return rows");
+    }
+    return result.rows as T[];
+  }
 }

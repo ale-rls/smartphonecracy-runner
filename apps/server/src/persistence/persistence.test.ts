@@ -2,14 +2,18 @@ import { describe, expect, it } from "vitest";
 import scenarioJson from "../../../../content/scenarios/dev.json";
 import type { Scenario } from "@smartphonecracy/scenario";
 import type { FinalVoteSnapshot } from "../votes/index.js";
-import { InstallationPersistence, PersistenceWriteQueue, PostgresPersistenceExecutor, type PersistenceExecutor, type SqlStatement } from "./index.js";
+import { InstallationPersistence, PersistenceWriteQueue, PostgresPersistenceExecutor, type PersistenceExecutor, type PersistenceQueueHealthEvent, type SqlStatement } from "./index.js";
 
 class RecordingExecutor implements PersistenceExecutor {
   calls: SqlStatement[][] = [];
   failures = 0;
+  rows: Record<string, unknown>[] = [];
   async execute(statements: readonly SqlStatement[]): Promise<void> {
     if (this.failures-- > 0) throw new Error("database unavailable");
     this.calls.push([...statements]);
+  }
+  async query<T extends object>(_statement: SqlStatement): Promise<readonly T[]> {
+    return this.rows as T[];
   }
 }
 
@@ -35,6 +39,39 @@ describe("persistence", () => {
     expect(queue.bufferedWrites).toBe(2);
     await queue.flush();
     expect(executor.calls.map((call) => call[0]?.text)).toEqual(["first", "second"]);
+  });
+
+  it("retries indefinitely with capped backoff and reports degradation then recovery", async () => {
+    const executor = new RecordingExecutor(); executor.failures = 8;
+    const delays: number[] = [];
+    const health: PersistenceQueueHealthEvent[] = [];
+    const queue = new PersistenceWriteQueue(executor, {
+      retryDelayMs: 10, maxRetryDelayMs: 25, sustainedFailureThreshold: 3,
+      sleep: async (delay) => { delays.push(delay); }, onHealthEvent: (event) => health.push(event),
+    });
+    queue.enqueue([{ text: "survives-outage" }]);
+    await queue.flush();
+    expect(delays).toEqual([10, 20, 25, 25, 25, 25, 25, 25]);
+    expect(health.map((event) => event.status)).toEqual(["degraded", "recovered"]);
+    expect(executor.calls[0]?.[0]?.text).toBe("survives-outage");
+  });
+
+  it("bounds the retry buffer and reports overflow without throwing from enqueue", async () => {
+    let release!: () => void;
+    const blocked = new Promise<void>((resolve) => { release = resolve; });
+    const health: PersistenceQueueHealthEvent[] = [];
+    const executor: PersistenceExecutor = {
+      execute: async () => blocked,
+      query: async <T extends object>() => [] as T[],
+    };
+    const queue = new PersistenceWriteQueue(executor, { maxBufferedWrites: 2, onHealthEvent: (event) => health.push(event) });
+    queue.enqueue([{ text: "one" }]);
+    queue.enqueue([{ text: "two" }]);
+    expect(() => queue.enqueue([{ text: "dropped" }])).not.toThrow();
+    expect(queue.bufferedWrites).toBe(2);
+    expect(health).toContainEqual({ status: "buffer-full", bufferedWrites: 2, droppedWrites: 1 });
+    release();
+    await queue.flush();
   });
 
   it("persists transition checkpoints and explicit recovery events", async () => {
@@ -79,5 +116,22 @@ describe("persistence", () => {
     const persistence = new InstallationPersistence({ queue: new PersistenceWriteQueue(executor), installationId: "i", scenario, participantDataExpiresAt: expires });
     persistence.deleteExpiredParticipantData(expires); await persistence.flush();
     expect(executor.calls.flat().at(-1)).toEqual({ text: "select delete_expired_participant_data($1)", values: [new Date(expires).toISOString()] });
+  });
+
+  it("reconstructs session exports through the executor query after restart", async () => {
+    const executor = new RecordingExecutor();
+    executor.rows = [{
+      sessionId: "s", questionId: "question-fixed", phaseEpoch: 2,
+      outcome: { winner: "fixed" }, participantId: "p1", x: 0.8, y: 0.2,
+      status: "valid", lastInputAt: "2026-07-12T10:00:00.000Z", recordedAt: "2026-07-12T10:00:01.000Z",
+    }];
+    const persistenceAfterRestart = new InstallationPersistence({ queue: new PersistenceWriteQueue(executor), installationId: "i", scenario, participantDataExpiresAt: expires });
+    const exported = await persistenceAfterRestart.exportSession("s");
+    expect(exported?.json).toEqual({ sessionId: "s", snapshots: [{
+      sessionId: "s", questionId: "question-fixed", phaseEpoch: 2, outcome: { winner: "fixed" },
+      votes: [{ participantId: "p1", x: 0.8, y: 0.2, status: "valid", lastInputAt: "2026-07-12T10:00:00.000Z", recordedAt: "2026-07-12T10:00:01.000Z" }],
+    }] });
+    expect(exported?.csv).toContain('"p1"');
+    expect(await new InstallationPersistence({ queue: new PersistenceWriteQueue(new RecordingExecutor()), installationId: "i", scenario, participantDataExpiresAt: expires }).exportSession("missing")).toBeNull();
   });
 });
