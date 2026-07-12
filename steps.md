@@ -173,15 +173,15 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
   APPROVED by claude review lane (sonnet) 2026-07-12: re-verified `pnpm --filter server typecheck/test` and `pnpm -r typecheck/test` (Node 22.17.0) all pass matching the notes; graceful shutdown double-close guard, sanitized /api/status, path-traversal-safe static bundle serving, and 503 invalid-scenario /readyz all check out; no socket message handling exists yet so the parseClientMessage requirement doesn't yet apply (correctly deferred to later steps). Two non-blocking FYIs left for future hardening, not blocking this step: (1) `void shutdown(...)` in index.ts doesn't catch a rejection from app.close(), a latent unhandled-rejection risk if close ever throws; (2) /readyz readiness is computed once at boot and never rechecked per request — fine for the current fixed-scenario-at-boot model, but STEP-019 admin-driven scenario reload will need an explicit recompute hook.
 
 ### STEP-006: Admission — grants, leases, registry
-- status: todo
-- owner: —
+- status: in-progress
+- owner: codex
 - tier: complex
 - depends-on: STEP-005
 - files: apps/server/src/admission/**, room registry
 - acceptance: HMAC join grants (rotation/expiry per policy), participant leases (2 h, installation-scoped, same-lease socket replacement), 30-cap with room_full + lease reconnect at capacity, per-IP rate limit (memory only), identity/color assignment
 - verify: pnpm --filter server test (admission suite)
 - reviewer: claude
-- notes: —
+- notes: Claimed by codex 2026-07-12. Fable review required for grant/lease crypto. Implementing HMAC grants and leases, in-memory registry/rate limiting, and parsed WebSocket admission handling within the reserved server slice.
 
 ### STEP-007: Phase engine
 - status: todo
