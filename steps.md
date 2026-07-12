@@ -250,8 +250,8 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: —
 
 ### STEP-013: Display client core
-- status: todo
-- owner: —
+- status: in-progress
+- owner: claude
 - tier: complex
 - depends-on: STEP-002, STEP-004
 - files: apps/display/**
