@@ -56,6 +56,7 @@ function setup(options: {
   maxSessionDurationMs?: number;
   testScenario?: typeof scenario;
   onVoteSnapshotEnqueued?: (snapshot: FinalVoteSnapshot) => void;
+  qr?: boolean;
 } ) {
   const registry = new ParticipantRegistry(2, 50);
   const checkpoints = options.checkpoints ?? [];
@@ -78,6 +79,17 @@ function setup(options: {
     ...(options.onVoteSnapshotEnqueued === undefined
       ? {}
       : { onVoteSnapshotEnqueued: options.onVoteSnapshotEnqueued }),
+    ...(options.qr
+      ? {
+          qr: {
+            phoneJoinBaseUrl: "https://phone.example/join",
+            issueGrant: (issuedAt: number) => ({
+              token: `grant-${issuedAt}`,
+              claims: { expiresAt: issuedAt + 120_000 },
+            }),
+          },
+        }
+      : {}),
   });
   return { engine, registry, checkpoints };
 }
@@ -119,6 +131,20 @@ function connectDisplay(engine: PhaseEngine, socket: WebSocket): void {
 }
 
 describe("PhaseEngine lifecycle", () => {
+  it("pushes a QR grant on display join and authenticated refresh requests", () => {
+    const { engine } = setup({ now: () => 1_000, qr: true });
+    const display = new MockSocket();
+    connectDisplay(engine, display as unknown as WebSocket);
+    expect(display.sent.filter((message) => message.t === "qr_grant")).toHaveLength(1);
+
+    engine.handleClientMessage({ t: "qr_grant_request", v: 1 }, display as unknown as WebSocket);
+    expect(display.sent.filter((message) => message.t === "qr_grant")).toHaveLength(2);
+
+    const stranger = new MockSocket();
+    engine.handleClientMessage({ t: "qr_grant_request", v: 1 }, stranger as unknown as WebSocket);
+    expect(stranger.sent).toEqual([]);
+  });
+
   it("keeps phones in idle until a healthy display joins, then runs the lobby", () => {
     let now = 1_000;
     const { engine, registry } = setup({ now: () => now });
