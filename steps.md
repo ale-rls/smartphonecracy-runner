@@ -285,8 +285,8 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: CursorField (pure): 100 ms render-delay interpolation between last two ticks, stale-tick rejection, absent-cursor removal, join-halo progress, freeze semantics (ingest ignored while frozen); CursorCanvas rAF w/ destination-out fade trails, crisp full-clear while frozen; QuadrantOverlay pins q1 TR/q2 TL/q3 BL/q4 BR, live counts only when server sends them, winner/tie/empty highlight; store: question_status/resolved gated to current session+epoch, cleared on phase advance; cursors bypass React (direct CursorField ingest). freezeUntil display-side hold ends when server advances phase (server owns freezeMs timing).
 
 ### STEP-016: Display QR + heartbeat
-- status: todo
-- owner: —
+- status: in-progress
+- owner: claude
 - tier: simple
 - depends-on: STEP-013
 - files: apps/display/src/qr/**, heartbeat
