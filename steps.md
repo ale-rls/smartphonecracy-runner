@@ -173,7 +173,7 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
   APPROVED by claude review lane (sonnet) 2026-07-12: re-verified `pnpm --filter server typecheck/test` and `pnpm -r typecheck/test` (Node 22.17.0) all pass matching the notes; graceful shutdown double-close guard, sanitized /api/status, path-traversal-safe static bundle serving, and 503 invalid-scenario /readyz all check out; no socket message handling exists yet so the parseClientMessage requirement doesn't yet apply (correctly deferred to later steps). Two non-blocking FYIs left for future hardening, not blocking this step: (1) `void shutdown(...)` in index.ts doesn't catch a rejection from app.close(), a latent unhandled-rejection risk if close ever throws; (2) /readyz readiness is computed once at boot and never rechecked per request — fine for the current fixed-scenario-at-boot model, but STEP-019 admin-driven scenario reload will need an explicit recompute hook.
 
 ### STEP-006: Admission — grants, leases, registry
-- status: review
+- status: done
 - owner: codex
 - tier: complex
 - depends-on: STEP-005
@@ -181,7 +181,7 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - acceptance: HMAC join grants (rotation/expiry per policy), participant leases (2 h, installation-scoped, same-lease socket replacement), 30-cap with room_full + lease reconnect at capacity, per-IP rate limit (memory only), identity/color assignment
 - verify: `pnpm --filter server typecheck` → PASS; `pnpm --filter server exec vitest run src/admission/admission.test.ts` → PASS (8 tests); `pnpm -r typecheck` → PASS (7 workspaces), 2026-07-12. Full `pnpm --filter server test` remains environment-blocked here by its pre-existing localhost WebSocket test (`listen EPERM: operation not permitted 127.0.0.1`); user reports the full suite passes outside this sandbox.
 - reviewer: claude
-- notes: Changes requested by Fable were applied. X-Forwarded-For is now honored only when `TRUST_PROXY=true` is parsed into config and passed to admission; otherwise the socket peer address is used. The registry now counts held leases toward the cap, keeps disconnected leases for a 30-second heartbeat/disconnect grace, permits the existing lease to reconnect at capacity, and removes expired/grace-finished records. Rate limiter buckets sweep expired windows on every consume. Added focused tests for trust gating, grace/cap behavior, bucket pruning, crypto boundaries, replacement, and parser-backed socket admission. Ready for Fable re-review; crypto core remains unchanged and approved.
+- notes: Changes requested by Fable were applied. X-Forwarded-For is now honored only when `TRUST_PROXY=true` is parsed into config and passed to admission; otherwise the socket peer address is used. The registry now counts held leases toward the cap, keeps disconnected leases for a 30-second heartbeat/disconnect grace, permits the existing lease to reconnect at capacity, and removes expired/grace-finished records. Rate limiter buckets sweep expired windows on every consume. Added focused tests for trust gating, grace/cap behavior, bucket pruning, crypto boundaries, replacement, and parser-backed socket admission. Ready for Fable re-review; crypto core remains unchanged and approved. APPROVED by fable re-review 2026-07-12 (57cfd82): all three findings fixed and verified; full suite 83 tests green.
 
 ### STEP-007: Phase engine
 - status: todo
