@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useReducer } from "react";
+import { useEffect, useMemo, useReducer, useRef } from "react";
 import { CursorField } from "./cursors/cursorField.js";
 import { CursorCanvas } from "./cursors/CursorCanvas.js";
 import { DisplayConnection } from "./lib/connection.js";
 import { applyKioskGuards, performReload } from "./lib/kiosk.js";
+import { IDLE_PLACEHOLDER, startHeartbeat } from "./lib/heartbeat.js";
 import { useMedia } from "./media/useMedia.js";
 import { displayReducer, initialDisplayState } from "./state/store.js";
 import { Countdown } from "./components/Countdown.js";
+import { QrBadge } from "./components/QrBadge.js";
 import { QuadrantOverlay } from "./components/QuadrantOverlay.js";
 
 /**
@@ -13,8 +15,9 @@ import { QuadrantOverlay } from "./components/QuadrantOverlay.js";
  *  1. video layer — one active <video> element
  *  2. UI layer — prompts, axes, countdowns, diagnostics
  *  3. cursor canvas — filled in by STEP-015
- * Media caching/Blob playback arrives in STEP-014; QR + heartbeat in
- * STEP-016. This shell renders phases from server snapshots only.
+ * Media caching/Blob playback arrives in STEP-014; QR badge + heartbeat
+ * loop are wired in by STEP-016. This shell renders phases from server
+ * snapshots only.
  */
 
 declare const __BUILD_VERSION__: string | undefined;
@@ -65,6 +68,27 @@ export function App() {
     if (state.reloadRequired) void performReload();
   }, [state.reloadRequired]);
 
+  // display_heartbeat loop (plan §7): read from a ref so every tick sees
+  // the latest session/phase, not a stale closure over the mount-time
+  // state. "idle" matches the server's idle-session convention
+  // (apps/server/src/engine/phase-engine.ts) and satisfies the schema's
+  // nonEmpty sessionId/phaseId before the first snapshot arrives.
+  const stateRef = useRef(state);
+  stateRef.current = state;
+
+  useEffect(() => {
+    const dispose = startHeartbeat({
+      isOpen: () => connection.currentStatus === "open",
+      getState: () => ({
+        sessionId: stateRef.current.sessionId ?? IDLE_PLACEHOLDER,
+        phaseId: stateRef.current.phase?.id ?? IDLE_PLACEHOLDER,
+        phaseEpoch: Math.max(0, stateRef.current.phaseEpoch),
+      }),
+      send: (message) => connection.send(message),
+    });
+    return dispose;
+  }, [connection]);
+
   // Freeze follows the reducer's session/epoch-gated resolution state,
   // so a stale question_resolved frame can never freeze a live field
   // (codex review finding). Phase advance clears resolution → unfreeze.
@@ -106,9 +130,9 @@ export function App() {
         {phase === null || phase.kind === "idle" ? (
           <div className="idle">
             <h1>smartphonecracy</h1>
-            {/* Attract loop + large QR rendered by STEP-016 */}
           </div>
         ) : null}
+        <QrBadge grant={state.qrGrant} qrHidden={state.qrHidden} clock={connection.clock} />
         {phase?.kind === "position-question" && (
           <div className="question">
             <h2>{phase.text}</h2>
@@ -130,7 +154,18 @@ export function App() {
           </div>
         )}
         {state.notice && (
-          <div className={`notice notice-${state.notice.level}`}>
+          <div
+            className={[
+              "notice",
+              `notice-${state.notice.level}`,
+              // display_replaced means another kiosk took over this
+              // connection (plan §7) — the operator needs to notice at a
+              // glance, so it gets a dedicated prominent treatment.
+              state.notice.code === "display_replaced" ? "notice-prominent" : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+          >
             {state.notice.message}
           </div>
         )}
