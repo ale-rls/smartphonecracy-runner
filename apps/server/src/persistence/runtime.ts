@@ -10,7 +10,7 @@ import { PersistenceWriteQueue, type PersistenceQueueHealthEvent } from "./write
 const migrationPath = fileURLToPath(new URL("../../../../infra/migrations/001_persistence.sql", import.meta.url));
 
 type PoolLike = {
-  connect(): Promise<PostgresQueryClient & { release(): void }>;
+  connect(): Promise<PostgresQueryClient & { release(destroy?: boolean): void }>;
   end(): Promise<void>;
 };
 
@@ -49,7 +49,7 @@ export async function createPersistenceRuntime(
         // A full queue cannot persist its own overflow event without recursively
         // producing another overflow. Degraded/recovered events are queued and
         // become durable when the database is writable again.
-        if (event.status !== "buffer-full") {
+        if (event.status !== "buffer-full" && event.status !== "stopped") {
           persistence?.recordHealthEvent(event, dependencies.now?.() ?? Date.now());
         }
       },
@@ -63,11 +63,15 @@ export async function createPersistenceRuntime(
     await persistence.flush();
     await persistence.recoverAfterCrash(dependencies.now?.() ?? Date.now());
     await persistence.flush();
+    let closePromise: Promise<void> | null = null;
     return {
       persistence,
-      close: async () => {
-        client.release();
-        await pool.end();
+      close: () => {
+        closePromise ??= (async () => {
+          client.release(true);
+          await pool.end();
+        })();
+        return closePromise;
       },
     };
   } catch (error) {

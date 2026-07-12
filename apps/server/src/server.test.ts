@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import WebSocket from "ws";
-import { ConfigError, buildServer, loadConfig, type ServerRuntime } from "./index.js";
+import { ConfigError, buildServer, listenWithCleanup, loadConfig, type ServerRuntime } from "./index.js";
 
 const runtimes: ServerRuntime[] = [];
 
@@ -133,6 +133,34 @@ describe("HTTP readiness and bundles", () => {
 });
 
 describe("WebSocket lifecycle", () => {
+  it("closes app resources before persistence when listening fails", async () => {
+    const order: string[] = [];
+    const failure = new Error("listen failed");
+    await expect(listenWithCleanup({
+      listen: async () => { throw failure; },
+      close: async () => { order.push("app"); },
+    }, {
+      close: async () => { order.push("persistence"); },
+    }, { host: "127.0.0.1", port: 3001 })).rejects.toBe(failure);
+    expect(order).toEqual(["app", "persistence"]);
+  });
+
+  it("preserves listen and cleanup failures together", async () => {
+    const listenError = new Error("listen failed");
+    const closeError = new Error("app close failed");
+    const persistenceError = new Error("persistence close failed");
+    const result = listenWithCleanup({
+      listen: async () => { throw listenError; },
+      close: async () => { throw closeError; },
+    }, {
+      close: async () => { throw persistenceError; },
+    }, { host: "127.0.0.1", port: 3001 });
+    await expect(result).rejects.toMatchObject({
+      name: "AggregateError",
+      errors: [listenError, closeError, persistenceError],
+    });
+  });
+
   it("accepts /ws upgrades and closes clients during graceful shutdown", async () => {
     let connected = false;
     const runtime = await buildServer({

@@ -1,7 +1,7 @@
 import type { Scenario } from "@smartphonecracy/scenario";
 import { resolveSnapshot, type FinalVoteSnapshot } from "../votes/index.js";
 import type { PhaseCheckpoint } from "../engine/phase-engine.js";
-import { PersistenceWriteQueue, type SqlStatement } from "./write-queue.js";
+import { PersistenceWriteQueue, type PersistenceShutdownResult, type SqlStatement } from "./write-queue.js";
 import type { AdminDataSource, AdminExport } from "../admin/index.js";
 import type { PersistenceQueueHealthEvent } from "./write-queue.js";
 
@@ -171,4 +171,5 @@ export class InstallationPersistence implements AdminDataSource {
   }
 
   flush(): Promise<void> { return this.options.queue.flush(); }
+  shutdown(timeoutMs: number): Promise<PersistenceShutdownResult> { return this.options.queue.shutdown(timeoutMs); }
 }
