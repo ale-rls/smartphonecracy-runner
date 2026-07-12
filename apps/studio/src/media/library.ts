@@ -1,0 +1,65 @@
+import type { StudioProject } from "@smartphonecracy/studio-adapter";
+
+export const MEDIA_BUDGET_BYTES = 2 * 1024 * 1024 * 1024;
+
+export type MediaRow = StudioProject["manifest"]["files"][number] & {
+  references: string[];
+  durationMs?: number;
+};
+
+export async function sha256Hex(bytes: ArrayBuffer): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return [...new Uint8Array(digest)].map((value) => value.toString(16).padStart(2, "0")).join("");
+}
+
+export async function inspectLocalMedia(
+  file: File,
+  readDuration: (file: File) => Promise<number> = browserVideoDuration,
+) {
+  return { src: file.name, bytes: file.size, hash: await sha256Hex(await file.arrayBuffer()), durationMs: await readDuration(file) };
+}
+
+async function browserVideoDuration(file: File): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement("video");
+    const url = URL.createObjectURL(file);
+    video.preload = "metadata";
+    video.onloadedmetadata = () => { URL.revokeObjectURL(url); resolve(Math.round(video.duration * 1000)); };
+    video.onerror = () => { URL.revokeObjectURL(url); reject(new Error(`Could not read duration for ${file.name}`)); };
+    video.src = url;
+  });
+}
+
+export function mediaRows(project: StudioProject): MediaRow[] {
+  return project.manifest.files.map((file) => ({
+    ...file,
+    references: project.scenario.phases.filter((phase) => phase.kind === "video" && phase.src === file.src).map((phase) => phase.id),
+  }));
+}
+
+export function distinctReferencedBytes(project: StudioProject): number {
+  const referenced = new Set(project.scenario.phases.flatMap((phase) => phase.kind === "video" ? [phase.src] : []));
+  const byHash = new Map<string, number>();
+  for (const file of project.manifest.files) if (referenced.has(file.src)) byHash.set(file.hash, Math.max(byHash.get(file.hash) ?? 0, file.bytes));
+  return [...byHash.values()].reduce((sum, bytes) => sum + bytes, 0);
+}
+
+export function branchMediaBudgets(project: StudioProject, phaseId: string): Record<string, number> {
+  const byId = new Map(project.scenario.phases.map((phase) => [phase.id, phase]));
+  const phase = byId.get(phaseId);
+  if (!phase || phase.kind !== "position-question") return {};
+  const targets = phase.next.type === "fixed" ? { next: phase.next.target } : { ...phase.next.map, tie: phase.next.tie, empty: phase.next.empty };
+  const bytesFor = (start: string) => {
+    const seen = new Set<string>(); const media = new Set<string>(); const queue = [start];
+    while (queue.length) {
+      const id = queue.pop()!; if (seen.has(id)) continue; seen.add(id);
+      const item = byId.get(id); if (!item) continue;
+      if (item.kind === "video") { media.add(item.src); queue.push(item.next); }
+      else if (item.kind === "position-question") queue.push(...(item.next.type === "fixed" ? [item.next.target] : [...Object.values(item.next.map), item.next.tie, item.next.empty]));
+    }
+    const hashes = new Map<string, number>();
+    for (const file of project.manifest.files) if (media.has(file.src)) hashes.set(file.hash, Math.max(hashes.get(file.hash) ?? 0, file.bytes));
+    return [...hashes.values()].reduce((sum, value) => sum + value, 0);
+  };
+  return Object.fromEntries(Object.entries(targets).map(([outcome, target]) => [outcome, bytesFor(target)]));
+}

@@ -663,15 +663,15 @@ Claude's plan amendments folded into the steps: (1) server engine/vote logic doe
 - notes: Completed by codex 2026-07-13. Added typed idle/video/question forms with immediate autosaved draft updates, plain-language and runtime labels, inline unique-ID errors, atomic rename with graph-target and runtimeExtensions sidecar remapping, director-approved question defaults, fixed/plurality transition editing, destructive-change confirmations, session undo/redo including connection restoration, and a read-only compiled-JSON panel. A complete show can be authored through the graph and forms without JSON editing. Self-verified per the normalized reviewer rule; the STEP-036 adapter validator remains the compile/export backstop.
 
 ### STEP-041: Studio Phase D — media library + diagnostics panel
-- status: todo
+- status: done
 - owner: codex
 - tier: complex
 - depends-on: STEP-040
 - files: apps/studio/src/media/**, diagnostics/**
 - acceptance: plan §10/§11 — manifest import/list (id, file, bytes, hash, referencing nodes); local-file inspection computes size + SHA-256 in-browser and duration via <video> (suggests expectedDurationMs — manifest itself carries no durations); missing/unused/duplicate-hash detection; DISTINCT-file 2 GiB budget arithmetic incl. per-branch view; error/warning/info diagnostics with focus-node action; all plan §11 required errors block export, required warnings need acknowledgement (incl. abandoned-solo-reaches-unreviewed-empty-target and live-counts-influence warnings); invalid shows cannot be exported (plan §17-D exit)
-- verify: pnpm --filter studio test + typecheck; fixture shows exercising every §11 error/warning
+- verify: `pnpm --filter studio test` → PASS (14 tests incl. 4 media/diagnostics fixtures); `pnpm --filter studio typecheck` → PASS; `pnpm --filter studio build` → PASS; `git diff --check` → PASS (2026-07-13)
 - reviewer: none
-- notes: (reviewer normalized per codex review point 4) self-verified; the 2 GiB budget arithmetic and export-blocking behavior get an independent check at STEP-045 (deployment gating) and STEP-043 (e2e). Escalate to fable if uncertainty.
+- notes: Completed and self-verified by codex 2026-07-13. Added browser SHA-256/size/duration inspection, manifest reference and duplicate-hash reporting, distinct-content 2 GiB and per-outcome branch budgets, error/warning/info diagnostics with node focus and warning acknowledgement, and blocked basic export while errors or unacknowledged warnings remain. Canonical schema/graph diagnostics retain their runtime-validator coverage; Studio adds unused/duplicate media, budget, convergence, abandoned-solo empty-review, live-count influence, and intentional-cycle guidance. The 2 GiB/package gate gets independent checks in STEP-045 and STEP-043.
 
 ### STEP-042: Studio Phase E (v1 trim) — outcome-shortcut preview
 - status: todo
