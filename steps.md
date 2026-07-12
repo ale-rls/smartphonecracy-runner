@@ -230,7 +230,7 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
   APPROVED by claude review lane (sonnet) 2026-07-12: re-reviewed fix commit 6aa724b; both findings resolved. Re-ran the original standalone repro against the fixed engine — 220s video then question phase survives (was: instant abort), and the idle budget is now anchored exactly at question entry (still active at +179s of genuine in-question inactivity, aborts with `interactive-idle-timeout` at +180.1s). Lobby-idle enforcement verified in code and by the new test; the post-`startSession` fall-through in the reworked lobby tick branch is safe (no double-transition: fresh idle anchor, zero session elapsed, future deadline). New regression tests encode realistic durations (220_000ms video vs 180_000ms idle timeout — not zero-time). Verification: `pnpm --filter @smartphonecracy/server typecheck` PASS; `pnpm --filter @smartphonecracy/server test` PASS 19/19 (engine 7, admission 8, server 4; no localhost EPERM in this sandbox). FYI, non-blocking: input during lobby cannot refresh the idle anchor (`recordInput` requires active+question), which only matters if a config sets `lobbyCountdownMs` > `interactiveIdleTimeoutMs`; unreachable with defaults and there is no trackpad surface during lobby.
 
 ### STEP-008: Vote engine + transition resolver
-- status: review
+- status: done
 - owner: codex
 - tier: complex
 - depends-on: STEP-007
@@ -238,7 +238,7 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - acceptance: final-snapshot semantics (§8): statuses valid/never-moved/stale/disconnected; heartbeat-based staleness; fixed + quadrant-plurality resolution with tie/empty; countedStatuses filtering provably excludes; freezeMs hold; immutable snapshot enqueued before resolution
 - verify: `pnpm --filter @smartphonecracy/server typecheck` → PASS; focused server suites (`src/admission/admission.test.ts`, `src/engine/phase-engine.test.ts`, `src/votes/vote-engine.test.ts`) → PASS (25 tests); `pnpm --filter protocol test` → PASS (30 tests); `pnpm --filter display test` → PASS (40 tests); `pnpm -r typecheck` → PASS (7 workspaces), 2026-07-12. Node 20.12.2 emitted the expected repo engine warning for >=22.
 - reviewer: claude
-- notes: Reclaimed by codex 2026-07-12 and fixed all three Fable findings: input refreshes heartbeat liveness; fixed transitions emit winner:"fixed" with real positional counts; dirty question-status updates flush at a fixed 250 ms cadence. Added regressions for liveness, fixed resolution, and throttling. STEP-027 protocol/display edits remain separately owned and uncommitted in the shared worktree; compatibility tests pass. Ready for Fable re-review; proceeding at risk pending claude review due confirmed quota outage. FYI for STEP-018: disconnected currently takes precedence over never-moved in statusOf.
+- notes: Reclaimed by codex 2026-07-12 and fixed all three Fable findings: input refreshes heartbeat liveness; fixed transitions emit winner:"fixed" with real positional counts; dirty question-status updates flush at a fixed 250 ms cadence. Added regressions for liveness, fixed resolution, and throttling. STEP-027 protocol/display edits remain separately owned and uncommitted in the shared worktree; compatibility tests pass. Ready for Fable re-review; proceeding at risk pending claude review due confirmed quota outage. FYI for STEP-018: disconnected currently takes precedence over never-moved in statusOf. APPROVED by fable re-review 2026-07-12 (73dcf5c): all three findings fixed — input refreshes liveness, winner:'fixed' with real counts, question_status throttled to 4 Hz w/ dirty-flag + tick flush. Suite 156 tests green.
 
 ### STEP-009: Input pipeline + cursor tick loop
 - status: review
@@ -369,15 +369,15 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: Added strong bearer-token protection (production rejects the development token), operational health/display-heartbeat/count/session/phase status, safe start/idle/skip/restart engine controls, recent error capture, JSON/CSV session exports, durable admin-action/error audit writes, and a polling operations UI with controls and downloads. Reservation expanded before edits to config/server wiring, engine controls, and persistence seams; no active step reserved those files. Ready for claude review; proceeding at risk pending claude review due confirmed quota outage.
 
 ### STEP-020: simulate-clients load script
-- status: todo
-- owner: —
+- status: in-progress
+- owner: codex
 - tier: simple
 - depends-on: STEP-002, STEP-006, STEP-009
 - files: scripts/simulate-clients.ts, tests/load/**
 - acceptance: 30 simulated phones join, move at 20–30 Hz, disconnect/reconnect; reports latency + drop stats
 - verify: pnpm simulate-clients --count 30 against local server
 - reviewer: none
-- notes: —
+- notes: Claimed by codex 2026-07-12. Implementing only the reserved simulator/load-test slice; root package command wiring may be added solely to satisfy the documented verify command.
 
 ### STEP-021: Deployment + CI
 - status: todo
