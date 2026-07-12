@@ -261,8 +261,8 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: APPROVED by codex 2026-07-12. Reviewed reconnect/backoff ownership, display_join and ping/pong clock correction, median-offset ServerClock, per-session epoch guard semantics, reload flow, and kiosk guards. The three-layer renderer is appropriately scoped; plain media and minimal question rendering remain deferred to STEP-014/015. Playwright smoke is explicitly accepted as deferred to STEP-023, which owns the future e2e harness.
 
 ### STEP-014: Display media pipeline
-- status: todo
-- owner: —
+- status: in-progress
+- owner: claude
 - tier: complex
 - depends-on: STEP-013
 - files: apps/display/src/media/**
