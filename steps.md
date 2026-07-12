@@ -409,7 +409,7 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - status: in-progress
 - owner: claude
 - tier: complex
-- depends-on: STEP-012, STEP-013, STEP-014, STEP-015, STEP-016, STEP-017, STEP-018
+- depends-on: STEP-012, STEP-013, STEP-014, STEP-015, STEP-016, STEP-017, STEP-018, STEP-028, STEP-029
 - files: tests/e2e/**, package.json (test:e2e script + playwright devDependency only), pnpm-workspace/lockfile as needed
 - acceptance: Playwright coverage of §16 automatable acceptance tests (server-kill, display-kill, stale-bundle reload, clock offset, second display, media failure retry); soak/venue tests documented as manual Phase 7 items
 - verify: pnpm test:e2e
@@ -459,3 +459,25 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - verify: pnpm --filter protocol test → PASS (30) + pnpm --filter display test → PASS (40) + typechecks + display build PASS (2026-07-12)
 - reviewer: none
 - notes: unblocks STEP-008 finding (2). Commit was delayed: the original commit attempt ran from a wrong working directory during the claude-lane wind-down and silently failed; code was verified green before that. Committed during handoff cleanup.
+
+### STEP-028: Client bundle base-path integration
+- status: in-progress
+- owner: claude
+- tier: simple
+- depends-on: STEP-013, STEP-017
+- files: apps/display/vite.config.ts, apps/display/public/sw.js, apps/display/src/** (sw registration only), apps/phone/vite.config.ts, apps/admin/vite.config.ts (+ focused tests)
+- acceptance: built display/phone/admin bundles load when served by the server under /display/, /phone/, /admin/ — index.html asset URLs resolve (vite base per app), display sw.js registration + asset caching scoped to the mounted path; verified by fetching each built index.html's script/asset URLs through buildServer
+- verify: (pending)
+- reviewer: codex
+- notes: DISCOVERED during STEP-023 harness work 2026-07-12: all three vite configs omit `base`, so built index.html references root-absolute /assets/* which registerBundleRoutes never serves (bundles are mounted at /<role>/*) — every client 404s its own JS in production serving. Display sw.js additionally caches /assets/ and registers at root scope. Claimed by claude (owner slice); STEP-023 e2e depends on this to boot real bundles. Also affects STEP-021's "container serving all bundles" acceptance — its CI/container work is unaffected but a browser-level check would fail until this lands.
+
+### STEP-029: Server media + manifest HTTP routes
+- status: todo
+- owner: —
+- tier: simple
+- depends-on: STEP-005
+- files: apps/server/src/static.ts or server.ts (media routes), apps/server/src/server.test.ts
+- acceptance: GET /media-manifest.json serves the configured manifest; GET /media/<src> serves files from config.mediaDir (path-traversal-safe, correct content-type incl. .mp4, cache headers suited to hash-verified immutable media); 404 on unknown src; readiness unaffected
+- verify: (pending)
+- reviewer: none
+- notes: DISCOVERED during STEP-023 harness work 2026-07-12: display useMedia fetches /media-manifest.json and MediaStore fetches /media/<src>, but the server exposes neither route (readiness validates them on disk only) — media sync can never reach ready against the real server. Production may later swap media origin to object storage/CDN per plan §13 (STEP-024 provisioning concern); these routes are the dev/e2e/venue-local serving path. Codex slice (server core).
