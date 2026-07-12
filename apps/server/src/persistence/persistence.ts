@@ -19,7 +19,6 @@ const phaseRowId = (snapshot: FinalVoteSnapshot) => `${snapshot.sessionId}:${sna
 
 export class InstallationPersistence implements AdminDataSource {
   private lastActiveSessionId: string | null = null;
-  private readonly snapshots = new Map<string, FinalVoteSnapshot[]>();
   private readonly errors: unknown[] = [];
 
   constructor(private readonly options: PersistenceOptions) {
@@ -59,7 +58,6 @@ export class InstallationPersistence implements AdminDataSource {
   }
 
   voteSnapshot(snapshot: FinalVoteSnapshot): void {
-    this.snapshots.set(snapshot.sessionId, [...(this.snapshots.get(snapshot.sessionId) ?? []), snapshot]);
     const phase = this.options.scenario.phases.find((candidate) => candidate.id === snapshot.questionId);
     if (!phase || phase.kind !== "position-question") throw new Error(`unknown persisted question ${snapshot.questionId}`);
     const resolution = resolveSnapshot(phase, snapshot);
@@ -112,15 +110,36 @@ export class InstallationPersistence implements AdminDataSource {
   async recentErrors(): Promise<readonly unknown[]> { return this.errors.slice(-50); }
 
   async exportSession(sessionId: string): Promise<AdminExport | null> {
-    const snapshots = this.snapshots.get(sessionId);
-    if (!snapshots) return null;
-    const rows = snapshots.flatMap((snapshot) => snapshot.votes.map((vote) => ({
-      sessionId, questionId: snapshot.questionId, participantId: vote.participantId,
-      x: vote.x, y: vote.y, status: vote.status, recordedAt: new Date(vote.recordedAt).toISOString(),
-    })));
+    type ExportRow = {
+      sessionId: string; questionId: string; phaseEpoch: number; outcome: unknown;
+      participantId: string | null; x: number | null; y: number | null;
+      status: string | null; lastInputAt: string | null; recordedAt: string | null;
+    };
+    const rows = await this.options.queue.query<ExportRow>({
+      text: `select s.id as "sessionId", sp.phase_id as "questionId", sp.phase_index as "phaseEpoch", sp.outcome_json as outcome,
+        v.participant_id as "participantId", v.x, v.y, v.status, v.last_input_at as "lastInputAt", v.recorded_at as "recordedAt"
+        from sessions s join session_phases sp on sp.session_id=s.id
+        left join votes v on v.session_phase_id=sp.id
+        where s.id=$1 and sp.outcome_json is not null order by sp.phase_index,v.id`,
+      values: [sessionId],
+    });
+    if (rows.length === 0) return null;
+    const grouped = new Map<number, ExportRow[]>();
+    for (const row of rows) grouped.set(row.phaseEpoch, [...(grouped.get(row.phaseEpoch) ?? []), row]);
+    const snapshots = [...grouped].map(([phaseEpoch, phaseRows]) => ({
+      sessionId,
+      questionId: phaseRows[0]!.questionId,
+      phaseEpoch,
+      outcome: phaseRows[0]!.outcome,
+      votes: phaseRows.filter((row) => row.participantId !== null).map((row) => ({
+        participantId: row.participantId, x: row.x, y: row.y, status: row.status,
+        lastInputAt: row.lastInputAt, recordedAt: row.recordedAt,
+      })),
+    }));
     const quote = (value: unknown) => `"${String(value ?? "").replaceAll('"', '""')}"`;
     const columns = ["sessionId", "questionId", "participantId", "x", "y", "status", "recordedAt"] as const;
-    return { json: { sessionId, snapshots }, csv: [columns.join(","), ...rows.map((row) => columns.map((column) => quote(row[column])).join(","))].join("\n") };
+    const voteRows = rows.filter((row): row is ExportRow & { participantId: string } => row.participantId !== null);
+    return { json: { sessionId, snapshots }, csv: [columns.join(","), ...voteRows.map((row) => columns.map((column) => quote(row[column])).join(","))].join("\n") };
   }
 
   flush(): Promise<void> { return this.options.queue.flush(); }
