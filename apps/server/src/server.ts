@@ -73,6 +73,17 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Ser
     startedAt,
     uptimeMs: Date.now() - startedAt,
   }));
+  app.get("/api/phases", async (_request, reply) => {
+    if (!readiness.ready) {
+      return reply.code(503).send({ error: "scenario_unavailable" });
+    }
+
+    return Object.fromEntries(
+      readiness.scenario.phases
+        .filter((phase) => phase.kind === "video")
+        .map((phase) => [phase.id, phase.src]),
+    );
+  });
 
   registerBundleRoutes(app, config.bundleDirs);
 

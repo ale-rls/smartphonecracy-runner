@@ -435,15 +435,15 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: largely manual/on-hardware; blocked until STEP-000 deliverables exist.
 
 ### STEP-026: Public video phase map API
-- status: todo
-- owner: —
+- status: done
+- owner: codex
 - tier: simple
 - depends-on: STEP-005
 - files: apps/server/** (public phases API route)
 - acceptance: `GET /api/phases` returns a sanitized public map of video phase IDs to media `src` values for display preloading, without exposing private configuration or scenario internals
-- verify: pnpm --filter server test (phases API suite)
-- reviewer: claude
-- notes: Requested during STEP-014 display media pipeline work; display snapshots carry next-phase IDs but not their video sources. Backlog entry only; no implementation in this session.
+- verify: `pnpm --filter @smartphonecracy/server exec vitest run src/server.test.ts -t "public video phase|invalid scenario"` → PASS (2 tests; 3 unrelated skipped); `pnpm --filter @smartphonecracy/server typecheck` → PASS, 2026-07-12. Node 20.12.2 emitted the expected repo engine warning for >=22.
+- reviewer: none
+- notes: Added `GET /api/phases` as an exact video phase ID→media src map; no durations, graph edges, scenario metadata, secrets, or non-video phases are exposed. Invalid scenario readiness fails closed with 503 `scenario_unavailable`. Self-verified as a simple step.
 
 ### STEP-027: winner:"fixed" protocol + display support
 - status: done
