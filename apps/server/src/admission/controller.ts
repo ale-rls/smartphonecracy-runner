@@ -1,5 +1,11 @@
 import type { IncomingMessage } from "node:http";
-import { encodeMessage, parseClientMessage, type IdentityMessage, type JoinRejectedMessage } from "@smartphonecracy/protocol";
+import {
+  encodeMessage,
+  parseClientMessage,
+  type ClientToServerMessage,
+  type IdentityMessage,
+  type JoinRejectedMessage,
+} from "@smartphonecracy/protocol";
 import { DEFAULT_INSTALLATION_POLICY } from "@smartphonecracy/shared";
 import type { RawData, WebSocket } from "ws";
 import {
@@ -10,7 +16,7 @@ import {
   type JoinGrantClaims,
 } from "./tokens.js";
 import { InMemoryIpRateLimiter } from "./rate-limit.js";
-import { createClientId, ParticipantRegistry } from "./registry.js";
+import { createClientId, ParticipantRegistry, type ParticipantRecord } from "./registry.js";
 
 export type AdmissionPolicy = {
   maxParticipants: number;
@@ -28,6 +34,9 @@ export type AdmissionControllerOptions = {
   rateLimiter?: InMemoryIpRateLimiter;
   trustProxy?: boolean;
   disconnectGraceMs?: number;
+  onClientMessage?: (message: ClientToServerMessage, socket: WebSocket, request: IncomingMessage) => void;
+  onParticipantJoin?: (participant: ParticipantRecord, socket: WebSocket) => void;
+  onSocketClosed?: (socket: WebSocket) => void;
 };
 
 type SocketState = { joined: boolean };
@@ -82,8 +91,14 @@ export class AdmissionController {
     socket.on("message", (raw: RawData) => {
       void this.handleRaw(socket, request, asBytes(raw));
     });
-    socket.on("close", () => this.registry.releaseSocket(socket, this.now()));
-    socket.on("error", () => this.registry.releaseSocket(socket, this.now()));
+    socket.on("close", () => {
+      this.registry.releaseSocket(socket, this.now());
+      this.options.onSocketClosed?.(socket);
+    });
+    socket.on("error", () => {
+      this.registry.releaseSocket(socket, this.now());
+      this.options.onSocketClosed?.(socket);
+    });
   }
 
   private async handleRaw(socket: WebSocket, request: IncomingMessage, raw: unknown): Promise<void> {
@@ -92,6 +107,7 @@ export class AdmissionController {
       this.close(socket, 1008, "invalid client message");
       return;
     }
+    this.options.onClientMessage?.(parsed.message, socket, request);
     if (parsed.message.t === "ping") {
       this.send(socket, {
         t: "pong",
@@ -182,6 +198,7 @@ export class AdmissionController {
       participantLease: issuedLease.token,
       leaseExpiresAt: issuedLease.claims.expiresAt,
     });
+    this.options.onParticipantJoin?.(admitted.participant, socket);
     await Promise.resolve();
   }
 

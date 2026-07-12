@@ -3,6 +3,7 @@ import type { IncomingMessage } from "node:http";
 import { WebSocketServer, type WebSocket } from "ws";
 import { AdmissionController } from "./admission/index.js";
 import { loadConfig, type ServerConfig } from "./config.js";
+import { PhaseEngine } from "./engine/phase-engine.js";
 import { loadScenarioReadiness, type ScenarioReadiness } from "./readiness.js";
 import { registerBundleRoutes } from "./static.js";
 
@@ -18,6 +19,7 @@ export type ServerRuntime = {
   readiness: ScenarioReadiness;
   webSockets: WebSocketServer;
   admission: AdmissionController;
+  engine: PhaseEngine | null;
   startedAt: number;
 };
 
@@ -27,12 +29,26 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Ser
   const startedAt = Date.now();
   const app = Fastify({ logger: config.nodeEnv !== "test" });
   const webSockets = new WebSocketServer({ noServer: true });
+  let engine: PhaseEngine | null = null;
   const admission = options.admission ?? new AdmissionController({
     installationId: config.installationId,
     roomId: config.roomId,
     secret: config.joinGrantSecret,
     trustProxy: config.trustProxy,
+    onClientMessage: (message, socket, request) => engine?.handleClientMessage(message, socket, request),
+    onParticipantJoin: (participant, socket) => engine?.participantJoined(socket, participant),
+    onSocketClosed: (socket) => engine?.socketClosed(socket),
   });
+  if (readiness.ready) {
+    engine = new PhaseEngine({
+      scenario: readiness.scenario,
+      registry: admission.registry,
+      installationId: config.installationId,
+      roomId: config.roomId,
+      displayToken: config.displayToken,
+    });
+    engine.start();
+  }
 
   app.get("/healthz", async () => ({ ok: true }));
   app.get("/readyz", async (_request, reply) => {
@@ -74,9 +90,10 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Ser
   // Upgraded sockets are not managed by Fastify's HTTP connection tracker.
   // Close them before Fastify waits for the underlying server to drain.
   app.addHook("preClose", async () => {
+    engine?.stop();
     for (const socket of webSockets.clients) socket.terminate();
     await new Promise<void>((resolve) => webSockets.close(() => resolve()));
   });
 
-  return { app, config, readiness, webSockets, admission, startedAt };
+  return { app, config, readiness, webSockets, admission, engine, startedAt };
 }
