@@ -53,8 +53,8 @@ describe("VoteEngine", () => {
     const votes = new VoteEngine({ onSnapshotEnqueued: (snapshot) => enqueued.push(snapshot) });
     begin(votes);
 
-    votes.recordHeartbeat("valid", 150);
     votes.recordInput("valid", 0.5, 0.25, 10);
+    votes.recordHeartbeat("valid", 150);
     votes.recordInput("stale", 0.25, 0.25, 10);
     votes.recordInput("disconnected", 0.25, 0.75, 10);
     votes.setConnected("disconnected", false, 50);
@@ -78,6 +78,18 @@ describe("VoteEngine", () => {
     expect(resolution.snapshot.votes[0]?.x).toBe(0.5);
   });
 
+  it("treats input as participant liveness", () => {
+    const votes = new VoteEngine();
+    begin(votes, ["active"]);
+    votes.recordInput("active", 0.25, 0.25, 150);
+
+    expect(votes.finalize(200)!.snapshot.votes[0]).toMatchObject({
+      status: "valid",
+      lastHeartbeatAt: 150,
+      lastInputAt: 150,
+    });
+  });
+
   it("filters excluded statuses before counting, including a parked cursor", () => {
     const votes = new VoteEngine();
     begin(votes, ["included", "excluded-stale", "excluded-disconnected"], {
@@ -87,8 +99,8 @@ describe("VoteEngine", () => {
       empty: "empty-target",
       countedStatuses: ["valid"],
     });
-    votes.recordHeartbeat("included", 150);
     votes.recordInput("included", 0.1, 0.1, 10);
+    votes.recordHeartbeat("included", 150);
     votes.recordInput("excluded-stale", 0.9, 0.1, 10);
     votes.recordInput("excluded-disconnected", 0.9, 0.9, 10);
     votes.setConnected("excluded-disconnected", false, 50);
@@ -112,15 +124,15 @@ describe("VoteEngine", () => {
     expect(result.winner).toBe("tie");
   });
 
-  it("resolves fixed transitions without inspecting or counting positions", () => {
+  it("resolves fixed transitions with real counts but no quadrant winner", () => {
     const votes = new VoteEngine();
     begin(votes, ["participant"], { type: "fixed", target: "fixed-target" });
     votes.recordInput("participant", 0.5, 0.5, 10);
     const snapshot = votes.finalize(20)!.snapshot;
     const resolved = resolveSnapshot({ ...question, next: { type: "fixed", target: "fixed-target" } }, snapshot);
     expect(resolved).toEqual({
-      quadrantCounts: { q1: 0, q2: 0, q3: 0, q4: 0 },
-      winner: "empty",
+      quadrantCounts: { q1: 0, q2: 0, q3: 0, q4: 1 },
+      winner: "fixed",
       resolvedTarget: "fixed-target",
     });
   });

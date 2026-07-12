@@ -37,7 +37,7 @@ export type FinalVoteSnapshot = {
 export type VoteResolution = {
   snapshot: FinalVoteSnapshot;
   quadrantCounts: QuadrantCounts;
-  winner: Quadrant | "tie" | "empty";
+  winner: Quadrant | "tie" | "empty" | "fixed";
   resolvedTarget: string;
 };
 
@@ -79,16 +79,22 @@ function freezeVote(vote: PositionVote): PositionVote {
 
 /**
  * Resolve an immutable final snapshot. This is deliberately a pure resolver:
- * fixed transitions do not inspect positions or call quadrantOf at all.
+ * Fixed transitions retain real positional counts but deliberately produce no
+ * quadrant winner; plurality transitions additionally apply status filtering.
  */
 export function resolveSnapshot(
   question: PositionQuestionPhase,
   snapshot: FinalVoteSnapshot,
 ): Omit<VoteResolution, "snapshot"> {
   if (question.next.type === "fixed") {
+    const counts = emptyCounts();
+    for (const vote of snapshot.votes) {
+      if (vote.x === null || vote.y === null) continue;
+      counts[quadrantOf(vote.x, vote.y)] += 1;
+    }
     return {
-      quadrantCounts: emptyCounts(),
-      winner: "empty",
+      quadrantCounts: counts,
+      winner: "fixed",
       resolvedTarget: question.next.target,
     };
   }
@@ -214,6 +220,8 @@ export class VoteEngine {
     vote.x = clampCoordinate(x);
     vote.y = clampCoordinate(y);
     vote.lastInputAt = now;
+    vote.lastHeartbeatAt = now;
+    this.heartbeatTimes.set(participantId, now);
     return true;
   }
 
