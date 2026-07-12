@@ -1,0 +1,83 @@
+import { describe, expect, it } from "vitest";
+import scenarioJson from "../../../../content/scenarios/dev.json";
+import type { Scenario } from "@smartphonecracy/scenario";
+import type { FinalVoteSnapshot } from "../votes/index.js";
+import { InstallationPersistence, PersistenceWriteQueue, PostgresPersistenceExecutor, type PersistenceExecutor, type SqlStatement } from "./index.js";
+
+class RecordingExecutor implements PersistenceExecutor {
+  calls: SqlStatement[][] = [];
+  failures = 0;
+  async execute(statements: readonly SqlStatement[]): Promise<void> {
+    if (this.failures-- > 0) throw new Error("database unavailable");
+    this.calls.push([...statements]);
+  }
+}
+
+const scenario = scenarioJson as Scenario;
+const expires = Date.UTC(2027, 0, 1);
+
+describe("persistence", () => {
+  it("commits batches atomically and rolls back partial failures", async () => {
+    const queries: string[] = [];
+    const client = { query: async (text: string) => {
+      queries.push(text);
+      if (text === "bad") throw new Error("constraint");
+    } };
+    const executor = new PostgresPersistenceExecutor(client);
+    await expect(executor.execute([{ text: "ok" }, { text: "bad" }])).rejects.toThrow("constraint");
+    expect(queries).toEqual(["begin", "ok", "bad", "rollback"]);
+  });
+
+  it("buffers without blocking gameplay, retries in order, and flushes", async () => {
+    const executor = new RecordingExecutor(); executor.failures = 2;
+    const queue = new PersistenceWriteQueue(executor, { retryDelayMs: 0, sleep: async () => undefined });
+    queue.enqueue([{ text: "first" }]); queue.enqueue([{ text: "second" }]);
+    expect(queue.bufferedWrites).toBe(2);
+    await queue.flush();
+    expect(executor.calls.map((call) => call[0]?.text)).toEqual(["first", "second"]);
+  });
+
+  it("persists transition checkpoints and explicit recovery events", async () => {
+    const executor = new RecordingExecutor();
+    const persistence = new InstallationPersistence({ queue: new PersistenceWriteQueue(executor), installationId: "i", scenario, participantDataExpiresAt: expires });
+    persistence.checkpoint({ kind: "recovery", reason: "crash-recovery", sessionId: "s", phaseId: "question-fixed", phaseEpoch: 3, startedAt: 10, deadlineAt: 20 });
+    await persistence.flush();
+    const texts = executor.calls.flat().map((statement) => statement.text);
+    expect(texts.some((text) => text.includes("insert into checkpoints"))).toBe(true);
+    expect(texts.some((text) => text.includes("'recovery'"))).toBe(true);
+  });
+
+  it("attributes the idle transition to the session that just ended", async () => {
+    const executor = new RecordingExecutor();
+    const persistence = new InstallationPersistence({ queue: new PersistenceWriteQueue(executor), installationId: "i", scenario, participantDataExpiresAt: expires });
+    persistence.checkpoint({ kind: "transition", reason: "start", sessionId: "s", phaseId: "intro-video", phaseEpoch: 1, startedAt: 10, deadlineAt: 20 });
+    persistence.checkpoint({ kind: "transition", reason: "complete", sessionId: "idle", phaseId: "idle", phaseEpoch: 4, startedAt: 30, deadlineAt: null });
+    await persistence.flush();
+    const sessionWrites = executor.calls.flat().filter((statement) => statement.text.includes("insert into sessions"));
+    expect(sessionWrites.at(-1)?.values?.[0]).toBe("s");
+    expect(sessionWrites.at(-1)?.values?.[3]).toBe("ended");
+  });
+
+  it("stores exactly final votes and a complete reproducible outcome", async () => {
+    const executor = new RecordingExecutor();
+    const persistence = new InstallationPersistence({ queue: new PersistenceWriteQueue(executor), installationId: "i", scenario, participantDataExpiresAt: expires });
+    const snapshot: FinalVoteSnapshot = Object.freeze({ sessionId: "s", questionId: "question-fixed", phaseEpoch: 2, recordedAt: 200, votes: Object.freeze([
+      Object.freeze({ sessionId: "s", questionId: "question-fixed", participantId: "p1", x: .8, y: .8, status: "valid", lastInputAt: 190, lastHeartbeatAt: 195, currentPhaseStartedAt: 100, currentPhaseDeadline: 200, recordedAt: 200 }),
+      Object.freeze({ sessionId: "s", questionId: "question-fixed", participantId: "p2", x: null, y: null, status: "never-moved", lastInputAt: null, lastHeartbeatAt: 195, currentPhaseStartedAt: 100, currentPhaseDeadline: 200, recordedAt: 200 }),
+    ]) });
+    persistence.voteSnapshot(snapshot); await persistence.flush();
+    const batch = executor.calls.flat();
+    expect(batch.filter((statement) => statement.text.includes("insert into votes"))).toHaveLength(2);
+    expect(batch.some((statement) => statement.text.toLowerCase().includes("cursor"))).toBe(false);
+    const phaseWrite = batch.find((statement) => statement.text.includes("insert into session_phases"))!;
+    const outcome = JSON.parse(phaseWrite.values![9] as string);
+    expect(outcome).toMatchObject({ winner: "fixed", resolvedTarget: "question-quadrant", includedTotal: 1, excludedTotal: 1, boundaryConvention: expect.any(String) });
+  });
+
+  it("exposes testable participant deletion without leases, grants, IPs, or traces", async () => {
+    const executor = new RecordingExecutor();
+    const persistence = new InstallationPersistence({ queue: new PersistenceWriteQueue(executor), installationId: "i", scenario, participantDataExpiresAt: expires });
+    persistence.deleteExpiredParticipantData(expires); await persistence.flush();
+    expect(executor.calls.flat().at(-1)).toEqual({ text: "select delete_expired_participant_data($1)", values: [new Date(expires).toISOString()] });
+  });
+});
