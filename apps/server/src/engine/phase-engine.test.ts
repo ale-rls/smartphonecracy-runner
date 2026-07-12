@@ -375,6 +375,84 @@ describe("PhaseEngine lifecycle", () => {
     expect(checkpoints.at(-2)?.kind).toBe("recovery");
   });
 
+  it("applies admin start and idle controls across lifecycle states", () => {
+    let now = 1_000;
+    const checkpoints: PhaseCheckpoint[] = [];
+    const { engine, registry } = setup({ now: () => now, checkpoints });
+
+    expect(engine.adminStart(now)).toEqual({ ok: false, reason: "wrong-phase" });
+    expect(engine.adminIdle(now)).toEqual({ ok: true });
+    expect(engine.lifecycleState).toBe("idle");
+
+    const phone = new MockSocket();
+    const display = new MockSocket();
+    addParticipant(registry, phone as unknown as WebSocket, now, "p1");
+    engine.participantJoined(phone as unknown as WebSocket);
+    connectDisplay(engine, display as unknown as WebSocket);
+    expect(engine.lifecycleState).toBe("lobby");
+
+    now = 1_010;
+    expect(engine.adminStart(now)).toEqual({ ok: true });
+    expect(engine.lifecycleState).toBe("active");
+    expect(engine.currentPhaseId).toBe("intro");
+    expect(engine.adminStart(now)).toEqual({ ok: false, reason: "wrong-phase" });
+
+    now = 1_020;
+    expect(engine.adminIdle(now)).toEqual({ ok: true });
+    expect(engine.lifecycleState).toBe("idle");
+    expect(engine.currentPhaseId).toBe("idle");
+    expect(checkpoints.at(-1)?.reason).toBe("admin-idle");
+  });
+
+  it("skips video and question phases and safely restarts mid-video and mid-freeze", () => {
+    let now = 1_000;
+    const checkpoints: PhaseCheckpoint[] = [];
+    const { engine, registry } = setup({
+      now: () => now,
+      checkpoints,
+      interactiveIdleTimeoutMs: 1_000,
+    });
+    const phone = new MockSocket();
+    const display = new MockSocket();
+    addParticipant(registry, phone as unknown as WebSocket, now, "p1");
+    engine.participantJoined(phone as unknown as WebSocket, registry.get("lease-p1"));
+    connectDisplay(engine, display as unknown as WebSocket);
+
+    now = 1_100;
+    engine.tick(now);
+    const firstVideoEpoch = engine.currentPhaseEpoch;
+    expect(engine.adminRestart(now + 1)).toEqual({ ok: true });
+    expect(engine.currentPhaseId).toBe("intro");
+    expect(engine.currentPhaseEpoch).toBeGreaterThan(firstVideoEpoch);
+    expect(engine.completeVideo("session-1", "intro", firstVideoEpoch, now + 2)).toEqual({
+      ok: false,
+      reason: "stale",
+    });
+
+    now = 1_110;
+    expect(engine.adminSkip(now)).toEqual({ ok: true });
+    expect(engine.currentPhaseId).toBe("question");
+    const questionEpoch = engine.currentPhaseEpoch;
+
+    now = 1_120;
+    expect(engine.adminSkip(now)).toEqual({ ok: true });
+    expect(engine.currentPhaseId).toBe("question");
+    expect(display.sent.at(-1)).toMatchObject({
+      t: "question_resolved",
+      phaseEpoch: questionEpoch,
+      freezeUntil: 1_140,
+    });
+
+    now = 1_130;
+    expect(engine.adminRestart(now)).toEqual({ ok: true });
+    expect(engine.currentPhaseId).toBe("intro");
+    const restartedEpoch = engine.currentPhaseEpoch;
+    engine.tick(1_140);
+    expect(engine.currentPhaseId).toBe("intro");
+    expect(engine.currentPhaseEpoch).toBe(restartedEpoch);
+    expect(checkpoints.map((checkpoint) => checkpoint.reason)).toContain("admin-restart");
+  });
+
   it("finalizes once, enqueues before resolution, hides live counts, and holds through freeze", () => {
     let now = 1_000;
     const checkpoints: PhaseCheckpoint[] = [];
