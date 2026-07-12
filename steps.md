@@ -250,15 +250,15 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: —
 
 ### STEP-013: Display client core
-- status: in-progress
+- status: review
 - owner: claude
 - tier: complex
 - depends-on: STEP-002, STEP-004
 - files: apps/display/**
 - acceptance: three layers (§9); phase renderer from snapshots; server-time-corrected countdowns; reconnect w/ backoff + snapshot re-request; build-version reload handling; kiosk basics (hidden cursor, no context menu, wake lock attempt)
-- verify: pnpm --filter display test + Playwright smoke
+- verify: pnpm --filter display test → PASS (11 tests) + typecheck PASS + vite build PASS (2026-07-12). Playwright smoke deferred to STEP-023 (no e2e harness exists yet) — reviewer may reject this deferral.
 - reviewer: codex
-- notes: —
+- notes: three-layer shell (video / UI / cursor-canvas placeholder); DisplayConnection with injectable WebSocket, display_join on open, ping/pong→ServerClock (median offset), Backoff w/ jitter; pure displayReducer w/ stale-epoch guard (per-session), QR-grant drop on reconnect; reload → SW update + location.reload; kiosk guards (cursor hide, contextmenu, best-effort wake lock). Video layer uses plain /media/ src until STEP-014; question layer minimal until STEP-015.
 
 ### STEP-014: Display media pipeline
 - status: todo
