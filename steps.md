@@ -250,15 +250,15 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: —
 
 ### STEP-013: Display client core
-- status: review
+- status: done
 - owner: claude
 - tier: complex
 - depends-on: STEP-002, STEP-004
 - files: apps/display/**
 - acceptance: three layers (§9); phase renderer from snapshots; server-time-corrected countdowns; reconnect w/ backoff + snapshot re-request; build-version reload handling; kiosk basics (hidden cursor, no context menu, wake lock attempt)
-- verify: pnpm --filter display test → PASS (11 tests) + typecheck PASS + vite build PASS (2026-07-12). Playwright smoke deferred to STEP-023 (no e2e harness exists yet) — reviewer may reject this deferral.
+- verify: `pnpm --filter display test` → PASS (11 tests); `pnpm --filter display typecheck` → PASS; `pnpm --filter display build` → PASS (2026-07-12). Playwright smoke explicitly accepted as deferred to STEP-023 because no e2e harness exists yet.
 - reviewer: codex
-- notes: three-layer shell (video / UI / cursor-canvas placeholder); DisplayConnection with injectable WebSocket, display_join on open, ping/pong→ServerClock (median offset), Backoff w/ jitter; pure displayReducer w/ stale-epoch guard (per-session), QR-grant drop on reconnect; reload → SW update + location.reload; kiosk guards (cursor hide, contextmenu, best-effort wake lock). Video layer uses plain /media/ src until STEP-014; question layer minimal until STEP-015.
+- notes: APPROVED by codex 2026-07-12. Reviewed reconnect/backoff ownership, display_join and ping/pong clock correction, median-offset ServerClock, per-session epoch guard semantics, reload flow, and kiosk guards. The three-layer renderer is appropriately scoped; plain media and minimal question rendering remain deferred to STEP-014/015. Playwright smoke is explicitly accepted as deferred to STEP-023, which owns the future e2e harness.
 
 ### STEP-014: Display media pipeline
 - status: todo
