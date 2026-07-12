@@ -204,15 +204,15 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
   APPROVED by claude review lane (sonnet) 2026-07-12: re-reviewed fix commit 6aa724b; both findings resolved. Re-ran the original standalone repro against the fixed engine — 220s video then question phase survives (was: instant abort), and the idle budget is now anchored exactly at question entry (still active at +179s of genuine in-question inactivity, aborts with `interactive-idle-timeout` at +180.1s). Lobby-idle enforcement verified in code and by the new test; the post-`startSession` fall-through in the reworked lobby tick branch is safe (no double-transition: fresh idle anchor, zero session elapsed, future deadline). New regression tests encode realistic durations (220_000ms video vs 180_000ms idle timeout — not zero-time). Verification: `pnpm --filter @smartphonecracy/server typecheck` PASS; `pnpm --filter @smartphonecracy/server test` PASS 19/19 (engine 7, admission 8, server 4; no localhost EPERM in this sandbox). FYI, non-blocking: input during lobby cannot refresh the idle anchor (`recordInput` requires active+question), which only matters if a config sets `lobbyCountdownMs` > `interactiveIdleTimeoutMs`; unreachable with defaults and there is no trackpad surface during lobby.
 
 ### STEP-008: Vote engine + transition resolver
-- status: in-progress
+- status: review
 - owner: codex
 - tier: complex
 - depends-on: STEP-007
-- files: apps/server/src/votes/**
+- files: apps/server/src/votes/**, apps/server/src/engine/phase-engine.ts, apps/server/src/engine/phase-engine.test.ts, apps/server/src/admission/registry.ts
 - acceptance: final-snapshot semantics (§8): statuses valid/never-moved/stale/disconnected; heartbeat-based staleness; fixed + quadrant-plurality resolution with tie/empty; countedStatuses filtering provably excludes; freezeMs hold; immutable snapshot enqueued before resolution
-- verify: pnpm --filter server test (vote suite incl. boundary cases x=0.5/y=0.5/center)
+- verify: `pnpm --filter @smartphonecracy/server typecheck` → PASS; focused server suites (`src/admission/admission.test.ts`, `src/engine/phase-engine.test.ts`, `src/votes/vote-engine.test.ts`) → PASS (23 tests); `pnpm -r typecheck` → PASS. `pnpm -r test` has 1 environment-only failure in the pre-existing localhost WebSocket test (`listen EPERM: operation not permitted 127.0.0.1`); all other workspace tests pass.
 - reviewer: claude
-- notes: Claimed by codex 2026-07-12T09:21:15Z under lock protocol. Implementing final snapshot, resolution, freeze hold, and STEP-007 wiring.
+- notes: Implemented and ready for claude/Fable review. VoteEngine records heartbeat-based statuses and normalized latest positions, freezes one deep immutable snapshot per participant, invokes the persistence enqueue hook before pure resolution, and resolves fixed/plurality/tie/empty outcomes. PhaseEngine starts/updates/finalizes vote state, broadcasts conditional question status, emits question_resolved with freezeUntil, rejects late input, and advances only after the freeze. `quadrantOf` is consumed from @smartphonecracy/shared; registry values provide the session participant seed. Commit attempt was blocked by the managed sandbox because `.git/index.lock` is not writable; working-tree changes are intentionally left intact for handoff.
 
 ### STEP-009: Input pipeline + cursor tick loop
 - status: todo
