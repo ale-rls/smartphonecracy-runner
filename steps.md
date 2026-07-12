@@ -272,8 +272,8 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: MediaStore (injectable caches/fetch/digest): boot sync keyed by content hash, byte+sha256 verify per download, stale-entry eviction, endless capped-backoff retry (never ready with missing media); Blob URLs memoized per src, retainOnly() revokes outside the active set; useMedia hook gates UI on ready + visible retry state; public/sw.js is app-shell only (never intercepts /media/), cache-first hashed assets, network-first HTML. Next-video preload wired but waits on STEP-026 (id→src map) — only the active video gets a Blob URL until then.
 
 ### STEP-015: Display cursors + question rendering
-- status: todo
-- owner: —
+- status: in-progress
+- owner: claude
 - tier: complex
 - depends-on: STEP-013
 - files: apps/display/src/cursors/**, question UI
