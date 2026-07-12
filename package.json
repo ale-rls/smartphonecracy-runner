@@ -8,7 +8,8 @@
   "scripts": {
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
-    "validate-scenario": "tsx scripts/validate-scenario.ts"
+    "validate-scenario": "tsx scripts/validate-scenario.ts",
+    "simulate-clients": "tsx scripts/simulate-clients.ts"
   },
   "devDependencies": {
     "tsx": "^4.19.2",
