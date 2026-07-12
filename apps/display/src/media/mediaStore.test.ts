@@ -78,6 +78,17 @@ describe("MediaStore.sync", () => {
     expect(cached.has("/media-cache/hash-b")).toBe(true);
   });
 
+  it("downloads with cache: no-store so an immutable-cached corrupt response cannot poison retries", async () => {
+    const { caches } = fakeCaches();
+    const fetchSpy = vi.fn(fakeFetch());
+    const store = makeStore({ caches, fetchFn: fetchSpy as typeof fetch });
+    await store.sync(manifest);
+    expect(fetchSpy).toHaveBeenCalled();
+    for (const [, init] of fetchSpy.mock.calls) {
+      expect(init).toEqual({ cache: "no-store" });
+    }
+  });
+
   it("skips files already cached with the right size", async () => {
     const { caches } = fakeCaches();
     const store = makeStore({ caches });
