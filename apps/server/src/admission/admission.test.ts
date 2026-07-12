@@ -92,6 +92,29 @@ describe("HMAC admission tokens", () => {
 });
 
 describe("participant admission", () => {
+  it("rejects new joins during an active show but permits a known lease to reconnect", () => {
+    let newParticipantsAllowed = true;
+    const admission = controller({ isNewParticipantAllowed: () => newParticipantsAllowed });
+    const grant = admission.issueJoinGrant().token;
+    const first = socket();
+    join(admission, first, grant);
+    const identity = lastMessage(first) as { participantLease: string };
+
+    newParticipantsAllowed = false;
+    const blocked = socket();
+    join(admission, blocked, grant, undefined, "198.51.100.2");
+    expect(lastMessage(blocked)).toMatchObject({ t: "join_rejected", reason: "show_in_progress" });
+
+    const reconnect = socket();
+    join(admission, reconnect, grant, identity.participantLease, "198.51.100.3");
+    expect(lastMessage(reconnect)).toMatchObject({ t: "identity" });
+
+    newParticipantsAllowed = true;
+    const nextRound = socket();
+    join(admission, nextRound, grant, undefined, "198.51.100.4");
+    expect(lastMessage(nextRound)).toMatchObject({ t: "identity" });
+  });
+
   it("instructs stale phone and display bundles to reload without blocking valid messages", () => {
     const messages: string[] = [];
     const admission = controller({

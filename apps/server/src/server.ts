@@ -40,6 +40,7 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Ser
     secret: config.joinGrantSecret,
     trustProxy: config.trustProxy,
     buildVersion: config.buildVersion,
+    isNewParticipantAllowed: () => config.allowLateJoin || engine?.lifecycleState !== "active",
     onClientMessage: (message, socket, request) => engine?.handleClientMessage(message, socket, request),
     onParticipantJoin: (participant, socket) => engine?.participantJoined(socket, participant),
     onSocketClosed: (socket) => engine?.socketClosed(socket),
@@ -54,6 +55,7 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Ser
       qr: {
         phoneJoinBaseUrl: config.phoneJoinBaseUrl,
         issueGrant: (now) => admission.issueJoinGrant(now),
+        allowLateJoin: config.allowLateJoin,
       },
       onCheckpoint: (checkpoint) => options.persistence?.checkpoint(checkpoint),
       onVoteSnapshotEnqueued: (snapshot) => options.persistence?.voteSnapshot(snapshot),

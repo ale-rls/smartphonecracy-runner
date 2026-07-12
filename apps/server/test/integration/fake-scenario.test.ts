@@ -55,6 +55,7 @@ function createHarness(policy: { noParticipantGraceMs?: number } = {}) {
     disconnectGraceMs: 50,
     policy: { maxParticipants: 30, joinGrantTtlMs: 120_000, participantLeaseTtlMs: 7_200_000 },
     sessionId: () => engine.currentSessionId,
+    isNewParticipantAllowed: () => engine.lifecycleState !== "active",
     onClientMessage: (message, socket, req) => engine.handleClientMessage(message, socket, req),
     onParticipantJoin: (participant, socket) => engine.participantJoined(socket, participant),
     onSocketClosed: (socket) => engine.socketClosed(socket),
@@ -89,12 +90,13 @@ function createHarness(policy: { noParticipantGraceMs?: number } = {}) {
     });
     return socket;
   };
-  const phone = async (suffix: number) => {
+  const phone = async (suffix: number, participantLease?: string) => {
     const socket = new TestSocket();
     connect(socket, `198.51.100.${suffix}`);
     socket.message({
       t: "join", v: 1, clientVersion: "test", installationId: "inst-1", roomId: "room-1",
       joinGrant: admission.issueJoinGrant(now).token,
+      ...(participantLease === undefined ? {} : { participantLease }),
     });
     await Promise.resolve();
     return socket;
@@ -148,26 +150,28 @@ describe("fake scenario server integration", () => {
     ]));
   });
 
-  it("admits a late join, snapshots disconnects, and completes the scenario", async () => {
+  it("rejects a late join, reconnects an existing lease, and completes the scenario", async () => {
     const h = createHarness();
     const display = h.display();
     const first = await h.phone(1);
+    const firstLease = last(first, "identity").participantLease as string;
     h.advance(100);
     display.message({
       t: "video_ended", v: 1, sessionId: h.engine.currentSessionId, phaseId: "intro-video",
       phaseEpoch: h.engine.currentPhaseEpoch, mediaId: "intro.mp4",
     });
     const late = await h.phone(2);
-    expect(last(late, "snapshot")).toMatchObject({ phase: { id: "question-fixed" } });
-    h.input(first, 1, 0.2, 0.2);
-    h.input(late, 1, 0.8, 0.8);
+    expect(last(late, "join_rejected")).toMatchObject({ reason: "show_in_progress" });
+    first.close();
+    const reconnected = await h.phone(3, firstLease);
+    expect(last(reconnected, "snapshot")).toMatchObject({ phase: { id: "question-fixed" } });
+    h.input(reconnected, 1, 0.2, 0.2);
     await Promise.resolve();
-    late.close();
     h.advance(20_000);
     expect(last(display, "question_resolved")).toMatchObject({ winner: "fixed" });
     expect(h.admission.registry.connectedCount).toBe(1);
     h.advance(3_000);
-    h.input(first, 2, 0.2, 0.2);
+    h.input(reconnected, 2, 0.2, 0.2);
     await Promise.resolve();
     h.advance(20_000);
     h.advance(3_000);

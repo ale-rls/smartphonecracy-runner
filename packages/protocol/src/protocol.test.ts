@@ -86,6 +86,7 @@ const serverMessages: ServerToClientMessage[] = [
     leaseExpiresAt: 99,
   },
   { t: "join_rejected", v: 1, reason: "room_full" },
+  { t: "join_rejected", v: 1, reason: "show_in_progress" },
   { t: "status", v: 1, phaseId: "intro", message: "watch the screen" },
   { t: "pong", v: 1, echoClientTime: 4, serverTime: 5 },
 ];

@@ -32,6 +32,7 @@ const REJECTION_TEXT: Record<string, string> = {
   expired_grant: "This code has expired — scan the QR on the screen again.",
   room_full: "The room is full right now. Watch the screen and try again soon.",
   rate_limited: "Too many attempts — wait a moment and scan again.",
+  show_in_progress: "The show is in progress — wait for the next round.",
 };
 
 export function App() {
