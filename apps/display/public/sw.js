@@ -10,6 +10,10 @@
 
 const SHELL_CACHE = "smartphonecracy-shell-v1";
 
+// The SW is served from the bundle mount (e.g. /display/sw.js), so the
+// app shell's hashed assets live under <mount>/assets/, not /assets/.
+const ASSETS_PREFIX = new URL("./assets/", self.location.href).pathname;
+
 self.addEventListener("install", (event) => {
   event.waitUntil(self.skipWaiting());
 });
@@ -36,7 +40,7 @@ self.addEventListener("fetch", (event) => {
   // (media, media-manifest, /api/*, /ws, health endpoints) passes
   // through untouched — the SW must never sit between the app and the
   // server's live surfaces (review finding, plan §9).
-  if (url.pathname.startsWith("/assets/")) {
+  if (url.pathname.startsWith(ASSETS_PREFIX)) {
     // Hashed, immutable: cache-first.
     event.respondWith(
       (async () => {
