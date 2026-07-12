@@ -212,7 +212,7 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - acceptance: final-snapshot semantics (§8): statuses valid/never-moved/stale/disconnected; heartbeat-based staleness; fixed + quadrant-plurality resolution with tie/empty; countedStatuses filtering provably excludes; freezeMs hold; immutable snapshot enqueued before resolution
 - verify: `pnpm --filter @smartphonecracy/server typecheck` → PASS; focused server suites (`src/admission/admission.test.ts`, `src/engine/phase-engine.test.ts`, `src/votes/vote-engine.test.ts`) → PASS (23 tests); `pnpm -r typecheck` → PASS. `pnpm -r test` has 1 environment-only failure in the pre-existing localhost WebSocket test (`listen EPERM: operation not permitted 127.0.0.1`); all other workspace tests pass.
 - reviewer: claude
-- notes: Implemented and ready for claude/Fable review. VoteEngine records heartbeat-based statuses and normalized latest positions, freezes one deep immutable snapshot per participant, invokes the persistence enqueue hook before pure resolution, and resolves fixed/plurality/tie/empty outcomes. PhaseEngine starts/updates/finalizes vote state, broadcasts conditional question status, emits question_resolved with freezeUntil, rejects late input, and advances only after the freeze. `quadrantOf` is consumed from @smartphonecracy/shared; registry values provide the session participant seed. Commit attempt was blocked by the managed sandbox because `.git/index.lock` is not writable; working-tree changes are intentionally left intact for handoff.
+- notes: Implemented and ready for claude/Fable review. VoteEngine records heartbeat-based statuses and normalized latest positions, freezes one deep immutable snapshot per participant, invokes the persistence enqueue hook before pure resolution, and resolves fixed/plurality/tie/empty outcomes. PhaseEngine starts/updates/finalizes vote state, broadcasts conditional question status, emits question_resolved with freezeUntil, rejects late input, and advances only after the freeze. `quadrantOf` is consumed from @smartphonecracy/shared; registry values provide the session participant seed. Commit attempt was blocked by the managed sandbox because `.git/index.lock` is not writable; working-tree changes are intentionally left intact for handoff. CHANGES REQUESTED (fable review 2026-07-12): (1) recordInput must refresh liveness (lastHeartbeatAt) — plan §8: stale = no heartbeat OR other socket message; currently an actively-dragging participant with lost pings finalizes as stale; (2) fixed-transition questions emit winner:'empty' + zero counts → display shows the empty-outcome dramaturgy for a fully-voted question; emit winner:'fixed' with REAL computed counts once STEP-027 (protocol schema + display, claude) lands; (3) question_status is broadcast per input (~750 msg/s at 30×25 Hz) — throttle to a fixed cadence (e.g. 4 Hz) or on-change. Core resolver, snapshot immutability/ordering, boundary tests, countedStatuses filtering all approved. FYI (non-blocking): disconnected takes precedence over never-moved in statusOf — harmless due to null-coord guards, but persistence (018) should be aware.
 
 ### STEP-009: Input pipeline + cursor tick loop
 - status: todo
@@ -418,3 +418,14 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - verify: pnpm --filter server test (phases API suite)
 - reviewer: claude
 - notes: Requested during STEP-014 display media pipeline work; display snapshots carry next-phase IDs but not their video sources. Backlog entry only; no implementation in this session.
+
+### STEP-027: winner:"fixed" protocol + display support
+- status: in-progress
+- owner: claude
+- tier: simple
+- depends-on: STEP-002
+- files: packages/protocol/src/messages.ts, apps/display/src/components/QuadrantOverlay.tsx (+tests)
+- acceptance: question_resolved winner enum gains "fixed"; display renders no winner/empty highlight and no outcome state for winner:"fixed" (counts still shown if present); discovered during STEP-008 fable review
+- verify: pnpm --filter protocol test && pnpm --filter display test
+- reviewer: none
+- notes: unblocks STEP-008 finding (2).
