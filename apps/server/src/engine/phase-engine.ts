@@ -8,6 +8,7 @@ import type { Scenario, Phase } from "@smartphonecracy/scenario";
 import type { IncomingMessage } from "node:http";
 import type { WebSocket } from "ws";
 import type { ParticipantRecord, ParticipantRegistry } from "../admission/index.js";
+import { CursorPipeline } from "../cursors/index.js";
 import { VoteEngine, type FinalVoteSnapshot, type VoteParticipantSeed } from "../votes/index.js";
 
 export type EngineLifecycle = "idle" | "lobby" | "active";
@@ -80,6 +81,7 @@ export class PhaseEngine {
   private readonly onCheckpoint: ((checkpoint: PhaseCheckpoint) => void) | undefined;
   private readonly onPhaseDeadline: ((event: PhaseDeadlineEvent) => void) | undefined;
   private readonly votes: VoteEngine;
+  private readonly cursors: CursorPipeline;
   private readonly clients = new Set<WebSocket>();
   private readonly participantSockets = new Set<WebSocket>();
 
@@ -116,6 +118,10 @@ export class PhaseEngine {
     this.votes = options.onVoteSnapshotEnqueued === undefined
       ? new VoteEngine()
       : new VoteEngine({ onSnapshotEnqueued: options.onVoteSnapshotEnqueued });
+    this.cursors = new CursorPipeline({
+      sendCursors: (message) => this.sendToDisplay(message),
+      sendPresence: (message) => this.broadcast(message),
+    });
     this.phaseStartedAt = this.now();
     this.requirePhase("idle");
   }
@@ -168,11 +174,13 @@ export class PhaseEngine {
   start(): void {
     if (this.timer !== null) return;
     this.timer = setInterval(() => this.tick(), 250);
+    this.cursors.start();
   }
 
   stop(): void {
     if (this.timer !== null) clearInterval(this.timer);
     this.timer = null;
+    this.cursors.stop();
   }
 
   tick(now = this.now()): void {
@@ -254,6 +262,7 @@ export class PhaseEngine {
     this.participantSockets.add(socket);
     if (_participant !== undefined) {
       this.participantIds.set(socket, _participant.clientId);
+      this.cursors.join(_participant.clientId, _participant.color);
       this.votes.addParticipant({
         participantId: _participant.clientId,
         connected: true,
@@ -272,8 +281,11 @@ export class PhaseEngine {
     this.participantSockets.delete(socket);
     const participantId = this.participantIds.get(socket);
     if (participantId !== undefined) {
-      this.votes.setConnected(participantId, false, this.now());
       this.participantIds.delete(socket);
+      if (![...this.participantIds.values()].includes(participantId)) {
+        this.votes.setConnected(participantId, false, this.now());
+        this.cursors.leave(participantId);
+      }
       this.queueQuestionStatus();
     }
     if (this.displaySocket === socket) {
@@ -322,7 +334,9 @@ export class PhaseEngine {
         ) {
           const participantId = this.participantIds.get(socket);
           if (participantId !== undefined) {
-            this.recordInput(this.now(), participantId, message.x, message.y);
+            if (this.cursors.recordInput(participantId, message.seq, message.x, message.y)) {
+              this.recordInput(this.now(), participantId, message.x, message.y);
+            }
           }
         }
         return;
@@ -400,6 +414,7 @@ export class PhaseEngine {
     this.clients.add(socket);
     this.displayDisconnectedAt = null;
     this.send(socket, this.getSnapshotMessage());
+    this.send(socket, { t: "presence", v: 1, count: this.registry.connectedCount });
     if (this.lifecycle === "idle" && this.registry.connectedCount >= 1) {
       this.startLobby(this.now());
     }
