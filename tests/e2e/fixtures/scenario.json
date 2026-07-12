@@ -1,0 +1,48 @@
+{
+  "version": "e2e-0.1.0",
+  "entryPhaseId": "intro-video",
+  "cyclesAllowed": false,
+  "phases": [
+    {
+      "kind": "idle",
+      "id": "idle"
+    },
+    {
+      "kind": "video",
+      "id": "intro-video",
+      "src": "intro.mp4",
+      "expectedDurationMs": 1500,
+      "next": "question-fixed"
+    },
+    {
+      "kind": "position-question",
+      "id": "question-fixed",
+      "text": "Where do you stand on public transit funding?",
+      "xAxis": { "minLabel": "Cut spending", "maxLabel": "Increase spending" },
+      "yAxis": { "minLabel": "Local control", "maxLabel": "National control" },
+      "durationMs": 6000,
+      "freezeMs": 1500,
+      "connectionStaleAfterMs": 2500,
+      "showLiveCounts": true,
+      "next": { "type": "fixed", "target": "question-quadrant" }
+    },
+    {
+      "kind": "position-question",
+      "id": "question-quadrant",
+      "text": "Where do you stand on housing policy?",
+      "xAxis": { "minLabel": "Deregulate", "maxLabel": "Regulate" },
+      "yAxis": { "minLabel": "Market-led", "maxLabel": "State-led" },
+      "durationMs": 6000,
+      "freezeMs": 1500,
+      "connectionStaleAfterMs": 2500,
+      "showLiveCounts": true,
+      "next": {
+        "type": "quadrant-plurality",
+        "map": { "q1": "idle", "q2": "idle", "q3": "idle", "q4": "idle" },
+        "tie": "idle",
+        "empty": "idle",
+        "countedStatuses": ["valid", "stale", "disconnected"]
+      }
+    }
+  ]
+}
