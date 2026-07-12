@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useReducer } from "react";
+import { CursorField } from "./cursors/cursorField.js";
+import { CursorCanvas } from "./cursors/CursorCanvas.js";
 import { DisplayConnection } from "./lib/connection.js";
 import { applyKioskGuards, performReload } from "./lib/kiosk.js";
 import { useMedia } from "./media/useMedia.js";
 import { displayReducer, initialDisplayState } from "./state/store.js";
 import { Countdown } from "./components/Countdown.js";
+import { QuadrantOverlay } from "./components/QuadrantOverlay.js";
 
 /**
  * Display application shell (plan §9), three rendering layers:
@@ -29,14 +32,30 @@ const config = {
 export function App() {
   const [state, dispatch] = useReducer(displayReducer, initialDisplayState);
 
+  const cursorField = useMemo(() => new CursorField(), []);
+
   const connection = useMemo(
     () =>
       new DisplayConnection({
         ...config,
-        onMessage: (message) => dispatch({ type: "server-message", message }),
+        onMessage: (message) => {
+          // Cursor batches bypass React state (20–30 Hz), everything
+          // else flows through the reducer.
+          if (message.t === "cursors") {
+            cursorField.ingest(message, Date.now());
+            return;
+          }
+          if (message.t === "question_resolved") {
+            cursorField.setFrozen(true); // freeze the field at the snapshot
+          }
+          if (message.t === "phase" || message.t === "snapshot") {
+            cursorField.setFrozen(false); // next phase unfreezes
+          }
+          dispatch({ type: "server-message", message });
+        },
         onStatusChange: (status) => dispatch({ type: "connection-status", status }),
       }),
-    [],
+    [cursorField],
   );
 
   useEffect(() => {
@@ -100,7 +119,11 @@ export function App() {
               <span>{phase.yAxis.minLabel}</span>
               <span>{phase.yAxis.maxLabel}</span>
             </div>
-            {phase.deadlineAt !== null && (
+            <QuadrantOverlay
+              liveCounts={state.liveCounts}
+              resolution={state.resolution}
+            />
+            {state.resolution === null && phase.deadlineAt !== null && (
               <Countdown clock={connection.clock} deadlineAt={phase.deadlineAt} />
             )}
           </div>
@@ -112,9 +135,9 @@ export function App() {
         )}
       </section>
 
-      {/* Layer 3: cursor canvas (STEP-015) */}
+      {/* Layer 3: cursor canvas */}
       <section className="layer layer-cursors">
-        <canvas id="cursor-canvas" />
+        <CursorCanvas field={cursorField} />
       </section>
     </main>
   );
