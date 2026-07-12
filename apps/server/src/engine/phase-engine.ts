@@ -28,6 +28,8 @@ export const DEFAULT_PHASE_ENGINE_POLICY: PhaseEnginePolicy = {
   noParticipantGraceMs: 120_000,
 };
 
+const QUESTION_STATUS_INTERVAL_MS = 250;
+
 export type PhaseCheckpoint = {
   kind: "transition" | "recovery";
   reason: string;
@@ -96,6 +98,8 @@ export class PhaseEngine {
   private readonly participantIds = new Map<WebSocket, string>();
   private questionFreezeUntil: number | null = null;
   private questionResolutionTarget: string | null = null;
+  private questionStatusDirty = false;
+  private lastQuestionStatusAt: number | null = null;
   private timer: ReturnType<typeof setInterval> | null = null;
 
   constructor(options: PhaseEngineOptions) {
@@ -216,6 +220,8 @@ export class PhaseEngine {
 
     const phase = this.currentPhase();
 
+    if (phase.kind === "position-question") this.broadcastQuestionStatus(now);
+
     if (phase.kind === "position-question" && this.questionFreezeUntil !== null) {
       if (now < this.questionFreezeUntil) return;
       const target = this.questionResolutionTarget;
@@ -255,7 +261,7 @@ export class PhaseEngine {
       }, this.now());
     }
     this.send(socket, this.getSnapshotMessage());
-    this.broadcastQuestionStatus();
+    this.queueQuestionStatus();
     if (this.lifecycle === "idle" && this.displaySocket !== undefined && this.registry.connectedCount >= 1) {
       this.startLobby(this.now());
     }
@@ -268,7 +274,7 @@ export class PhaseEngine {
     if (participantId !== undefined) {
       this.votes.setConnected(participantId, false, this.now());
       this.participantIds.delete(socket);
-      this.broadcastQuestionStatus();
+      this.queueQuestionStatus();
     }
     if (this.displaySocket === socket) {
       this.displaySocket = undefined;
@@ -298,7 +304,7 @@ export class PhaseEngine {
         const participantId = this.participantIds.get(socket);
         if (participantId !== undefined) {
           this.votes.recordHeartbeat(participantId, this.now());
-          this.broadcastQuestionStatus();
+          this.queueQuestionStatus();
         }
         return;
       }
@@ -329,7 +335,7 @@ export class PhaseEngine {
     if (this.lifecycle !== "active" || this.currentPhase().kind !== "position-question") return false;
     if (participantId !== undefined && x !== undefined && y !== undefined) {
       if (!this.votes.recordInput(participantId, x, y, now)) return false;
-      this.broadcastQuestionStatus(now);
+      this.queueQuestionStatus(now);
     }
     this.lastInputAt = now;
     return true;
@@ -432,6 +438,8 @@ export class PhaseEngine {
   private enterPhase(target: string, now: number, reason: string): void {
     const phase = this.requirePhase(target);
     this.votes.clearQuestion();
+    this.questionStatusDirty = false;
+    this.lastQuestionStatusAt = null;
     this.questionFreezeUntil = null;
     this.questionResolutionTarget = null;
     this.phaseId = target;
@@ -467,7 +475,8 @@ export class PhaseEngine {
         phaseDeadline: this.deadlineAt!,
         participants,
       });
-      this.broadcastQuestionStatus(now);
+      this.questionStatusDirty = true;
+      this.broadcastQuestionStatus(now, true);
     }
   }
 
@@ -525,7 +534,7 @@ export class PhaseEngine {
   }
 
   private emitQuestionResolved(
-    resolution: { quadrantCounts: { q1: number; q2: number; q3: number; q4: number }; winner: "q1" | "q2" | "q3" | "q4" | "tie" | "empty"; resolvedTarget: string },
+    resolution: { quadrantCounts: { q1: number; q2: number; q3: number; q4: number }; winner: "q1" | "q2" | "q3" | "q4" | "tie" | "empty" | "fixed"; resolvedTarget: string },
     phase: Extract<Phase, { kind: "position-question" }>,
     now: number,
   ): void {
@@ -541,9 +550,20 @@ export class PhaseEngine {
     });
   }
 
-  private broadcastQuestionStatus(now = this.now()): void {
+  private queueQuestionStatus(now = this.now()): void {
+    this.questionStatusDirty = true;
+    this.broadcastQuestionStatus(now);
+  }
+
+  private broadcastQuestionStatus(now = this.now(), force = false): void {
     const phase = this.currentPhase();
     if (phase.kind !== "position-question") return;
+    if (!force && !this.questionStatusDirty) return;
+    if (
+      !force &&
+      this.lastQuestionStatusAt !== null &&
+      now - this.lastQuestionStatusAt < QUESTION_STATUS_INTERVAL_MS
+    ) return;
     const status = this.votes.liveStatus(now);
     if (!status) return;
     this.sendToDisplay({
@@ -555,6 +575,8 @@ export class PhaseEngine {
       positionedCount: status.positionedCount,
       ...(phase.showLiveCounts ? { quadrantCounts: status.quadrantCounts } : {}),
     });
+    this.questionStatusDirty = false;
+    this.lastQuestionStatusAt = now;
   }
 
   private requirePhase(id: string): Phase {

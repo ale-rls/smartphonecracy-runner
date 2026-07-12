@@ -333,8 +333,8 @@ describe("PhaseEngine lifecycle", () => {
     expect(resolved).toMatchObject({
       sessionId: "session-1",
       phaseEpoch: questionEpoch,
-      quadrantCounts: { q1: 0, q2: 0, q3: 0, q4: 0 },
-      winner: "empty",
+      quadrantCounts: { q1: 0, q2: 0, q3: 0, q4: 1 },
+      winner: "fixed",
       resolvedTarget: "idle",
       freezeUntil: 1_320,
     });
@@ -369,5 +369,36 @@ describe("PhaseEngine lifecycle", () => {
     engine.completeVideo("session-1", "intro", engine.currentPhaseEpoch, now);
     const status = display.sent.find((message) => message.t === "question_status");
     expect(status).toMatchObject({ quadrantCounts: { q1: 0, q2: 0, q3: 0, q4: 0 } });
+  });
+
+  it("throttles question status broadcasts to four per second", () => {
+    let now = 1_000;
+    const { engine, registry } = setup({
+      now: () => now,
+      interactiveIdleTimeoutMs: 1_000,
+      testScenario: liveCountsScenario,
+    });
+    const phone = new MockSocket();
+    const display = new MockSocket();
+    addParticipant(registry, phone as unknown as WebSocket, now, "p1");
+    engine.participantJoined(phone as unknown as WebSocket, registry.get("lease-p1"));
+    connectDisplay(engine, display as unknown as WebSocket);
+    now = 1_100;
+    engine.tick(now);
+    engine.completeVideo("session-1", "intro", engine.currentPhaseEpoch, now);
+    const questionEpoch = engine.currentPhaseEpoch;
+    const initialCount = display.sent.filter((message) => message.t === "question_status").length;
+
+    for (let seq = 1; seq <= 10; seq += 1) {
+      now += 10;
+      engine.handleClientMessage({
+        t: "input", v: 1, sessionId: "session-1", phaseEpoch: questionEpoch, seq, x: 0.5, y: 0.5,
+      }, phone as unknown as WebSocket);
+    }
+    expect(display.sent.filter((message) => message.t === "question_status")).toHaveLength(initialCount);
+
+    now = 1_350;
+    engine.tick(now);
+    expect(display.sent.filter((message) => message.t === "question_status")).toHaveLength(initialCount + 1);
   });
 });
