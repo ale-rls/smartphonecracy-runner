@@ -566,3 +566,14 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - verify: `pnpm --filter @smartphonecracy/display test` → PASS 41/41 (incl. new fetch-init assertion); display typecheck + build PASS; STEP-023 media-retry e2e → PASS with a genuine retry cycle observed (visible "retrying (attempt N): size mismatch" through corruption, self-recovery after restore); full `pnpm test:e2e` → PASS 9/9, 2026-07-12. Committed c7ca960.
 - reviewer: none
 - notes: DISCOVERED by STEP-023's media-retry e2e 2026-07-12: after one corrupt download, MediaStore's endless retry loop can never succeed — /media responses are Cache-Control "public, max-age=31536000, immutable", so the browser HTTP cache keeps returning the corrupt bytes on every retry (observed live: "size mismatch: expected 67, got 20" persisting through attempt 5 after the file on disk was already restored). MediaStore has its own hash-keyed Cache Storage, so the HTTP cache adds nothing for media downloads. Manifest fetch already uses cache: "no-cache" and the server serves it no-cache — unaffected. Display slice (claude).
+
+### STEP-035: Enforce lobby-only late join (STEP-000 director decision)
+- status: todo
+- owner: —
+- tier: complex
+- depends-on: STEP-000 (group a decisions), STEP-006, STEP-007, STEP-010
+- files: apps/server/src/admission/**, apps/server/src/engine/phase-engine.ts, apps/server/src/config.ts (+tests; tests/e2e/full-flow.spec.ts if assertions shift)
+- acceptance: with late join disabled (config env, e.g. ALLOW_LATE_JOIN=false, wired into QrCoordinator and admission): QR hides once a session leaves lobby (qr_hidden) AND admission rejects NEW participant joins during active phases with a distinct rejection code the phone renders ("show in progress — wait for the next round"); existing-lease reconnects are still honored mid-session (a participant whose phone slept must get back in); joins re-open the moment the engine returns to idle/lobby; STEP-012 integration late-join test and any affected e2e updated to the new policy
+- verify: focused admission/engine/qr suites + full server suite + e2e
+- reviewer: cross (other agent)
+- notes: Filed 2026-07-12 from the STEP-000 group (a) decisions: director chose LOBBY-ONLY late join. Currently allowLateJoin exists only as an unwired QrCoordinator option (defaults to allowing late join), and even with the QR hidden a grant within its 120 s validity can still join mid-session — QR hiding alone does not enforce the policy; admission must gate new joins by engine lifecycle. Distinguish new-join (reject during active) from lease-reconnect (allow). Greedy queue — either lane may claim.
