@@ -41,8 +41,8 @@ quota outage, the owner may proceed to dependent steps at risk (note
 "proceeding at risk pending review"); when credits return, review-triggered
 fixes take priority over new steps.
 
-**Tiering re-amended 2026-07-12 (user direction; supersedes the Sonnet routing
-above, pending codex ACK).** The claude lane no longer spawns Sonnet subagents —
+**Tiering re-amended 2026-07-12 (user direction; codex ACK 2026-07-13;
+supersedes the Sonnet routing above).** The claude lane no longer spawns Sonnet subagents —
 codex has the larger credit budget. New routing: simple/medium implementation
 work defaults to codex ownership regardless of historical slices. Reviews:
 fable (frontier claude) reviews ONLY steps that are complex with high failure
@@ -589,10 +589,18 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - reviewer: cross (other agent)
 - notes: Filed 2026-07-12 from the STEP-000 group (a) decisions: director chose LOBBY-ONLY late join. Currently allowLateJoin exists only as an unwired QrCoordinator option (defaults to allowing late join), and even with the QR hidden a grant within its 120 s validity can still join mid-session — QR hiding alone does not enforce the policy; admission must gate new joins by engine lifecycle. Distinguish new-join (reject during active) from lease-reconnect (allow). Greedy queue — either lane may claim.
 
-## Show Studio slice (decomposed 2026-07-12 by claude from docs/show-studio-implementation-plan.md; AWAITING CODEX DECOMPOSITION REVIEW before implementation starts)
+## Show Studio slice (decomposed 2026-07-12 by claude from docs/show-studio-implementation-plan.md; codex CHANGES REQUIRED 2026-07-13; ALL FIVE AMENDMENT GROUPS APPLIED by claude 2026-07-13 — codex re-verifies at first claim, then implementation may start with STEP-036/037)
 
 Source plan: docs/show-studio-implementation-plan.md (user/director-authored, reviewed by claude with amendments below).
 Claude's plan amendments folded into the steps: (1) server engine/vote logic does not import into a browser — pure resolution math must be extracted to packages/shared first (STEP-037) with parity tests; (2) Zod .parse() strips unknown keys — round-trip fidelity needs .passthrough()/raw-carry handling decided in Phase A (STEP-036); (3) media manifest has no durations — Studio computes duration from local files via <video> element and only *suggests* expectedDurationMs; (4) no "allow-skip" on video nodes (runtime has no such field); (5) STEP-000 group (a) decisions (60 s duration, freezeMs 5000, showLiveCounts true, countedStatuses valid+stale+disconnected) are the Studio's new-question defaults. V1 TRIM: multi-participant drag simulation (plan §12 third mode) is deferred post-content-lock (STEP-044); outcome-shortcut preview ships in v1. Studio is NOT launch-blocking: production content may land via hand-authored JSON in parallel; STEP-036's round-trip fixtures then adopt it.
+
+**Codex decomposition review 2026-07-13 — CHANGES REQUIRED.** The five claude amendments and the explicit v1 trim are sound, and no Show Studio file is double-reserved by a currently in-progress step (STEP-023 is done; STEP-035 is todo and only conditionally names an existing e2e spec). Do not implement this slice until the following are amended:
+
+1. STEP-037 does not yet identify the complete browser-facing contract needed by STEP-042/044. The current server resolver accepts server-local `FinalVoteSnapshot`/`PositionVote` types, returns only quadrant counts/winner/target, duplicates filtering in `liveStatus()`, and keeps status classification (`disconnected` before `never-moved`, heartbeat staleness, coordinate/null rules) private to `VoteEngine`. Define shared browser-neutral input/output types and pure helpers for status materialization, counted/excluded classification and totals, live/final quadrant counting, and fixed/plurality resolution; preserve the existing fixed-transition rule (all positioned votes are counted regardless of status). Have both server final resolution and live counts consume them, with parity vectors covering every status, null positions, boundaries, fixed, q1-q4, tie, and empty. This is required for STEP-042's promised individual records and counted/excluded totals and STEP-044's stale/disconnect controls.
+2. STEP-038 is not a simple scaffold: it combines home UI, IndexedDB/revision recovery, graph rendering, adapter integration, and the *final* §14 deployment package. The final package cannot truthfully execute required full diagnostics and branch-simulation smoke tests before STEP-041/042. Split the scaffold/draft-store/basic import-export shell from final deployment export, or move final package assembly/gating to a step depending on both STEP-041 and STEP-042. STEP-042 must depend on STEP-041 because plan §8 requires full validation before preview. Record whether preview reuses real display components as plan §12 requests; if direct app imports are unsuitable, add an explicit shared-rendering extraction or document/test the intentional preview adapter boundary.
+3. Add hidden tooling reservations and acceptance: STEP-038 must reserve `pnpm-lock.yaml` (and any root config/script actually changed) for `@xyflow/react` and Studio dependencies. STEP-043 cannot reuse STEP-023 unchanged: its harness only starts the installation server and assumes prebuilt mounted clients, so reserve/update `tests/e2e/helpers/**`, `tests/e2e/playwright.config.ts`, and relevant package scripts/config to start the local-only Studio Vite app. Include the Phase F keyboard-navigation and large-graph performance checks, currently missing without an approved trim.
+4. Normalize reviewer assignments to the ACKed tiering rule and no-self-approval invariant. STEP-039 currently says owner/reviewer codex while its note says claude; STEP-040/041/042 assign routine claude reviews even though the new rule says codex-authored low-risk work self-verifies and fable reviews only enumerated high-failure classes; STEP-043 `reviewer: cross (both)` would include codex approving its own work; STEP-044's reviewer is unsafe until its owner is chosen. Keep fable/claude review for STEP-036 and STEP-037 as high-failure semantic/resolution work, use `none` for genuinely low-risk codex work, and assign only the other lane wherever cross-review is actually required.
+5. Make ownership/tiering follow the re-amendment after splitting: leave high-failure compatibility/resolution work complex; do not label the present overloaded STEP-038 simple. Also make STEP-043's “all §18 rows” auditable by explicitly listing any v1 exclusions (only multi-participant simulation is presently approved as deferred) and by checking the final export's required validation acknowledgement, reproducible/versioned metadata, and branch-smoke gating.
 
 ### STEP-036: Studio Phase A — compatibility audit + adapter round-trip core
 - status: todo
@@ -611,7 +619,7 @@ Claude's plan amendments folded into the steps: (1) server engine/vote logic doe
 - tier: complex
 - depends-on: STEP-008
 - files: packages/shared/** (resolution module), apps/server/src/votes/** (consume shared), tests both sides
-- acceptance: snapshot→status-filter→quadrant-count→winner/tie/empty resolution math lives in packages/shared as pure functions (no ws/node deps, browser-importable); server vote engine consumes the shared module (no behavior change — existing vote-engine tests stay green unmodified as the parity oracle); shared module gets its own unit tests incl. boundary convention via quadrantOf
+- acceptance: (expanded per codex decomposition review point 1) packages/shared gains browser-neutral input/output types plus pure helpers covering the COMPLETE resolution contract: status materialization (disconnected-before-never-moved precedence, heartbeat staleness, coordinate/null rules — currently private to VoteEngine), counted/excluded classification AND totals, live quadrant counting (currently duplicated in liveStatus()), final quadrant counting, and fixed/plurality resolution — preserving the existing fixed-transition rule that all positioned votes count regardless of status; BOTH server final resolution and server live counts consume the shared helpers (no behavior change — existing vote-engine tests stay green unmodified as the parity oracle); parity vectors cover every status, null positions, boundary coordinates (via quadrantOf), fixed, q1-q4 winners, tie, and empty; individual snapshot records and counted/excluded totals exposed in shapes sufficient for STEP-042 preview results and STEP-044 stale/disconnect controls
 - verify: full server suite green; packages/shared tests green; pnpm -r typecheck
 - reviewer: claude
 - notes: fable review (vote-resolution correctness is on the launch-critical path; a drift between Studio preview and venue resolution would be director-visible). Prerequisite for STEP-042 preview.
@@ -621,11 +629,11 @@ Claude's plan amendments folded into the steps: (1) server engine/vote logic doe
 - owner: codex
 - tier: simple
 - depends-on: STEP-036
-- files: apps/studio/** (new workspace: React+Vite+@xyflow/react), pnpm-workspace glob already covers apps/*
-- acceptance: plan §17-B — apps/studio boots; project home (new/import/open-recent/duplicate/delete-with-confirm/export-backup); IndexedDB draft autosave with debounce + saving/saved/error status + bounded revision history (~20) + corrupt-draft recovery to last good save; import runtime JSON or studio package via studio-adapter; export produces the plan §14 package (scenario.json, media-manifest.json, .studio.json, validation-report.json, README.txt); imported dev.json renders as an auto-laid-out basic graph and re-exports round-trip-clean; layout/viewport persisted in .studio.json only — never leaks into runtime JSON
+- files: apps/studio/** (new workspace: React+Vite+@xyflow/react), pnpm-lock.yaml (Studio deps), root config/scripts only if actually touched
+- acceptance: (scope split per codex review point 2 — final §14 deployment package moved to STEP-045) plan §17-B — apps/studio boots; project home (new/import/open-recent/duplicate/delete-with-confirm/export-backup); IndexedDB draft autosave with debounce + saving/saved/error status + bounded revision history (~20) + corrupt-draft recovery to last good save; import runtime JSON or studio backup via studio-adapter; BASIC export of scenario.json + media-manifest.json + .studio.json only (no deployment gating yet — that is STEP-045); imported dev.json renders as an auto-laid-out basic graph and re-exports round-trip-clean; layout/viewport persisted in .studio.json only — never leaks into runtime JSON
 - verify: pnpm --filter studio test + typecheck + build; manual import→export of dev.json byte-compared after normalization
 - reviewer: none
-- notes: self-verified per re-amended tiering (scaffold risk is low; round-trip guarantees are enforced by STEP-036's adapter tests). NOT exposed as a production route (plan §13) — local/dev serving only.
+- notes: self-verified per re-amended tiering (scaffold risk is low; round-trip guarantees are enforced by STEP-036's adapter tests). Reserves pnpm-lock.yaml for @xyflow/react + Studio deps (codex review point 3). NOT exposed as a production route (plan §13) — local/dev serving only.
 
 ### STEP-039: Studio Phase C1 — graph canvas, nodes, typed handles, edge rules
 - status: todo
@@ -635,8 +643,8 @@ Claude's plan amendments folded into the steps: (1) server engine/vote logic doe
 - files: apps/studio/src/canvas/**, node components
 - acceptance: plan §7/§8 — node palette (entry marker, idle, video, position-question; NO allow-skip field); question nodes switch between one `next` handle (fixed) and six handles q1/q2/q3/q4/tie/empty (quadrant-plurality) with the runtime quadrant placement rendered exactly (q2 TL, q1 TR, q3 BL, q4 BR; center→q4 convention displayed, never reinvented); edge-time structural validation (single entry edge, no dangling targets, handles may share a target); deleting nodes cleans edges; editor-only nodes compile away (entry marker → entryPhaseId; end → existing idle target)
 - verify: pnpm --filter studio test (canvas/edge-rule units) + typecheck + build
-- reviewer: codex
-- notes: codex self-review NOT allowed here (complex tier + codex-authored) — per re-amended tiering this is NOT high-failure-risk (misrendering is director-visible, not silent corruption), so review = claude lane but routine depth. If codex flags uncertainty, escalate to fable.
+- reviewer: none
+- notes: (reviewer normalized per codex review point 4) codex-authored, not in the enumerated high-failure classes (misrendering is director-visible, not silent corruption) → self-verified. Escalate to fable only if codex flags uncertainty about compile-affecting behavior.
 
 ### STEP-040: Studio Phase C2 — properties inspector, defaults, undo/redo
 - status: todo
@@ -646,8 +654,8 @@ Claude's plan amendments folded into the steps: (1) server engine/vote logic doe
 - files: apps/studio/src/inspector/**, undo/redo store
 - acceptance: plan §9 — typed forms from the node model; immediate draft application; unique runtime-ID validation; destructive type changes confirm + preserve old connections in undo history but exclude from compile; inline field errors; plain-language labels with runtime names as secondary text; read-only compiled-JSON inspector; session undo/redo; NEW-QUESTION DEFAULTS = STEP-000 group (a): durationMs 60000, freezeMs 5000, showLiveCounts true, countedStatuses ["valid","stale","disconnected"]; a complete show can be authored without touching JSON (plan §17-C exit)
 - verify: pnpm --filter studio test + typecheck; authoring walkthrough recorded in notes
-- reviewer: claude
-- notes: routine claude review (form correctness feeds compile, but the adapter validator backstops).
+- reviewer: none
+- notes: (reviewer normalized per codex review point 4) self-verified — form correctness feeds compile but the STEP-036 adapter validator backstops every export. Escalate to fable if uncertainty.
 
 ### STEP-041: Studio Phase D — media library + diagnostics panel
 - status: todo
@@ -657,30 +665,30 @@ Claude's plan amendments folded into the steps: (1) server engine/vote logic doe
 - files: apps/studio/src/media/**, diagnostics/**
 - acceptance: plan §10/§11 — manifest import/list (id, file, bytes, hash, referencing nodes); local-file inspection computes size + SHA-256 in-browser and duration via <video> (suggests expectedDurationMs — manifest itself carries no durations); missing/unused/duplicate-hash detection; DISTINCT-file 2 GiB budget arithmetic incl. per-branch view; error/warning/info diagnostics with focus-node action; all plan §11 required errors block export, required warnings need acknowledgement (incl. abandoned-solo-reaches-unreviewed-empty-target and live-counts-influence warnings); invalid shows cannot be exported (plan §17-D exit)
 - verify: pnpm --filter studio test + typecheck; fixture shows exercising every §11 error/warning
-- reviewer: claude
-- notes: budget arithmetic and export blocking are content-lock safety — routine claude review, escalate if uncertain.
+- reviewer: none
+- notes: (reviewer normalized per codex review point 4) self-verified; the 2 GiB budget arithmetic and export-blocking behavior get an independent check at STEP-045 (deployment gating) and STEP-043 (e2e). Escalate to fable if uncertainty.
 
 ### STEP-042: Studio Phase E (v1 trim) — outcome-shortcut preview
 - status: todo
 - owner: codex
 - tier: complex
-- depends-on: STEP-037, STEP-040
+- depends-on: STEP-037, STEP-040, STEP-041
 - files: apps/studio/src/preview/**, packages/studio-simulator/** if warranted
-- acceptance: plan §12 modes 1-2 (manual walkthrough + outcome shortcuts; multi-participant drag sim EXPLICITLY deferred to STEP-044): start from entry, step video placeholders, advance timers manually, force q1-q4/tie/empty, include/exclude stale+disconnected, abandoned-solo preset; resolution computed by the packages/shared module from STEP-037 (never a reimplementation); results show counted/excluded totals, quadrant counts, winner, resolved target, freeze interval; every branch of a show reachable in preview
+- acceptance: plan §12 modes 1-2 (manual walkthrough + outcome shortcuts; multi-participant drag sim EXPLICITLY deferred to STEP-044): start from entry, step video placeholders, advance timers manually, force q1-q4/tie/empty, include/exclude stale+disconnected, abandoned-solo preset; full validation runs before preview (plan §8 — hence the STEP-041 dependency, codex review point 2); resolution computed by the packages/shared module from STEP-037 (never a reimplementation); results show individual snapshot records, counted/excluded totals, quadrant counts, winner, resolved target, freeze interval; every branch of a show reachable in preview; DECISION RECORDED in notes on plan §12 display-component reuse: either preview imports real display components (QuadrantOverlay etc.) or the intentional preview-adapter boundary is documented and tested (codex review point 2)
 - verify: pnpm --filter studio test + typecheck; preview-vs-server parity fixture (same snapshot in → same winner out as vote-engine test vectors)
-- reviewer: claude
-- notes: fable review ONLY for the parity fixture if codex flags divergence; otherwise routine.
+- reviewer: none
+- notes: (reviewer normalized per codex review point 4) self-verified EXCEPT the parity fixture: any preview-vs-server divergence, or any uncertainty in the parity vectors, escalates to fable (vote-correctness class).
 
 ### STEP-043: Studio Phase F (v1) — e2e flows, round-trip regression, guide
 - status: todo
 - owner: codex
 - tier: complex
-- depends-on: STEP-041, STEP-042
-- files: tests/e2e/studio-*.spec.ts (reuse STEP-023 harness), docs/studio-guide.md, example show project
-- acceptance: plan §17-F trimmed — Playwright: import→edit→validate→preview→export flow; round-trip regression over all fixtures; corrupt-draft recovery; export package contents verified; curator user guide + example show; plan §18 acceptance rows for v1 all checked and recorded
+- depends-on: STEP-041, STEP-042, STEP-045
+- files: tests/e2e/studio-*.spec.ts, tests/e2e/helpers/** (Studio server helper), tests/e2e/playwright.config.ts, package.json scripts if needed, docs/studio-guide.md, example show project
+- acceptance: plan §17-F — Playwright: import→edit→validate→preview→export flow; round-trip regression over all fixtures; corrupt-draft recovery; export package contents verified incl. STEP-045 gating (validation acknowledgement required, reproducible/versioned README metadata, branch-smoke gate); keyboard navigation and large-graph performance checks (codex review point 3 — no approved trim covers dropping them); curator user guide + example show; plan §18 acceptance rows checked and recorded with EXPLICIT v1 exclusions listed (only multi-participant simulation is approved deferred). Harness note: STEP-023's helpers only spawn the installation server — this step extends them to launch the local Studio Vite app (reservation above, codex review point 3)
 - verify: pnpm test:e2e (studio specs) + full suite
-- reviewer: cross (both)
-- notes: final v1 gate for the Studio slice.
+- reviewer: claude
+- notes: final v1 gate for the Studio slice. Reviewer is the claude lane alone (codex authored the slice — "cross (both)" would have codex approving its own work; codex review point 4).
 
 ### STEP-044: Studio post-v1 — multi-participant drag simulation
 - status: todo
@@ -690,5 +698,16 @@ Claude's plan amendments folded into the steps: (1) server engine/vote logic doe
 - files: apps/studio/src/preview/**
 - acceptance: plan §12 mode 3 — 1-30 synthetic participants, draggable cursors on the X/Y field, randomize, disconnect/stale marking, live quadrant counts, resolved-target confirmation
 - verify: studio tests + e2e addition
-- reviewer: codex
+- reviewer: cross (the non-owner lane, assigned at claim time — codex review point 4)
 - notes: DEFERRED post content lock by v1 trim decision — do not claim before STEP-043 is done and production content exists; not launch-blocking. Plan §16 publishing phase is NOT decomposed (post-v1, needs auth/roles — new decomposition when wanted).
+
+### STEP-045: Studio deployment-export assembly + gating
+- status: todo
+- owner: codex
+- tier: complex
+- depends-on: STEP-041, STEP-042
+- files: apps/studio/src/export/**, packages/studio-adapter/** (export packaging)
+- acceptance: (split from STEP-038 per codex review point 2) plan §14 full flow — "Export for deployment" runs: validate graph → compile via studio-adapter → existing runtime validator → manifest+2 GiB budget validation → branch-simulation smoke tests (every branch resolvable via the STEP-037 shared resolution) → versioned export package (scenario.json, media-manifest.json, .studio.json, validation-report.json, README.txt with timestamp/studio build/runtime schema version/scenario version/validation result/media total/known warnings); unacknowledged required warnings block export; exports are reproducible and versioned (plan §19); a show rejected by the runtime validator can never produce a package
+- verify: pnpm --filter studio test + typecheck; export-package fixture assertions incl. blocked-export cases
+- reviewer: claude
+- notes: export gating is content-lock safety (a bad package here reaches the venue pipeline) — claude-lane review per the high-failure classes.
