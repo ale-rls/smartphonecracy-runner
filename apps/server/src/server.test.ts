@@ -89,6 +89,30 @@ describe("HTTP readiness and bundles", () => {
     expect(response.body).not.toContain("idle");
   });
 
+  it("serves the media manifest and immutable media without changing readiness", async () => {
+    const runtime = await buildServer({ config: await fixture() });
+    runtimes.push(runtime);
+
+    const manifest = await runtime.app.inject({ url: "/media-manifest.json" });
+    expect(manifest.statusCode).toBe(200);
+    expect(manifest.headers["content-type"]).toContain("application/json");
+    expect(manifest.headers["cache-control"]).toBe("no-cache");
+    expect(manifest.json()).toEqual({ files: [{ src: "intro.mp4", bytes: 5, hash: "test" }] });
+
+    const media = await runtime.app.inject({ url: "/media/intro.mp4" });
+    expect(media.statusCode).toBe(200);
+    expect(media.body).toBe("video");
+    expect(media.headers["content-type"]).toBe("video/mp4");
+    expect(media.headers["cache-control"]).toBe("public, max-age=31536000, immutable");
+
+    expect((await runtime.app.inject({ url: "/media/unknown.mp4" })).statusCode).toBe(404);
+    expect((await runtime.app.inject({ url: "/media/%2e%2e/scenario.json" })).statusCode).toBe(404);
+    expect((await runtime.app.inject({ url: "/readyz" })).json()).toEqual({
+      ok: true,
+      scenarioVersion: "test-1",
+    });
+  });
+
   it("stays live but fails readiness for an invalid scenario", async () => {
     const runtime = await buildServer({ config: await fixture(true) });
     runtimes.push(runtime);
