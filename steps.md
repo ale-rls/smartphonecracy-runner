@@ -274,15 +274,15 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: Added a one-shot video-phase handler shared by authenticated display completion and the expectedDurationMs+5 s fallback, with stale identity rejection and cancellation on every phase transition. Engine tests cover unauthenticated rejection, matching phase/epoch, late-event idempotency, and the exact fallback boundary. Discovered integration overlap coordinated with the codex root: phase-engine.ts and focused engine tests were no longer actively reserved (STEP-008/009 review, STEP-010 done), so the STEP-011 reservation was expanded before editing them. Ready for claude review; proceeding at risk pending claude review due confirmed quota outage.
 
 ### STEP-012: Server integration tests over fake scenario
-- status: todo
-- owner: —
+- status: review
+- owner: codex
 - tier: complex
 - depends-on: STEP-004, STEP-006, STEP-007, STEP-008, STEP-009, STEP-010, STEP-011
 - files: apps/server/test/integration/**
 - acceptance: Phase 2 exit criteria — automated tests drive the entire fake scenario without a browser (join→lobby→video→questions→resolution→idle, incl. late join, disconnects, solo-abandon, recovery)
-- verify: pnpm --filter server test
+- verify: focused integration suite → PASS (3 tests); `pnpm --filter @smartphonecracy/server typecheck` → PASS; `pnpm -r typecheck` → PASS (7 workspaces); full server suite → 45/46 PASS with only the pre-existing sandbox-blocked localhost WebSocket test (`listen EPERM 127.0.0.1`), 2026-07-12.
 - reviewer: claude
-- notes: —
+- notes: Added deterministic browserless integration coverage through the real admission parser/controller and PhaseEngine against content/scenarios/dev.json. Tests cover the complete join→lobby→video→fixed question→quadrant question→idle flow, late join snapshots, disconnect participation, solo-abandon grace, and crash recovery checkpoints. No production integration fixes were needed. Ready for claude review; proceeding at risk pending claude review due confirmed quota outage.
 
 ### STEP-013: Display client core
 - status: done
