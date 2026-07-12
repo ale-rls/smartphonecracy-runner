@@ -4,5 +4,10 @@ import { defineConfig } from "vite";
 export default defineConfig({
   // Served by the server under /phone/ (registerBundleRoutes).
   base: "/phone/",
+  // Baked into the bundle so join carries the real build version
+  // (plan §7 reload-on-mismatch); falls back to "0.0.0-dev" in App.tsx.
+  define: {
+    __BUILD_VERSION__: JSON.stringify(process.env.BUILD_VERSION ?? "0.0.0-dev"),
+  },
   plugins: [react()],
 });
