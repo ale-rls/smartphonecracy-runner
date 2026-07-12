@@ -1,5 +1,7 @@
 import Fastify, { type FastifyInstance } from "fastify";
+import type { IncomingMessage } from "node:http";
 import { WebSocketServer, type WebSocket } from "ws";
+import { AdmissionController } from "./admission/index.js";
 import { loadConfig, type ServerConfig } from "./config.js";
 import { loadScenarioReadiness, type ScenarioReadiness } from "./readiness.js";
 import { registerBundleRoutes } from "./static.js";
@@ -7,6 +9,7 @@ import { registerBundleRoutes } from "./static.js";
 export type BuildServerOptions = {
   config?: ServerConfig;
   onWebSocketConnection?: (socket: WebSocket) => void;
+  admission?: AdmissionController;
 };
 
 export type ServerRuntime = {
@@ -14,6 +17,7 @@ export type ServerRuntime = {
   config: ServerConfig;
   readiness: ScenarioReadiness;
   webSockets: WebSocketServer;
+  admission: AdmissionController;
   startedAt: number;
 };
 
@@ -23,6 +27,11 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Ser
   const startedAt = Date.now();
   const app = Fastify({ logger: config.nodeEnv !== "test" });
   const webSockets = new WebSocketServer({ noServer: true });
+  const admission = options.admission ?? new AdmissionController({
+    installationId: config.installationId,
+    roomId: config.roomId,
+    secret: config.joinGrantSecret,
+  });
 
   app.get("/healthz", async () => ({ ok: true }));
   app.get("/readyz", async (_request, reply) => {
@@ -56,7 +65,10 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Ser
       webSockets.emit("connection", webSocket, request);
     });
   });
-  webSockets.on("connection", (socket) => options.onWebSocketConnection?.(socket));
+  webSockets.on("connection", (socket, request) => {
+    admission.handleConnection(socket, request as IncomingMessage);
+    options.onWebSocketConnection?.(socket);
+  });
 
   // Upgraded sockets are not managed by Fastify's HTTP connection tracker.
   // Close them before Fastify waits for the underlying server to drain.
@@ -65,5 +77,5 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Ser
     await new Promise<void>((resolve) => webSockets.close(() => resolve()));
   });
 
-  return { app, config, readiness, webSockets, startedAt };
+  return { app, config, readiness, webSockets, admission, startedAt };
 }

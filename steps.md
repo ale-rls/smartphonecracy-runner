@@ -173,15 +173,15 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
   APPROVED by claude review lane (sonnet) 2026-07-12: re-verified `pnpm --filter server typecheck/test` and `pnpm -r typecheck/test` (Node 22.17.0) all pass matching the notes; graceful shutdown double-close guard, sanitized /api/status, path-traversal-safe static bundle serving, and 503 invalid-scenario /readyz all check out; no socket message handling exists yet so the parseClientMessage requirement doesn't yet apply (correctly deferred to later steps). Two non-blocking FYIs left for future hardening, not blocking this step: (1) `void shutdown(...)` in index.ts doesn't catch a rejection from app.close(), a latent unhandled-rejection risk if close ever throws; (2) /readyz readiness is computed once at boot and never rechecked per request — fine for the current fixed-scenario-at-boot model, but STEP-019 admin-driven scenario reload will need an explicit recompute hook.
 
 ### STEP-006: Admission — grants, leases, registry
-- status: in-progress
+- status: review
 - owner: codex
 - tier: complex
 - depends-on: STEP-005
 - files: apps/server/src/admission/**, room registry
 - acceptance: HMAC join grants (rotation/expiry per policy), participant leases (2 h, installation-scoped, same-lease socket replacement), 30-cap with room_full + lease reconnect at capacity, per-IP rate limit (memory only), identity/color assignment
-- verify: pnpm --filter server test (admission suite)
+- verify: `pnpm --filter server typecheck` → PASS; `pnpm --filter server exec vitest run src/admission/admission.test.ts` → PASS (5 tests); `pnpm -r typecheck` → PASS (7 workspaces), 2026-07-12. Full `pnpm --filter server test` was attempted but the sandbox rejects its pre-existing localhost WebSocket test with `listen EPERM: operation not permitted 127.0.0.1`; rerun outside the restricted sandbox during Fable review.
 - reviewer: claude
-- notes: Claimed by codex 2026-07-12. Fable review required for grant/lease crypto. Implementing HMAC grants and leases, in-memory registry/rate limiting, and parsed WebSocket admission handling within the reserved server slice.
+- notes: Ready for Fable review. Added HMAC-SHA256, timing-safe, installation/room-scoped rotating join grants with 120-second expiry; signed 2-hour installation-scoped participant leases; in-memory participant registry with stable identity/color assignment, same-lease socket replacement, 30-participant connected cap, lease reconnect at capacity, and expiry pruning; process-local per-IP join throttling; and WebSocket handling that runs every raw payload through `parseClientMessage`, emits identity/rejection/pong messages, and closes malformed or duplicate joins. Added config secret wiring and server boundary integration. Fable should specifically review token parsing, expiry boundaries, scope checks, and replay/capacity semantics.
 
 ### STEP-007: Phase engine
 - status: todo

@@ -1,0 +1,46 @@
+export type RateLimitResult = {
+  allowed: boolean;
+  retryAfterMs?: number;
+};
+
+type Bucket = { windowStartedAt: number; attempts: number };
+
+/** Process-local abuse control. IPs are never used as participant identity or persisted. */
+export class InMemoryIpRateLimiter {
+  private readonly buckets = new Map<string, Bucket>();
+
+  constructor(
+    private readonly options: { maxAttempts: number; windowMs: number } = {
+      maxAttempts: 30,
+      windowMs: 60_000,
+    },
+  ) {
+    if (options.maxAttempts < 1 || options.windowMs < 1) {
+      throw new Error("rate limiter options must be positive");
+    }
+  }
+
+  consume(ip: string, now = Date.now()): RateLimitResult {
+    const current = this.buckets.get(ip);
+    if (!current || now - current.windowStartedAt >= this.options.windowMs) {
+      this.buckets.set(ip, { windowStartedAt: now, attempts: 1 });
+      return { allowed: true };
+    }
+    if (current.attempts >= this.options.maxAttempts) {
+      return {
+        allowed: false,
+        retryAfterMs: Math.max(1, current.windowStartedAt + this.options.windowMs - now),
+      };
+    }
+    current.attempts += 1;
+    return { allowed: true };
+  }
+
+  get size(): number {
+    return this.buckets.size;
+  }
+
+  clear(): void {
+    this.buckets.clear();
+  }
+}

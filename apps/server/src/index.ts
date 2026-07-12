@@ -5,6 +5,7 @@ import { buildServer } from "./server.js";
 export * from "./config.js";
 export * from "./readiness.js";
 export * from "./server.js";
+export * from "./admission/index.js";
 
 export async function startServer(): Promise<void> {
   const config = loadConfig();
