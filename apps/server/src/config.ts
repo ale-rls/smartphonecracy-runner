@@ -13,6 +13,7 @@ const envSchema = z.object({
   ROOM_ID: z.string().min(1).default("main"),
   DISPLAY_TOKEN: z.string().min(1).default("dev-display-token"),
   JOIN_GRANT_SECRET: z.string().min(16).default("dev-join-grant-secret-please-change"),
+  TRUST_PROXY: z.enum(["true", "false"]).default("false"),
   PHONE_JOIN_BASE_URL: z.string().url().default("http://localhost:5174/"),
   SCENARIO_PATH: z.string().min(1).optional(),
   MEDIA_MANIFEST_PATH: z.string().min(1).optional(),
@@ -31,6 +32,7 @@ export type ServerConfig = {
   roomId: string;
   displayToken: string;
   joinGrantSecret: string;
+  trustProxy: boolean;
   phoneJoinBaseUrl: string;
   scenarioPath: string;
   mediaManifestPath: string;
@@ -71,6 +73,7 @@ export function loadConfig(
     roomId: value.ROOM_ID,
     displayToken: value.DISPLAY_TOKEN,
     joinGrantSecret: value.JOIN_GRANT_SECRET,
+    trustProxy: value.TRUST_PROXY === "true",
     phoneJoinBaseUrl: value.PHONE_JOIN_BASE_URL,
     scenarioPath: fromRoot(value.SCENARIO_PATH, "content/scenarios/dev.json"),
     mediaManifestPath: fromRoot(value.MEDIA_MANIFEST_PATH, "content/media-manifest.json"),

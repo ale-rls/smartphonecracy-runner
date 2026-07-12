@@ -21,6 +21,7 @@ export class InMemoryIpRateLimiter {
   }
 
   consume(ip: string, now = Date.now()): RateLimitResult {
+    this.pruneExpired(now);
     const current = this.buckets.get(ip);
     if (!current || now - current.windowStartedAt >= this.options.windowMs) {
       this.buckets.set(ip, { windowStartedAt: now, attempts: 1 });
@@ -38,6 +39,12 @@ export class InMemoryIpRateLimiter {
 
   get size(): number {
     return this.buckets.size;
+  }
+
+  pruneExpired(now = Date.now()): void {
+    for (const [ip, bucket] of this.buckets) {
+      if (now - bucket.windowStartedAt >= this.options.windowMs) this.buckets.delete(ip);
+    }
   }
 
   clear(): void {

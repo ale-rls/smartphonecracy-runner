@@ -26,14 +26,18 @@ export type AdmissionControllerOptions = {
   sessionId?: string | (() => string);
   now?: () => number;
   rateLimiter?: InMemoryIpRateLimiter;
+  trustProxy?: boolean;
+  disconnectGraceMs?: number;
 };
 
 type SocketState = { joined: boolean };
 
-function requestIp(request: IncomingMessage): string {
+function requestIp(request: IncomingMessage, trustProxy: boolean): string {
   const forwarded = request.headers["x-forwarded-for"];
-  if (typeof forwarded === "string" && forwarded.length > 0) return forwarded.split(",")[0]!.trim();
-  if (Array.isArray(forwarded) && forwarded[0]) return forwarded[0];
+  if (trustProxy) {
+    if (typeof forwarded === "string" && forwarded.length > 0) return forwarded.split(",")[0]!.trim();
+    if (Array.isArray(forwarded) && forwarded[0]) return forwarded[0];
+  }
   return request.socket.remoteAddress ?? "unknown";
 }
 
@@ -56,7 +60,10 @@ export class AdmissionController {
       policy: options.policy ?? DEFAULT_INSTALLATION_POLICY,
     };
     this.now = options.now ?? (() => Date.now());
-    this.registry = new ParticipantRegistry(this.options.policy.maxParticipants);
+    this.registry = new ParticipantRegistry(
+      this.options.policy.maxParticipants,
+      options.disconnectGraceMs,
+    );
     this.rateLimiter = options.rateLimiter ?? new InMemoryIpRateLimiter();
   }
 
@@ -75,8 +82,8 @@ export class AdmissionController {
     socket.on("message", (raw: RawData) => {
       void this.handleRaw(socket, request, asBytes(raw));
     });
-    socket.on("close", () => this.registry.releaseSocket(socket));
-    socket.on("error", () => this.registry.releaseSocket(socket));
+    socket.on("close", () => this.registry.releaseSocket(socket, this.now()));
+    socket.on("error", () => this.registry.releaseSocket(socket, this.now()));
   }
 
   private async handleRaw(socket: WebSocket, request: IncomingMessage, raw: unknown): Promise<void> {
@@ -101,7 +108,10 @@ export class AdmissionController {
       this.close(socket, 1008, "socket already joined");
       return;
     }
-    const rate = this.rateLimiter.consume(requestIp(request), this.now());
+    const rate = this.rateLimiter.consume(
+      requestIp(request, this.options.trustProxy ?? false),
+      this.now(),
+    );
     if (!rate.allowed) {
       this.send(socket, {
         t: "join_rejected",
@@ -135,7 +145,7 @@ export class AdmissionController {
     const knownLease = parsed.message.participantLease && lease
       ? this.registry.get(parsed.message.participantLease)
       : undefined;
-    if (!knownLease && !this.registry.canAdmitNew()) {
+    if (!knownLease && !this.registry.canAdmitNew(now)) {
       this.send(socket, { t: "join_rejected", v: 1, reason: "room_full" });
       return;
     }
