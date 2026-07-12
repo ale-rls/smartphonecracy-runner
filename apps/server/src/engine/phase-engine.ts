@@ -193,7 +193,11 @@ export class PhaseEngine {
           this.abortToIdle("lobby-precondition-lost", now);
         }
       }
-      return;
+      if (this.lifecycle === "lobby" && this.interactiveIdleTimedOut(now)) {
+        this.abortToIdle("interactive-idle-timeout", now);
+        return;
+      }
+      if (this.lifecycle === "lobby") return;
     }
 
     if (this.sessionStartedAt !== null && now - this.sessionStartedAt >= this.policy.maxSessionDurationMs) {
@@ -202,11 +206,7 @@ export class PhaseEngine {
     }
 
     const phase = this.currentPhase();
-    if (
-      phase.kind === "position-question" &&
-      this.lastInputAt !== null &&
-      now - this.lastInputAt >= this.policy.interactiveIdleTimeoutMs
-    ) {
+    if (this.interactiveIdleTimedOut(now)) {
       this.abortToIdle("interactive-idle-timeout", now);
       return;
     }
@@ -357,7 +357,7 @@ export class PhaseEngine {
     this.lifecycle = "active";
     this.sessionId = this.sessionIdFactory();
     this.sessionStartedAt = now;
-    this.lastInputAt = now;
+    this.lastInputAt = null;
     this.noParticipantSince = null;
     this.enterPhase(this.scenario.entryPhaseId, now, "session-start");
   }
@@ -386,7 +386,7 @@ export class PhaseEngine {
       this.lastInputAt = null;
     } else {
       this.lifecycle = "active";
-      this.lastInputAt ??= now;
+      this.lastInputAt = phase.kind === "position-question" ? now : null;
     }
     this.transition(reason);
   }
@@ -423,6 +423,11 @@ export class PhaseEngine {
 
   private currentPhase(): Phase {
     return this.requirePhase(this.phaseId);
+  }
+
+  private interactiveIdleTimedOut(now: number): boolean {
+    const interactive = this.lifecycle === "lobby" || this.currentPhase().kind === "position-question";
+    return interactive && this.lastInputAt !== null && now - this.lastInputAt >= this.policy.interactiveIdleTimeoutMs;
   }
 
   private requirePhase(id: string): Phase {

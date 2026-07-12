@@ -47,11 +47,18 @@ const scenario = scenarioSchema.parse({
   ],
 });
 
-function setup(options: { now: () => number; checkpoints?: PhaseCheckpoint[]; maxSessionDurationMs?: number } ) {
+function setup(options: {
+  now: () => number;
+  checkpoints?: PhaseCheckpoint[];
+  lobbyCountdownMs?: number;
+  interactiveIdleTimeoutMs?: number;
+  maxSessionDurationMs?: number;
+  testScenario?: typeof scenario;
+} ) {
   const registry = new ParticipantRegistry(2, 50);
   const checkpoints = options.checkpoints ?? [];
   const engine = new PhaseEngine({
-    scenario,
+    scenario: options.testScenario ?? scenario,
     registry,
     installationId: "inst-1",
     roomId: "room-1",
@@ -59,8 +66,8 @@ function setup(options: { now: () => number; checkpoints?: PhaseCheckpoint[]; ma
     now: options.now,
     sessionIdFactory: () => "session-1",
     policy: {
-      lobbyCountdownMs: 100,
-      interactiveIdleTimeoutMs: 100,
+      lobbyCountdownMs: options.lobbyCountdownMs ?? 100,
+      interactiveIdleTimeoutMs: options.interactiveIdleTimeoutMs ?? 100,
       maxSessionDurationMs: options.maxSessionDurationMs ?? 10_000,
       displayDisconnectTimeoutMs: 100,
       noParticipantGraceMs: 100,
@@ -69,6 +76,13 @@ function setup(options: { now: () => number; checkpoints?: PhaseCheckpoint[]; ma
   });
   return { engine, registry, checkpoints };
 }
+
+const longVideoScenario = scenarioSchema.parse({
+  ...scenario,
+  phases: scenario.phases.map((phase) => phase.id === "intro"
+    ? { ...phase, expectedDurationMs: 220_000 }
+    : phase),
+});
 
 function addParticipant(registry: ParticipantRegistry, socket: WebSocket, now: number, id: string): void {
   const result = registry.admit({
@@ -126,6 +140,56 @@ describe("PhaseEngine lifecycle", () => {
     expect(engine.completeVideo("session-1", "intro", epoch - 1, now)).toEqual({ ok: false, reason: "stale" });
     expect(engine.completeVideo("session-1", "intro", epoch, now)).toEqual({ ok: true });
     expect(engine.currentPhaseId).toBe("question");
+  });
+
+  it("re-anchors interactive idle after a long video phase", () => {
+    let now = 1_000;
+    const checkpoints: PhaseCheckpoint[] = [];
+    const { engine, registry } = setup({
+      now: () => now,
+      checkpoints,
+      interactiveIdleTimeoutMs: 180_000,
+      maxSessionDurationMs: 1_000_000,
+      testScenario: longVideoScenario,
+    });
+    const phone = new MockSocket();
+    const display = new MockSocket();
+    addParticipant(registry, phone as unknown as WebSocket, now, "p1");
+    engine.participantJoined(phone as unknown as WebSocket);
+    connectDisplay(engine, display as unknown as WebSocket);
+
+    now = 1_100;
+    engine.tick(now);
+    expect(engine.currentPhaseId).toBe("intro");
+
+    now = 221_100;
+    expect(engine.completeVideo("session-1", "intro", engine.currentPhaseEpoch, now)).toEqual({ ok: true });
+    engine.tick(now + 1_000);
+
+    expect(engine.lifecycleState).toBe("active");
+    expect(engine.currentPhaseId).toBe("question");
+    expect(checkpoints.at(-1)?.reason).toBe("video-complete");
+  });
+
+  it("enforces interactive idle during the lobby", () => {
+    let now = 1_000;
+    const checkpoints: PhaseCheckpoint[] = [];
+    const { engine, registry } = setup({
+      now: () => now,
+      checkpoints,
+      lobbyCountdownMs: 1_000,
+      interactiveIdleTimeoutMs: 50,
+    });
+    const phone = new MockSocket();
+    const display = new MockSocket();
+    addParticipant(registry, phone as unknown as WebSocket, now, "p1");
+    engine.participantJoined(phone as unknown as WebSocket);
+    connectDisplay(engine, display as unknown as WebSocket);
+
+    engine.tick(now + 51);
+
+    expect(engine.lifecycleState).toBe("idle");
+    expect(checkpoints.at(-1)?.reason).toBe("interactive-idle-timeout");
   });
 
   it("emits one deadline event and checkpoints transitions", () => {
