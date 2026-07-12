@@ -373,15 +373,15 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: Added strong bearer-token protection (production rejects the development token), operational health/display-heartbeat/count/session/phase status, safe start/idle/skip/restart engine controls, recent error capture, JSON/CSV session exports, durable admin-action/error audit writes, and a polling operations UI with controls and downloads. Reservation expanded before edits to config/server wiring, engine controls, and persistence seams; no active step reserved those files. Ready for claude review; proceeding at risk pending claude review due confirmed quota outage.
 
 ### STEP-020: simulate-clients load script
-- status: in-progress
+- status: done
 - owner: codex
 - tier: simple
 - depends-on: STEP-002, STEP-006, STEP-009
-- files: scripts/simulate-clients.ts, tests/load/**
+- files: scripts/simulate-clients.ts, tests/load/**, package.json
 - acceptance: 30 simulated phones join, move at 20–30 Hz, disconnect/reconnect; reports latency + drop stats
-- verify: pnpm simulate-clients --count 30 against local server
+- verify: `pnpm exec vitest run tests/load/simulate-clients.test.ts` → PASS (3 tests); standalone script TypeScript check → PASS; live `pnpm simulate-clients --count 30` against local server → PASS: 30 clients, 14,520/14,520 inputs sent (0 drops), 15 successful lease reconnects, 0 rejections, 245 cursor ticks, 2,070 latency samples (p50 3 ms, p95 7 ms, max 12 ms), 2026-07-12.
 - reviewer: none
-- notes: Claimed by codex 2026-07-12. Implementing only the reserved simulator/load-test slice; root package command wiring may be added solely to satisfy the documented verify command.
+- notes: Added a Node WebSocket load harness that acquires a real signed grant through the display protocol, joins up to 30 phones, advances video phases, moves at 25 Hz during questions, pings for RTT samples, and reconnects half the clients using leases. The default 70-second profile respects the server's 30 joins/minute per-IP abuse limit before reconnecting. Reports input send/drop, join rejection, reconnect, cursor tick, and latency percentile statistics. Self-verified; reviewer none.
 
 ### STEP-021: Deployment + CI
 - status: todo
