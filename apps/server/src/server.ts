@@ -7,7 +7,7 @@ import { loadConfig, type ServerConfig } from "./config.js";
 import { PhaseEngine } from "./engine/phase-engine.js";
 import type { InstallationPersistence } from "./persistence/index.js";
 import { loadScenarioReadiness, type ScenarioReadiness } from "./readiness.js";
-import { registerBundleRoutes } from "./static.js";
+import { registerBundleRoutes, registerMediaRoutes } from "./static.js";
 
 export type BuildServerOptions = {
   config?: ServerConfig;
@@ -102,6 +102,7 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Ser
     ...(adminData === undefined ? {} : { data: adminData }),
   });
 
+  registerMediaRoutes(app, config.mediaManifestPath, config.mediaDir);
   registerBundleRoutes(app, config.bundleDirs);
 
   app.server.on("upgrade", (request, socket, head) => {

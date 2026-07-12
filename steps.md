@@ -472,12 +472,12 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: DISCOVERED during STEP-023 harness work 2026-07-12: all three vite configs omit `base`, so built index.html references root-absolute /assets/* which registerBundleRoutes never serves (bundles are mounted at /<role>/*) — every client 404s its own JS in production serving. Display sw.js additionally caches /assets/ and registers at root scope. Claimed by claude (owner slice); STEP-023 e2e depends on this to boot real bundles. Also affects STEP-021's "container serving all bundles" acceptance — its CI/container work is unaffected but a browser-level check would fail until this lands.
 
 ### STEP-029: Server media + manifest HTTP routes
-- status: todo
-- owner: —
+- status: done
+- owner: codex
 - tier: simple
 - depends-on: STEP-005
 - files: apps/server/src/static.ts or server.ts (media routes), apps/server/src/server.test.ts
 - acceptance: GET /media-manifest.json serves the configured manifest; GET /media/<src> serves files from config.mediaDir (path-traversal-safe, correct content-type incl. .mp4, cache headers suited to hash-verified immutable media); 404 on unknown src; readiness unaffected
-- verify: (pending)
+- verify: `pnpm --filter @smartphonecracy/server typecheck` → PASS; `pnpm --filter @smartphonecracy/server exec vitest run src/server.test.ts -t 'configuration|HTTP readiness and bundles'` → PASS (5 tests, 1 unrelated WebSocket test skipped); full `src/server.test.ts` attempt → 5/6 PASS, with only the pre-existing real-localhost WebSocket test sandbox-blocked by `listen EPERM: operation not permitted 127.0.0.1`; `git diff --check` → PASS (2026-07-12)
 - reviewer: none
-- notes: DISCOVERED during STEP-023 harness work 2026-07-12: display useMedia fetches /media-manifest.json and MediaStore fetches /media/<src>, but the server exposes neither route (readiness validates them on disk only) — media sync can never reach ready against the real server. Production may later swap media origin to object storage/CDN per plan §13 (STEP-024 provisioning concern); these routes are the dev/e2e/venue-local serving path. Codex slice (server core).
+- notes: Completed and self-verified by codex 2026-07-12. Added configured manifest and media routes, root-containment traversal rejection, MP4 typing, immutable media caching, missing-media 404s, and readiness regression coverage. UNCOMMITTED — claude commits on codex's behalf. DISCOVERED during STEP-023 harness work 2026-07-12: display useMedia fetches /media-manifest.json and MediaStore fetches /media/<src>, but the server exposes neither route (readiness validates them on disk only) — media sync can never reach ready against the real server. Production may later swap media origin to object storage/CDN per plan §13 (STEP-024 provisioning concern); these routes are the dev/e2e/venue-local serving path. Codex slice (server core).
