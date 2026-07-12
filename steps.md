@@ -150,6 +150,17 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - verify: n/a (user/director input)
 - reviewer: none
 - notes: BLOCKER: needs the user/director. Four separable deliverable groups: (a) director decisions (timings, axes, quadrant convention, counted statuses, empty targets), (b) content production (graph, media inventory ≤ 2 GiB), (c) hardware procurement (venue-spec mini PC), (d) privacy package approval. Engineering proceeds against the fake dev scenario; production.json lands here later.
+  GROUP (a) POLICY DECISIONS RECORDED — director (user) via claude session 2026-07-12:
+  * Player cap: 30 (confirmed; matches load-tested capacity).
+  * Position-question duration: 60 s (durationMs: 60000 per question in production.json).
+  * Lobby/idle timings: as built — lobby countdown 10 s, interactive-idle 180 s, max session 30 min, no-participant grace 2 min (DEFAULT_PHASE_ENGINE_POLICY unchanged).
+  * Resolution: freezeMs 5000 (CHANGED from plan's initial 3 s — 5 s hold on the outcome) + live quadrant counts ON (showLiveCounts: true per question).
+  * Late join: LOBBY-ONLY (CHANGED from as-built default — allowLateJoin=false; QR hides once a session starts; latecomers wait for next idle/lobby). production.json/QR wiring must set this.
+  * QR/grant/lease: as built — 60 s QR rotation, 120 s grant validity, 2 h participant lease.
+  * Counted statuses: valid + stale + disconnected (never-moved always excluded) — countedStatuses: ["valid","stale","disconnected"] on every quadrant-plurality question.
+  * Quadrant boundary convention: CONFIRMED center→q4 (x=0.5→right, y=0.5→bottom); shared quadrantOf stays as implemented.
+  * Trackpad sensitivity: deferred to the Phase 7 on-hardware pass per STEP-017 notes (no decision needed pre-hardware).
+  STILL OPEN (blockers): (b) content — axis wording + quadrant naming per question, full content graph, quadrant/tie/empty targets incl. the abandoned-solo empty-target review, media inventory + durations + 2 GiB arithmetic; opening hours/timezone + reset grace; (c) venue mini PC purchase; (d) privacy package (visitor notice, policy, processor/log-retention review, deletion schedule).
 
 ### STEP-001: Monorepo scaffold
 - status: done
