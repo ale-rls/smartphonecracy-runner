@@ -358,15 +358,15 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: Implemented all §11 tables and indexes, scenario registration, transactional Postgres adapter, ordered non-blocking write queue with exponential retries and shutdown flush, transition/recovery checkpoint persistence, explicit recovery events, full immutable vote snapshots and reproducible outcome_json, 90-day-policy retention timestamps, and executable participant-data deletion. Schema deliberately has no raw cursor trace, grant, lease, or IP storage. Discovered required overlap: apps/server/src/server.ts for engine hook wiring and shutdown flush; no active step reserved that file at discovery time. Ready for Fable-critical claude review; proceeding at risk pending claude review due confirmed quota outage.
 
 ### STEP-019: Admin API + UI
-- status: todo
-- owner: —
+- status: review
+- owner: codex
 - tier: complex
 - depends-on: STEP-007, STEP-009, STEP-018
-- files: apps/server/src/admin/**, apps/admin/**
+- files: apps/server/src/admin/**, apps/server/src/config.ts, apps/server/src/server.ts, apps/server/src/engine/phase-engine.ts, apps/server/src/persistence/**, apps/admin/**
 - acceptance: §12 — status (health, heartbeat age, counts, session/phase), controls (start, idle, skip, restart), recent errors, CSV/JSON export; token-protected; audit-logged
-- verify: pnpm --filter server test (admin suite) + admin UI smoke
+- verify: `pnpm --filter @smartphonecracy/server exec vitest run src/admin/admin.test.ts src/persistence/persistence.test.ts src/engine/phase-engine.test.ts` → PASS (22 tests); `pnpm --filter @smartphonecracy/admin test` → PASS (1 smoke test); `pnpm --filter @smartphonecracy/admin build` → PASS; `pnpm -r typecheck` → PASS (7 workspaces); `git diff --check` → PASS, 2026-07-12. Full server suite 54/55 PASS; only the known sandbox localhost bind test fails with `listen EPERM 127.0.0.1`.
 - reviewer: claude
-- notes: —
+- notes: Added strong bearer-token protection (production rejects the development token), operational health/display-heartbeat/count/session/phase status, safe start/idle/skip/restart engine controls, recent error capture, JSON/CSV session exports, durable admin-action/error audit writes, and a polling operations UI with controls and downloads. Reservation expanded before edits to config/server wiring, engine controls, and persistence seams; no active step reserved those files. Ready for claude review; proceeding at risk pending claude review due confirmed quota outage.
 
 ### STEP-020: simulate-clients load script
 - status: todo

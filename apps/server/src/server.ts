@@ -2,6 +2,7 @@ import Fastify, { type FastifyInstance } from "fastify";
 import type { IncomingMessage } from "node:http";
 import { WebSocketServer, type WebSocket } from "ws";
 import { AdmissionController } from "./admission/index.js";
+import { registerAdminRoutes, type AdminDataSource } from "./admin/index.js";
 import { loadConfig, type ServerConfig } from "./config.js";
 import { PhaseEngine } from "./engine/phase-engine.js";
 import type { InstallationPersistence } from "./persistence/index.js";
@@ -13,6 +14,7 @@ export type BuildServerOptions = {
   onWebSocketConnection?: (socket: WebSocket) => void;
   admission?: AdmissionController;
   persistence?: InstallationPersistence;
+  adminData?: AdminDataSource;
 };
 
 export type ServerRuntime = {
@@ -87,6 +89,17 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Ser
         .filter((phase) => phase.kind === "video")
         .map((phase) => [phase.id, phase.src]),
     );
+  });
+  const adminData = options.adminData ?? options.persistence;
+  app.addHook("onError", async (request, _reply, error) => {
+    adminData?.recordError?.({ message: error.message, at: new Date().toISOString(), path: request.url });
+  });
+  registerAdminRoutes(app, {
+    token: config.adminToken,
+    engine: () => engine,
+    ready: readiness.ready,
+    startedAt,
+    ...(adminData === undefined ? {} : { data: adminData }),
   });
 
   registerBundleRoutes(app, config.bundleDirs);

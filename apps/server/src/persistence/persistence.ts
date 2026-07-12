@@ -2,6 +2,7 @@ import type { Scenario } from "@smartphonecracy/scenario";
 import { resolveSnapshot, type FinalVoteSnapshot } from "../votes/index.js";
 import type { PhaseCheckpoint } from "../engine/phase-engine.js";
 import { PersistenceWriteQueue, type SqlStatement } from "./write-queue.js";
+import type { AdminDataSource, AdminExport } from "../admin/index.js";
 
 const DAY_MS = 86_400_000;
 
@@ -16,8 +17,10 @@ export type PersistenceOptions = {
 const iso = (ms: number | null) => ms === null ? null : new Date(ms).toISOString();
 const phaseRowId = (snapshot: FinalVoteSnapshot) => `${snapshot.sessionId}:${snapshot.phaseEpoch}`;
 
-export class InstallationPersistence {
+export class InstallationPersistence implements AdminDataSource {
   private lastActiveSessionId: string | null = null;
+  private readonly snapshots = new Map<string, FinalVoteSnapshot[]>();
+  private readonly errors: unknown[] = [];
 
   constructor(private readonly options: PersistenceOptions) {
     if (options.participantDataExpiresAt < Date.now() - 365 * DAY_MS) {
@@ -56,6 +59,7 @@ export class InstallationPersistence {
   }
 
   voteSnapshot(snapshot: FinalVoteSnapshot): void {
+    this.snapshots.set(snapshot.sessionId, [...(this.snapshots.get(snapshot.sessionId) ?? []), snapshot]);
     const phase = this.options.scenario.phases.find((candidate) => candidate.id === snapshot.questionId);
     if (!phase || phase.kind !== "position-question") throw new Error(`unknown persisted question ${snapshot.questionId}`);
     const resolution = resolveSnapshot(phase, snapshot);
@@ -94,6 +98,29 @@ export class InstallationPersistence {
 
   deleteExpiredParticipantData(cutoff = Date.now()): void {
     this.options.queue.enqueue([{ text: "select delete_expired_participant_data($1)", values: [iso(cutoff)] }]);
+  }
+
+  audit(entry: { action: string; at: string; detail: unknown }): void {
+    this.options.queue.enqueue([{ text: "insert into events (session_id,type,payload_json,created_at) values ($1,'admin_action',$2,$3)", values: [this.lastActiveSessionId ?? `installation:${this.options.installationId}`, JSON.stringify(entry), entry.at] }]);
+  }
+
+  recordError(entry: { message: string; at: string; path: string }): void {
+    this.errors.push(entry); if (this.errors.length > 50) this.errors.shift();
+    this.options.queue.enqueue([{ text: "insert into health_events (installation_id,component,status,payload_json,created_at) values ($1,'server','error',$2,$3)", values: [this.options.installationId, JSON.stringify(entry), entry.at] }]);
+  }
+
+  async recentErrors(): Promise<readonly unknown[]> { return this.errors.slice(-50); }
+
+  async exportSession(sessionId: string): Promise<AdminExport | null> {
+    const snapshots = this.snapshots.get(sessionId);
+    if (!snapshots) return null;
+    const rows = snapshots.flatMap((snapshot) => snapshot.votes.map((vote) => ({
+      sessionId, questionId: snapshot.questionId, participantId: vote.participantId,
+      x: vote.x, y: vote.y, status: vote.status, recordedAt: new Date(vote.recordedAt).toISOString(),
+    })));
+    const quote = (value: unknown) => `"${String(value ?? "").replaceAll('"', '""')}"`;
+    const columns = ["sessionId", "questionId", "participantId", "x", "y", "status", "recordedAt"] as const;
+    return { json: { sessionId, snapshots }, csv: [columns.join(","), ...rows.map((row) => columns.map((column) => quote(row[column])).join(","))].join("\n") };
   }
 
   flush(): Promise<void> { return this.options.queue.flush(); }
