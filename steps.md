@@ -294,8 +294,8 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: —
 
 ### STEP-017: Phone client
-- status: todo
-- owner: —
+- status: in-progress
+- owner: claude
 - tier: complex
 - depends-on: STEP-002
 - files: apps/phone/**
