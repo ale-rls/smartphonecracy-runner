@@ -186,6 +186,25 @@ describe("Blob URL lifecycle", () => {
     expect(store.activeBlobCount).toBe(1);
   });
 
+  it("revokes all Blob URLs on stop()", async () => {
+    const { caches } = fakeCaches();
+    const revoke = vi.fn();
+    const store = new MediaStore({
+      caches,
+      fetchFn: fakeFetch(),
+      digest: fakeDigest,
+      createObjectUrl: (blob) => `blob:${blob.size}`,
+      revokeObjectUrl: revoke,
+      sleep: async () => {},
+    });
+    await store.sync(manifest);
+    await store.getBlobUrl("a.mp4");
+    await store.getBlobUrl("b.mp4");
+    store.stop();
+    expect(revoke).toHaveBeenCalledTimes(2);
+    expect(store.activeBlobCount).toBe(0);
+  });
+
   it("returns null for unknown or uncached media", async () => {
     const { caches } = fakeCaches();
     const store = makeStore({ caches });
