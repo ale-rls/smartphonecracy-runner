@@ -446,12 +446,12 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: Requested during STEP-014 display media pipeline work; display snapshots carry next-phase IDs but not their video sources. Backlog entry only; no implementation in this session.
 
 ### STEP-027: winner:"fixed" protocol + display support
-- status: in-progress
+- status: done
 - owner: claude
 - tier: simple
 - depends-on: STEP-002
 - files: packages/protocol/src/messages.ts, apps/display/src/components/QuadrantOverlay.tsx (+tests)
 - acceptance: question_resolved winner enum gains "fixed"; display renders no winner/empty highlight and no outcome state for winner:"fixed" (counts still shown if present); discovered during STEP-008 fable review
-- verify: pnpm --filter protocol test && pnpm --filter display test
+- verify: pnpm --filter protocol test → PASS (30) + pnpm --filter display test → PASS (40) + typechecks + display build PASS (2026-07-12)
 - reviewer: none
-- notes: unblocks STEP-008 finding (2).
+- notes: unblocks STEP-008 finding (2). Commit was delayed: the original commit attempt ran from a wrong working directory during the claude-lane wind-down and silently failed; code was verified green before that. Committed during handoff cleanup.

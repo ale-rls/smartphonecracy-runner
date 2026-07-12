@@ -23,7 +23,13 @@ export function QuadrantOverlay({
   liveCounts: QuadrantCounts | null;
   resolution: QuestionResolvedMessage | null;
 }) {
-  const winner = resolution?.winner ?? null;
+  // A fixed-transition resolution carries no quadrant outcome to
+  // dramatize: freeze happens (freezeUntil is still honored upstream),
+  // counts may render, but nothing is highlighted or dimmed.
+  const winner =
+    resolution === null || resolution.winner === "fixed"
+      ? null
+      : resolution.winner;
   return (
     <div className="quadrant-overlay">
       <div className="axis-cross" aria-hidden />

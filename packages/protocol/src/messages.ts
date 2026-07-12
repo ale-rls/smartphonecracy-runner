@@ -196,7 +196,14 @@ export const questionResolvedSchema = z.object({
   sessionId: nonEmpty,
   phaseEpoch: z.number().int().nonnegative(),
   quadrantCounts: quadrantCountsSchema,
-  winner: z.union([quadrantSchema, z.literal("tie"), z.literal("empty")]),
+  // "fixed" = the question had a fixed transition: counts are still real
+  // evidence, but no quadrant outcome should be dramatized by the display.
+  winner: z.union([
+    quadrantSchema,
+    z.literal("tie"),
+    z.literal("empty"),
+    z.literal("fixed"),
+  ]),
   resolvedTarget: nonEmpty,
   freezeUntil: timestamp,
 });
