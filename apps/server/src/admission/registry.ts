@@ -13,6 +13,7 @@ export type ParticipantRecord = {
   color: string;
   leaseExpiresAt: number;
   socket?: WebSocket | undefined;
+  disconnectedAt?: number | undefined;
   lastSeenAt: number;
 };
 
@@ -39,8 +40,12 @@ function colorStart(clientId: string): number {
 export class ParticipantRegistry {
   private readonly participants = new Map<string, ParticipantRecord>();
 
-  constructor(private readonly maxParticipants: number) {
+  constructor(
+    private readonly maxParticipants: number,
+    private readonly disconnectGraceMs = 30_000,
+  ) {
     if (maxParticipants < 1) throw new Error("maxParticipants must be positive");
+    if (disconnectGraceMs < 1) throw new Error("disconnectGraceMs must be positive");
   }
 
   get leaseCount(): number {
@@ -63,8 +68,11 @@ export class ParticipantRegistry {
     return this.participants.get(participantLease);
   }
 
-  canAdmitNew(): boolean {
-    return this.connectedCount < this.maxParticipants;
+  canAdmitNew(now = Date.now()): boolean {
+    this.pruneExpired(now);
+    // A disconnected lease still holds its slot during the grace period, but
+    // the existing lease may reconnect without competing for a new slot.
+    return this.leaseCount < this.maxParticipants;
   }
 
   admit(options: {
@@ -75,8 +83,9 @@ export class ParticipantRegistry {
     now?: number;
   }): RegistryAdmission {
     const now = options.now ?? Date.now();
+    this.pruneExpired(now);
     const existing = this.participants.get(options.participantLease);
-    if (!existing && !this.canAdmitNew()) return { ok: false, reason: "room_full" };
+    if (!existing && !this.canAdmitNew(now)) return { ok: false, reason: "room_full" };
 
     const participant = existing ?? {
       clientId: options.clientId,
@@ -89,6 +98,7 @@ export class ParticipantRegistry {
       ? existing.socket
       : undefined;
     participant.socket = options.socket;
+    participant.disconnectedAt = undefined;
     participant.lastSeenAt = now;
     participant.leaseExpiresAt = options.leaseExpiresAt;
     this.participants.set(options.participantLease, participant);
@@ -97,9 +107,12 @@ export class ParticipantRegistry {
       : { ok: true, participant, replacedSocket };
   }
 
-  releaseSocket(socket: WebSocket): void {
+  releaseSocket(socket: WebSocket, now = Date.now()): void {
     for (const participant of this.participants.values()) {
-      if (participant.socket === socket) participant.socket = undefined;
+      if (participant.socket === socket) {
+        participant.socket = undefined;
+        participant.disconnectedAt = now;
+      }
     }
   }
 
@@ -107,6 +120,11 @@ export class ParticipantRegistry {
     for (const [lease, participant] of this.participants) {
       if (participant.leaseExpiresAt <= now) {
         participant.socket?.terminate();
+        this.participants.delete(lease);
+      } else if (
+        participant.disconnectedAt !== undefined &&
+        participant.disconnectedAt + this.disconnectGraceMs <= now
+      ) {
         this.participants.delete(lease);
       }
     }

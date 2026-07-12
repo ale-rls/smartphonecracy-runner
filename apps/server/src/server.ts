@@ -31,6 +31,7 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Ser
     installationId: config.installationId,
     roomId: config.roomId,
     secret: config.joinGrantSecret,
+    trustProxy: config.trustProxy,
   });
 
   app.get("/healthz", async () => ({ ok: true }));

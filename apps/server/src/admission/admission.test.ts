@@ -29,9 +29,9 @@ function socket(): WebSocket {
   return new MockSocket() as unknown as WebSocket;
 }
 
-function request(ip = "192.0.2.1"): IncomingMessage {
+function request(ip = "192.0.2.1", forwarded?: string): IncomingMessage {
   return {
-    headers: {},
+    headers: forwarded ? { "x-forwarded-for": forwarded } : {},
     socket: { remoteAddress: ip },
   } as unknown as IncomingMessage;
 }
@@ -40,8 +40,15 @@ function lastMessage(s: WebSocket): any {
   return (s as unknown as MockSocket).sent.at(-1);
 }
 
-function join(controller: AdmissionController, s: WebSocket, grant: string, lease?: string, ip?: string): void {
-  controller.handleConnection(s, request(ip));
+function join(
+  controller: AdmissionController,
+  s: WebSocket,
+  grant: string,
+  lease?: string,
+  ip?: string,
+  forwarded?: string,
+): void {
+  controller.handleConnection(s, request(ip, forwarded));
   s.emit("message", Buffer.from(JSON.stringify({
     t: "join",
     v: 1,
@@ -95,7 +102,11 @@ describe("participant admission", () => {
     join(admission, first, grant, undefined, "198.51.100.1");
     join(admission, second, grant, undefined, "198.51.100.2");
     const firstIdentity = lastMessage(first);
+    expect(lastMessage(second)).toMatchObject({ t: "identity" });
     expect(firstIdentity).toMatchObject({ t: "identity", sessionId: "idle", clientId: expect.any(String), color: expect.any(String) });
+    expect(admission.registry.leaseCount).toBe(2);
+    expect((first as unknown as MockSocket).readyState).toBe(1);
+    expect((second as unknown as MockSocket).readyState).toBe(1);
     expect(admission.registry.connectedCount).toBe(2);
 
     const rejected = socket();
@@ -121,6 +132,67 @@ describe("participant admission", () => {
     join(admission, limited, invalid, undefined, "203.0.113.8");
     expect(lastMessage(limited)).toMatchObject({ t: "join_rejected", reason: "rate_limited", retryAfterMs: 1_000 });
     expect(admission.rateLimiter.size).toBe(1);
+  });
+
+  it("trusts X-Forwarded-For only when explicitly configured", () => {
+    const invalid = "grant-v1.invalid.invalid";
+    const defaultLimiter = new InMemoryIpRateLimiter({ maxAttempts: 1, windowMs: 1_000 });
+    const direct = controller({ rateLimiter: defaultLimiter });
+    const directFirst = socket();
+    const directSecond = socket();
+    join(direct, directFirst, invalid, undefined, "198.51.100.1", "203.0.113.1");
+    join(direct, directSecond, invalid, undefined, "198.51.100.1", "203.0.113.2");
+    expect(lastMessage(directSecond)).toMatchObject({ t: "join_rejected", reason: "rate_limited" });
+
+    const proxied = controller({
+      rateLimiter: new InMemoryIpRateLimiter({ maxAttempts: 1, windowMs: 1_000 }),
+      trustProxy: true,
+    });
+    const proxiedFirst = socket();
+    const proxiedSecond = socket();
+    join(proxied, proxiedFirst, invalid, undefined, "198.51.100.1", "203.0.113.1");
+    join(proxied, proxiedSecond, invalid, undefined, "198.51.100.1", "203.0.113.2");
+    expect(lastMessage(proxiedSecond)).toMatchObject({ t: "join_rejected", reason: "expired_grant" });
+  });
+
+  it("holds a disconnected lease during a grace period, then frees its cap slot", () => {
+    let now = 1_000;
+    const admission = controller({
+      now: () => now,
+      disconnectGraceMs: 100,
+      policy: { maxParticipants: 2, joinGrantTtlMs: 120_000, participantLeaseTtlMs: 7_200_000 },
+    });
+    const grant = admission.issueJoinGrant(now).token;
+    const first = socket();
+    const second = socket();
+    join(admission, first, grant, undefined, "198.51.100.1");
+    join(admission, second, grant, undefined, "198.51.100.2");
+    const lease = (lastMessage(first) as { participantLease: string }).participantLease;
+    first.close();
+
+    now = 1_001;
+    const blocked = socket();
+    join(admission, blocked, grant, undefined, "198.51.100.3");
+    expect(lastMessage(blocked)).toMatchObject({ t: "join_rejected", reason: "room_full" });
+
+    const reconnect = socket();
+    join(admission, reconnect, grant, lease, "198.51.100.4");
+    expect(lastMessage(reconnect)).toMatchObject({ t: "identity" });
+    second.close();
+
+    now = 1_101;
+    const admittedAfterGrace = socket();
+    join(admission, admittedAfterGrace, grant, undefined, "198.51.100.5");
+    expect(lastMessage(admittedAfterGrace)).toMatchObject({ t: "identity" });
+  });
+
+  it("prunes expired rate-limit buckets during later traffic", () => {
+    const limiter = new InMemoryIpRateLimiter({ maxAttempts: 2, windowMs: 1_000 });
+    limiter.consume("203.0.113.1", 0);
+    limiter.consume("203.0.113.2", 0);
+    expect(limiter.size).toBe(2);
+    limiter.consume("203.0.113.3", 1_000);
+    expect(limiter.size).toBe(1);
   });
 
   it("parses every socket payload and closes malformed data", () => {
