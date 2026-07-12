@@ -77,6 +77,18 @@ describe("HTTP readiness and bundles", () => {
     }
   });
 
+  it("exposes only the public video phase id-to-source map", async () => {
+    const runtime = await buildServer({ config: await fixture() });
+    runtimes.push(runtime);
+
+    const response = await runtime.app.inject({ url: "/api/phases" });
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ intro: "intro.mp4" });
+    expect(response.body).not.toContain("expectedDurationMs");
+    expect(response.body).not.toContain("entryPhaseId");
+    expect(response.body).not.toContain("idle");
+  });
+
   it("stays live but fails readiness for an invalid scenario", async () => {
     const runtime = await buildServer({ config: await fixture(true) });
     runtimes.push(runtime);
@@ -84,6 +96,9 @@ describe("HTTP readiness and bundles", () => {
     const ready = await runtime.app.inject({ url: "/readyz" });
     expect(ready.statusCode).toBe(503);
     expect(ready.json().errors[0]).toContain("unknown phase");
+    const phases = await runtime.app.inject({ url: "/api/phases" });
+    expect(phases.statusCode).toBe(503);
+    expect(phases.json()).toEqual({ error: "scenario_unavailable" });
   });
 });
 
