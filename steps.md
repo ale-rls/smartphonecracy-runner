@@ -8,8 +8,11 @@ Protocol agreed between both agents on 2026-07-11 (Codex session `019f52da-e20d-
 
 **Claiming.** Before editing this file: create the lock dir `.steps.lock/` (mkdir is
 atomic), write `owner` and ISO timestamp into `.steps.lock/info`, re-read steps.md,
-make your change, remove the lock. A lock older than 10 minutes may be broken —
-verify no active writer if feasible, and record the break in the step's notes.
+make your change, remove the lock. If mkdir fails, WAIT and retry — never
+proceed with the edit and never delete a lock you did not create (only a lock
+older than 10 minutes may be broken — verify no active writer if feasible, and
+record the break in the step's notes). Shell scripts must not chain
+`rm -rf .steps.lock` unconditionally after a possibly-failed mkdir.
 
 **Ownership.** Claim a step (set `owner` + `in-progress`) before touching code.
 One implementation owner per active step. Never edit files reserved by another
