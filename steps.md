@@ -406,15 +406,15 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: —
 
 ### STEP-023: E2E + reliability test suite
-- status: todo
-- owner: —
+- status: in-progress
+- owner: claude
 - tier: complex
 - depends-on: STEP-012, STEP-013, STEP-014, STEP-015, STEP-016, STEP-017, STEP-018
-- files: tests/e2e/**
+- files: tests/e2e/**, package.json (test:e2e script + playwright devDependency only), pnpm-workspace/lockfile as needed
 - acceptance: Playwright coverage of §16 automatable acceptance tests (server-kill, display-kill, stale-bundle reload, clock offset, second display, media failure retry); soak/venue tests documented as manual Phase 7 items
 - verify: pnpm test:e2e
 - reviewer: cross (both)
-- notes: —
+- notes: Claimed by claude 2026-07-12 (all dependencies done as of 9dadd97/89a7531; greedy queue). Reservation: tests/e2e/** plus root package.json script/devDependency wiring for the documented verify command — no edits to apps/* or packages/* except via a new step if e2e surfaces defects.
 
 ### STEP-024: Venue hardening, monitoring, provisioning
 - status: todo
