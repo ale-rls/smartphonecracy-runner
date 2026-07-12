@@ -462,7 +462,7 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: unblocks STEP-008 finding (2). Commit was delayed: the original commit attempt ran from a wrong working directory during the claude-lane wind-down and silently failed; code was verified green before that. Committed during handoff cleanup.
 
 ### STEP-028: Client bundle base-path integration
-- status: review
+- status: done
 - owner: claude
 - tier: simple
 - depends-on: STEP-013, STEP-017
@@ -472,6 +472,7 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - reviewer: codex
 - notes: DISCOVERED during STEP-023 harness work 2026-07-12: all three vite configs omit `base`, so built index.html references root-absolute /assets/* which registerBundleRoutes never serves (bundles are mounted at /<role>/*) — every client 404s its own JS in production serving. Display sw.js additionally caches /assets/ and registers at root scope. Claimed by claude (owner slice); STEP-023 e2e depends on this to boot real bundles. Also affects STEP-021's "container serving all bundles" acceptance — its CI/container work is unaffected but a browser-level check would fail until this lands.
   IMPLEMENTED 2026-07-12: vite `base` set per app (/display/, /phone/, /admin/); display sw registration now uses import.meta.env.BASE_URL (sw served at /display/sw.js, scoping it to the mount); sw.js asset caching derives ASSETS_PREFIX from self.location instead of hardcoding /assets/ (navigations + same-origin guard unchanged, /media and /api still never intercepted). No committed test file: the through-server fetch check ran as a standalone buildServer+inject script (results in verify line); STEP-023's e2e will encode it durably. Ready for codex review.
+  APPROVED by codex 2026-07-12 (commit b118964). Independent review rebuilt all three bundles and confirmed emitted script URLs under `/display/assets/`, `/phone/assets/`, and `/admin/assets/`; built display JS registers `/display/sw.js`; `node --check apps/display/dist/sw.js` PASS. Display/phone/admin typecheck+test PASS (40/11/1 tests). Fetch-handler trace confirms `/display/assets/` cache-first, navigations network-first, same-origin GET guard intact, and root `/media` + `/api` outside the `/display/` SW scope and not otherwise intercepted. Repo grep found no executable root-absolute `/assets/` or `/sw.js` references (only historical notes/comments). An additional reviewer-side buildServer injection attempt was environment-blocked by tsx IPC `listen EPERM`; the owner's recorded 7/7 injection check covers that acceptance path and static route inspection agrees.
 
 ### STEP-029: Server media + manifest HTTP routes
 - status: done
@@ -482,4 +483,37 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - acceptance: GET /media-manifest.json serves the configured manifest; GET /media/<src> serves files from config.mediaDir (path-traversal-safe, correct content-type incl. .mp4, cache headers suited to hash-verified immutable media); 404 on unknown src; readiness unaffected
 - verify: `pnpm --filter @smartphonecracy/server typecheck` → PASS; `pnpm --filter @smartphonecracy/server exec vitest run src/server.test.ts -t 'configuration|HTTP readiness and bundles'` → PASS (5 tests, 1 unrelated WebSocket test skipped); full `src/server.test.ts` attempt → 5/6 PASS, with only the pre-existing real-localhost WebSocket test sandbox-blocked by `listen EPERM: operation not permitted 127.0.0.1`; `git diff --check` → PASS (2026-07-12)
 - reviewer: none
-- notes: Completed and self-verified by codex 2026-07-12. Added configured manifest and media routes, root-containment traversal rejection, MP4 typing, immutable media caching, missing-media 404s, and readiness regression coverage. UNCOMMITTED — claude commits on codex's behalf. DISCOVERED during STEP-023 harness work 2026-07-12: display useMedia fetches /media-manifest.json and MediaStore fetches /media/<src>, but the server exposes neither route (readiness validates them on disk only) — media sync can never reach ready against the real server. Production may later swap media origin to object storage/CDN per plan §13 (STEP-024 provisioning concern); these routes are the dev/e2e/venue-local serving path. Codex slice (server core).
+- notes: Completed and self-verified by codex 2026-07-12. Added configured manifest and media routes, root-containment traversal rejection, MP4 typing, immutable media caching, missing-media 404s, and readiness regression coverage. Committed on codex's behalf by claude at d962d16 after sanity review. DISCOVERED during STEP-023 harness work 2026-07-12: display useMedia fetches /media-manifest.json and MediaStore fetches /media/<src>, but the server exposes neither route (readiness validates them on disk only) — media sync can never reach ready against the real server. Production may later swap media origin to object storage/CDN per plan §13 (STEP-024 provisioning concern); these routes are the dev/e2e/venue-local serving path. Codex slice (server core).
+
+### STEP-030: Clients send buildVersion in join messages
+- status: in-progress
+- owner: claude
+- tier: simple
+- depends-on: STEP-002, STEP-013, STEP-017
+- files: packages/protocol/src/messages.ts (+tests), apps/display/src/** (display_join payload), apps/phone/src/** (join payload), vite define/env wiring for build version
+- acceptance: plan §7 — join and display_join schemas gain a required buildVersion string; display and phone send their build version (injected at build time, "dev" fallback) in every join; protocol tests cover the new field; server compilation unaffected (schema change is additive for the server until STEP-031 consumes it)
+- verify: (pending)
+- reviewer: codex
+- notes: DISCOVERED during STEP-023 harness work 2026-07-12: protocol has the `reload` envelope and both clients honor it (display kiosk.ts performReload, phone reloadRequired effect), but nothing can ever trigger it — join/display_join carry no buildVersion, and the server never checks or emits reload. Plan §7 requires the check "on every join and display_join". Split: this step (protocol+clients, claude slice) then STEP-031 (server check+emit, codex slice). STEP-023's stale-bundle-reload e2e depends on both.
+
+### STEP-031: Server build-version check + reload emit
+- status: todo
+- owner: —
+- tier: simple
+- depends-on: STEP-030
+- files: apps/server/src/admission/** (join/display_join handling), apps/server/src/config.ts if needed (+tests)
+- acceptance: plan §7 — on every join and display_join the server compares the client buildVersion against config.buildVersion; on mismatch sends { t: "reload", v, minVersion, reason: "assets" } (and still admits or rejects per admission rules — reload is an instruction, not a close); tests cover match, mismatch, and missing-field (old client ⇒ reload) paths
+- verify: (pending)
+- reviewer: none
+- notes: Filed 2026-07-12 during STEP-023 harness work; see STEP-030 notes for the discovery. Codex slice. §16: "A stale cached phone or display bundle receives reload, updates its app shell, and reconnects."
+
+### STEP-032: Persistence + recovery boot wiring
+- status: todo
+- owner: —
+- tier: complex
+- depends-on: STEP-018, STEP-021
+- files: apps/server/src/index.ts, apps/server/src/config.ts (DATABASE_URL), apps/server/src/server.ts (health-event seam), infra docs snippet
+- acceptance: when DATABASE_URL is set, boot constructs pg client → PostgresPersistenceExecutor → PersistenceWriteQueue (onHealthEvent wired to logs and, on sustained degradation, an operational error record) → InstallationPersistence, passes it into buildServer, runs migrations or asserts schema presence, writes the boot-time recovery event / recoverAfterCrash path (plan §6 crash recovery steps 3-4), and bounds shutdown flush with a timeout (STEP-018 re-review FYI 1); without DATABASE_URL the server runs exactly as today (dev mode, no persistence)
+- verify: (pending)
+- reviewer: claude
+- notes: Filed 2026-07-12: no production code constructs the persistence stack (it is injected in tests only), recoverAfterCrash() has no production caller (flagged in STEP-012 review), onHealthEvent defaults to a no-op (flagged in STEP-018 fable re-review), and shutdown flush needs a bound. Codex slice. Without this, the deployed container never persists sessions — §16 "Session outcomes are persisted" cannot hold.
