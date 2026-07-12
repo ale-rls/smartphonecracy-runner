@@ -11,6 +11,7 @@ import type { ParticipantRecord, ParticipantRegistry } from "../admission/index.
 import { QrGrantPushLoop, type QrGrantPushLoopOptions } from "../admission/qr.js";
 import { CursorPipeline } from "../cursors/index.js";
 import { VoteEngine, type FinalVoteSnapshot, type VoteParticipantSeed } from "../votes/index.js";
+import { VideoPhaseHandler } from "./video.js";
 
 export type EngineLifecycle = "idle" | "lobby" | "active";
 
@@ -84,6 +85,7 @@ export class PhaseEngine {
   private readonly onPhaseDeadline: ((event: PhaseDeadlineEvent) => void) | undefined;
   private readonly votes: VoteEngine;
   private readonly cursors: CursorPipeline;
+  private readonly video = new VideoPhaseHandler();
   private readonly qr: QrGrantPushLoop | null;
   private readonly clients = new Set<WebSocket>();
   private readonly participantSockets = new Set<WebSocket>();
@@ -240,6 +242,21 @@ export class PhaseEngine {
 
     const phase = this.currentPhase();
 
+    if (phase.kind === "video") {
+      const fallback = this.video.consumeFallback(now);
+      if (fallback !== null && this.matches(fallback.sessionId, fallback.phaseId, fallback.phaseEpoch)) {
+        this.onPhaseDeadline?.({
+          sessionId: this.sessionId,
+          phaseId: this.phaseId,
+          phaseEpoch: this.phaseEpoch,
+          phase,
+          deadlineAt: this.deadlineAt!,
+        });
+        this.advanceTo(phase.next, now, "video-fallback");
+      }
+      return;
+    }
+
     if (phase.kind === "position-question") this.broadcastQuestionStatus(now);
 
     if (phase.kind === "position-question" && this.questionFreezeUntil !== null) {
@@ -382,6 +399,7 @@ export class PhaseEngine {
     const phase = this.currentPhase();
     if (phase.kind !== "video") return { ok: false, reason: "wrong-phase" };
     if (!this.matches(sessionId, phaseId, phaseEpoch)) return { ok: false, reason: "stale" };
+    if (!this.video.complete({ sessionId, phaseId, phaseEpoch })) return { ok: false, reason: "stale" };
     return this.advanceTo(phase.next, now, "video-complete");
   }
 
@@ -476,8 +494,9 @@ export class PhaseEngine {
     this.questionResolutionTarget = null;
     this.phaseId = target;
     this.phaseStartedAt = now;
+    this.video.cancel();
     this.deadlineAt = phase.kind === "video"
-      ? now + phase.expectedDurationMs
+      ? this.video.begin({ sessionId: this.sessionId, phaseId: target, phaseEpoch: this.phaseEpoch + 1 }, phase.expectedDurationMs, now)
       : phase.kind === "position-question"
         ? now + phase.durationMs
         : null;

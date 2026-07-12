@@ -180,6 +180,58 @@ describe("PhaseEngine lifecycle", () => {
     expect(engine.currentPhaseId).toBe("question");
   });
 
+  it("accepts video_ended only from the authenticated display and cannot double-advance", () => {
+    let now = 1_000;
+    const { engine, registry } = setup({ now: () => now });
+    const phone = new MockSocket();
+    const display = new MockSocket();
+    const stranger = new MockSocket();
+    addParticipant(registry, phone as unknown as WebSocket, now, "p1");
+    engine.participantJoined(phone as unknown as WebSocket);
+    connectDisplay(engine, display as unknown as WebSocket);
+    now = 1_100;
+    engine.tick(now);
+    const event = {
+      t: "video_ended" as const,
+      v: 1 as const,
+      sessionId: "session-1",
+      phaseId: "intro",
+      phaseEpoch: engine.currentPhaseEpoch,
+      mediaId: "intro.mp4",
+    };
+
+    engine.handleClientMessage(event, stranger as unknown as WebSocket);
+    expect(engine.currentPhaseId).toBe("intro");
+    engine.handleClientMessage(event, display as unknown as WebSocket);
+    expect(engine.currentPhaseId).toBe("question");
+    engine.handleClientMessage(event, display as unknown as WebSocket);
+    expect(engine.currentPhaseId).toBe("question");
+  });
+
+  it("advances video at expected duration plus five seconds when no event arrives", () => {
+    let now = 1_000;
+    const checkpoints: PhaseCheckpoint[] = [];
+    const { engine, registry } = setup({ now: () => now, checkpoints });
+    const phone = new MockSocket();
+    const display = new MockSocket();
+    addParticipant(registry, phone as unknown as WebSocket, now, "p1");
+    engine.participantJoined(phone as unknown as WebSocket);
+    connectDisplay(engine, display as unknown as WebSocket);
+    now = 1_100;
+    engine.tick(now);
+    const epoch = engine.currentPhaseEpoch;
+    expect(engine.getSnapshot().deadlineAt).toBe(6_200);
+
+    engine.tick(6_199);
+    expect(engine.currentPhaseId).toBe("intro");
+    engine.tick(6_200);
+    expect(engine.currentPhaseId).toBe("question");
+    expect(checkpoints.at(-1)?.reason).toBe("video-fallback");
+    expect(engine.completeVideo("session-1", "intro", epoch, 6_201)).toEqual({ ok: false, reason: "wrong-phase" });
+    engine.tick(6_202);
+    expect(engine.currentPhaseId).toBe("question");
+  });
+
   it("re-anchors interactive idle after a long video phase", () => {
     let now = 1_000;
     const checkpoints: PhaseCheckpoint[] = [];
