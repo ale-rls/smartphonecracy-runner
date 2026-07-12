@@ -1,0 +1,218 @@
+import { EventEmitter } from "node:events";
+import { describe, expect, it } from "vitest";
+import { scenarioSchema } from "@smartphonecracy/scenario";
+import type { WebSocket } from "ws";
+import { ParticipantRegistry } from "../admission/index.js";
+import { PhaseEngine, type PhaseCheckpoint } from "./phase-engine.js";
+
+class MockSocket extends EventEmitter {
+  readyState = 1;
+  readonly sent: any[] = [];
+  readonly closes: Array<{ code: number | undefined; reason: string | undefined }> = [];
+
+  send(raw: string): void {
+    this.sent.push(JSON.parse(raw));
+  }
+
+  close(code?: number, reason?: string): void {
+    this.closes.push({ code, reason });
+    this.readyState = 3;
+    this.emit("close");
+  }
+
+  terminate(): void {
+    this.close(1006, "terminated");
+  }
+}
+
+const scenario = scenarioSchema.parse({
+  version: "engine-test-1",
+  entryPhaseId: "intro",
+  cyclesAllowed: false,
+  phases: [
+    { kind: "idle", id: "idle" },
+    { kind: "video", id: "intro", src: "intro.mp4", expectedDurationMs: 100, next: "question" },
+    {
+      kind: "position-question",
+      id: "question",
+      text: "Choose",
+      xAxis: { minLabel: "left", maxLabel: "right" },
+      yAxis: { minLabel: "up", maxLabel: "down" },
+      durationMs: 200,
+      freezeMs: 20,
+      connectionStaleAfterMs: 100,
+      showLiveCounts: false,
+      next: { type: "fixed", target: "idle" },
+    },
+  ],
+});
+
+function setup(options: { now: () => number; checkpoints?: PhaseCheckpoint[]; maxSessionDurationMs?: number } ) {
+  const registry = new ParticipantRegistry(2, 50);
+  const checkpoints = options.checkpoints ?? [];
+  const engine = new PhaseEngine({
+    scenario,
+    registry,
+    installationId: "inst-1",
+    roomId: "room-1",
+    displayToken: "display-secret",
+    now: options.now,
+    sessionIdFactory: () => "session-1",
+    policy: {
+      lobbyCountdownMs: 100,
+      interactiveIdleTimeoutMs: 100,
+      maxSessionDurationMs: options.maxSessionDurationMs ?? 10_000,
+      displayDisconnectTimeoutMs: 100,
+      noParticipantGraceMs: 100,
+    },
+    onCheckpoint: (checkpoint) => checkpoints.push(checkpoint),
+  });
+  return { engine, registry, checkpoints };
+}
+
+function addParticipant(registry: ParticipantRegistry, socket: WebSocket, now: number, id: string): void {
+  const result = registry.admit({
+    participantLease: `lease-${id}`,
+    clientId: id,
+    leaseExpiresAt: now + 10_000,
+    socket,
+    now,
+  });
+  expect(result.ok).toBe(true);
+}
+
+function connectDisplay(engine: PhaseEngine, socket: WebSocket): void {
+  engine.handleClientMessage({
+    t: "display_join",
+    v: 1,
+    clientVersion: "test",
+    installationId: "inst-1",
+    roomId: "room-1",
+    displayToken: "display-secret",
+  }, socket);
+}
+
+describe("PhaseEngine lifecycle", () => {
+  it("keeps phones in idle until a healthy display joins, then runs the lobby", () => {
+    let now = 1_000;
+    const { engine, registry } = setup({ now: () => now });
+    const phone = new MockSocket();
+    addParticipant(registry, phone as unknown as WebSocket, now, "p1");
+    engine.participantJoined(phone as unknown as WebSocket);
+    expect(engine.lifecycleState).toBe("idle");
+
+    const display = new MockSocket();
+    connectDisplay(engine, display as unknown as WebSocket);
+    expect(engine.lifecycleState).toBe("lobby");
+    expect(engine.currentPhaseId).toBe("idle");
+    now = 1_100;
+    engine.tick(now);
+    expect(engine.lifecycleState).toBe("active");
+    expect(engine.currentSessionId).toBe("session-1");
+    expect(engine.currentPhaseId).toBe("intro");
+  });
+
+  it("rejects stale video events and transitions only on the current epoch", () => {
+    let now = 1_000;
+    const { engine, registry } = setup({ now: () => now });
+    const phone = new MockSocket();
+    const display = new MockSocket();
+    addParticipant(registry, phone as unknown as WebSocket, now, "p1");
+    engine.participantJoined(phone as unknown as WebSocket);
+    connectDisplay(engine, display as unknown as WebSocket);
+    now = 1_100;
+    engine.tick(now);
+    const epoch = engine.currentPhaseEpoch;
+    expect(engine.completeVideo("session-1", "intro", epoch - 1, now)).toEqual({ ok: false, reason: "stale" });
+    expect(engine.completeVideo("session-1", "intro", epoch, now)).toEqual({ ok: true });
+    expect(engine.currentPhaseId).toBe("question");
+  });
+
+  it("emits one deadline event and checkpoints transitions", () => {
+    let now = 1_000;
+    const checkpoints: PhaseCheckpoint[] = [];
+    const { engine, registry } = setup({ now: () => now, checkpoints });
+    const phone = new MockSocket();
+    const display = new MockSocket();
+    addParticipant(registry, phone as unknown as WebSocket, now, "p1");
+    engine.participantJoined(phone as unknown as WebSocket);
+    connectDisplay(engine, display as unknown as WebSocket);
+    now = 1_100;
+    engine.tick(now);
+    engine.completeVideo("session-1", "intro", engine.currentPhaseEpoch, now);
+    engine.recordInput(1_350);
+    now = 1_300;
+    engine.tick(now);
+    engine.tick(1_400);
+    expect(checkpoints.map((checkpoint) => checkpoint.reason)).toEqual(["lobby-start", "session-start", "video-complete"]);
+  });
+
+  it("aborts to idle on interactive inactivity, max duration, no participants, and display loss", () => {
+    const cases = [
+      { label: "interactive-idle-timeout", trigger: (engine: PhaseEngine, now: number) => engine.tick(now + 100) },
+      { label: "max-session-duration", trigger: (engine: PhaseEngine, now: number) => engine.tick(now + 100) },
+      { label: "no-participants", trigger: (engine: PhaseEngine, now: number) => engine.tick(now + 100) },
+      { label: "display-timeout", trigger: (engine: PhaseEngine, now: number) => engine.tick(now + 100) },
+    ] as const;
+
+    for (const testCase of cases) {
+      let now = 1_000;
+      const checkpoints: PhaseCheckpoint[] = [];
+      const { engine, registry } = setup({
+        now: () => now,
+        checkpoints,
+        maxSessionDurationMs: testCase.label === "max-session-duration" ? 50 : 10_000,
+      });
+      const phone = new MockSocket();
+      const display = new MockSocket();
+      addParticipant(registry, phone as unknown as WebSocket, now, "p1");
+      engine.participantJoined(phone as unknown as WebSocket);
+      connectDisplay(engine, display as unknown as WebSocket);
+      now = 1_100;
+      engine.tick(now);
+      engine.completeVideo("session-1", "intro", engine.currentPhaseEpoch, now);
+      if (testCase.label === "no-participants") {
+        registry.releaseSocket(phone as unknown as WebSocket, now);
+        engine.socketClosed(phone as unknown as WebSocket);
+      }
+      if (testCase.label === "display-timeout") engine.socketClosed(display as unknown as WebSocket);
+      if (testCase.label === "no-participants") {
+        engine.tick(now + 1);
+        engine.tick(now + 101);
+      } else {
+        testCase.trigger(engine, now);
+      }
+      expect(engine.lifecycleState, testCase.label).toBe("idle");
+      expect(checkpoints.at(-1)?.reason, testCase.label).toBe(testCase.label);
+    }
+  });
+
+  it("recovers active state to idle and authenticates/replaces displays", () => {
+    let now = 1_000;
+    const checkpoints: PhaseCheckpoint[] = [];
+    const { engine, registry } = setup({ now: () => now, checkpoints });
+    const phone = new MockSocket();
+    const display = new MockSocket();
+    addParticipant(registry, phone as unknown as WebSocket, now, "p1");
+    engine.participantJoined(phone as unknown as WebSocket);
+    connectDisplay(engine, display as unknown as WebSocket);
+    const invalid = new MockSocket();
+    engine.handleClientMessage({
+      t: "display_join",
+      v: 1,
+      clientVersion: "test",
+      installationId: "inst-1",
+      roomId: "room-1",
+      displayToken: "wrong",
+    }, invalid as unknown as WebSocket);
+    expect(invalid.closes[0]?.code).toBe(1008);
+    const replacement = new MockSocket();
+    connectDisplay(engine, replacement as unknown as WebSocket);
+    expect(display.closes[0]?.code).toBe(4002);
+    now = 1_100;
+    engine.tick(now);
+    engine.recoverAfterCrash(now);
+    expect(engine.lifecycleState).toBe("idle");
+    expect(checkpoints.at(-2)?.kind).toBe("recovery");
+  });
+});
