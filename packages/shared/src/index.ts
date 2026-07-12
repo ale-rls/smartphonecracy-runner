@@ -38,3 +38,5 @@ export function quadrantOf(x: number, y: number): Quadrant {
   if (right) return bottom ? "q4" : "q1";
   return bottom ? "q3" : "q2";
 }
+
+export * from "./resolution.js";

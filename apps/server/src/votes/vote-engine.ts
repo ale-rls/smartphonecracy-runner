@@ -3,7 +3,13 @@ import type {
   PositionQuestionPhase,
   PositionVoteStatus,
 } from "@smartphonecracy/scenario";
-import { quadrantOf, type Quadrant } from "@smartphonecracy/shared";
+import {
+  countQuadrants,
+  materializePositionStatus,
+  resolveQuadrantPlurality,
+  resolveFixedTransition,
+  type Quadrant,
+} from "@smartphonecracy/shared";
 import type { QuadrantCounts } from "@smartphonecracy/protocol";
 
 export type VoteParticipantSeed = {
@@ -56,8 +62,6 @@ type MutableVote = {
   lastHeartbeatAt: number | null;
 };
 
-const QUADRANTS: readonly Quadrant[] = ["q1", "q2", "q3", "q4"];
-
 function emptyCounts(): QuadrantCounts {
   return { q1: 0, q2: 0, q3: 0, q4: 0 };
 }
@@ -67,10 +71,7 @@ function clampCoordinate(value: number): number {
 }
 
 function statusOf(vote: MutableVote, now: number, staleAfterMs: number): PositionVoteStatus {
-  if (!vote.connected) return "disconnected";
-  if (vote.x === null || vote.y === null) return "never-moved";
-  if (vote.lastHeartbeatAt === null || now - vote.lastHeartbeatAt >= staleAfterMs) return "stale";
-  return "valid";
+  return materializePositionStatus(vote, now, staleAfterMs);
 }
 
 function freezeVote(vote: PositionVote): PositionVote {
@@ -87,38 +88,17 @@ export function resolveSnapshot(
   snapshot: FinalVoteSnapshot,
 ): Omit<VoteResolution, "snapshot"> {
   if (question.next.type === "fixed") {
-    const counts = emptyCounts();
-    for (const vote of snapshot.votes) {
-      if (vote.x === null || vote.y === null) continue;
-      counts[quadrantOf(vote.x, vote.y)] += 1;
-    }
-    return {
-      quadrantCounts: counts,
-      winner: "fixed",
-      resolvedTarget: question.next.target,
-    };
+    return resolveFixedTransition(snapshot.votes, question.next.target);
   }
 
-  const counts = emptyCounts();
   const counted = new Set<CountablePositionVoteStatus>(question.next.countedStatuses);
-  for (const vote of snapshot.votes) {
-    if (vote.status === "never-moved" || !counted.has(vote.status) || vote.x === null || vote.y === null) continue;
-    const quadrant = quadrantOf(vote.x, vote.y);
-    counts[quadrant] += 1;
-  }
-
-  const total = QUADRANTS.reduce((sum, quadrant) => sum + counts[quadrant], 0);
-  if (total === 0) {
-    return { quadrantCounts: counts, winner: "empty", resolvedTarget: question.next.empty };
-  }
-
-  const highest = Math.max(...QUADRANTS.map((quadrant) => counts[quadrant]));
-  const winners = QUADRANTS.filter((quadrant) => counts[quadrant] === highest);
-  if (winners.length !== 1) {
-    return { quadrantCounts: counts, winner: "tie", resolvedTarget: question.next.tie };
-  }
-  const winner = winners[0]!;
-  return { quadrantCounts: counts, winner, resolvedTarget: question.next.map[winner] };
+  const outcome = resolveQuadrantPlurality(snapshot.votes, counted);
+  const resolvedTarget = outcome.winner === "empty"
+    ? question.next.empty
+    : outcome.winner === "tie"
+      ? question.next.tie
+      : question.next.map[outcome.winner];
+  return { ...outcome, resolvedTarget };
 }
 
 export class VoteEngine {
@@ -301,15 +281,14 @@ export class VoteEngine {
     statuses: Map<string, PositionVoteStatus>,
     next: PositionQuestionPhase["next"],
   ): QuadrantCounts {
-    const counts = emptyCounts();
-    if (next.type !== "quadrant-plurality") return counts;
+    if (next.type !== "quadrant-plurality") return emptyCounts();
     const counted = new Set<CountablePositionVoteStatus>(next.countedStatuses);
-    for (const vote of votes) {
-      const status = statuses.get(vote.participantId);
-      if (!status || status === "never-moved" || !counted.has(status) || vote.x === null || vote.y === null) continue;
-      counts[quadrantOf(vote.x, vote.y)] += 1;
-    }
-    return counts;
+    const positioned = [...votes].map((vote) => ({
+      x: vote.x,
+      y: vote.y,
+      status: statuses.get(vote.participantId) ?? "never-moved",
+    }));
+    return countQuadrants(positioned, counted);
   }
 
   private snapshotVotes(
