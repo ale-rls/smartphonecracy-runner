@@ -88,6 +88,9 @@ technical on-call contact and the venue duty contact.
 Thresholds not fixed in the implementation plan must be agreed and recorded in
 the monitoring dashboard before launch. Test every alert during the staged
 failure drills and record its owner, notification route, and escalation timer.
+Use the credential/input checklist and alert drill record in
+`infra/provisioning.md`; it intentionally records secret-manager references,
+not secret values.
 
 ## Handoff package check
 
