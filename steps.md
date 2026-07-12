@@ -204,15 +204,15 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
   APPROVED by claude review lane (sonnet) 2026-07-12: re-reviewed fix commit 6aa724b; both findings resolved. Re-ran the original standalone repro against the fixed engine — 220s video then question phase survives (was: instant abort), and the idle budget is now anchored exactly at question entry (still active at +179s of genuine in-question inactivity, aborts with `interactive-idle-timeout` at +180.1s). Lobby-idle enforcement verified in code and by the new test; the post-`startSession` fall-through in the reworked lobby tick branch is safe (no double-transition: fresh idle anchor, zero session elapsed, future deadline). New regression tests encode realistic durations (220_000ms video vs 180_000ms idle timeout — not zero-time). Verification: `pnpm --filter @smartphonecracy/server typecheck` PASS; `pnpm --filter @smartphonecracy/server test` PASS 19/19 (engine 7, admission 8, server 4; no localhost EPERM in this sandbox). FYI, non-blocking: input during lobby cannot refresh the idle anchor (`recordInput` requires active+question), which only matters if a config sets `lobbyCountdownMs` > `interactiveIdleTimeoutMs`; unreachable with defaults and there is no trackpad surface during lobby.
 
 ### STEP-008: Vote engine + transition resolver
-- status: todo
-- owner: —
+- status: in-progress
+- owner: codex
 - tier: complex
 - depends-on: STEP-007
 - files: apps/server/src/votes/**
 - acceptance: final-snapshot semantics (§8): statuses valid/never-moved/stale/disconnected; heartbeat-based staleness; fixed + quadrant-plurality resolution with tie/empty; countedStatuses filtering provably excludes; freezeMs hold; immutable snapshot enqueued before resolution
 - verify: pnpm --filter server test (vote suite incl. boundary cases x=0.5/y=0.5/center)
 - reviewer: claude
-- notes: —
+- notes: Claimed by codex 2026-07-12T09:21:15Z under lock protocol. Implementing final snapshot, resolution, freeze hold, and STEP-007 wiring.
 
 ### STEP-009: Input pipeline + cursor tick loop
 - status: todo
@@ -270,7 +270,7 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: APPROVED by codex 2026-07-12. Reviewed reconnect/backoff ownership, display_join and ping/pong clock correction, median-offset ServerClock, per-session epoch guard semantics, reload flow, and kiosk guards. The three-layer renderer is appropriately scoped; plain media and minimal question rendering remain deferred to STEP-014/015. Playwright smoke is explicitly accepted as deferred to STEP-023, which owns the future e2e harness.
 
 ### STEP-014: Display media pipeline
-- status: review
+- status: done
 - owner: claude
 - tier: complex
 - depends-on: STEP-013
@@ -282,9 +282,10 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
   CHANGES REQUESTED by codex review 2026-07-12: (1) `syncOnce()` trusts a cached response solely from its `content-length`; read and verify the cached body’s actual byte length and sha256 against the manifest before counting it as synced/allowing `ready`, with a same-size-corrupt-cache regression test. (2) Fix the `useMedia` race where a video phase arrives before media sync finishes: `showVideo()` can return null once and its phase-only effect never retries after `ready`; add a readiness-triggered retry/test. (3) If `getBlobUrl()` resolves after the phase changes, revoke/discard the newly created stale URL (and clean up on unmount/stop) so asynchronous phase changes cannot leak Blob URLs. (4) Narrow `sw.js` to actual app-shell HTML and `/assets/` requests; its current “everything else” network-first branch intercepts/caches non-shell GETs such as `/api` and the manifest, contrary to app-shell-only semantics. Keep next-video preloading explicitly deferred to STEP-026’s public id→src map dependency.
   Verification by codex: `pnpm --filter @smartphonecracy/display typecheck` PASS; `pnpm --filter @smartphonecracy/display test` PASS (18 tests, 2 files); `pnpm --filter @smartphonecracy/display build` PASS; `node --check apps/display/public/sw.js` PASS, 2026-07-12. Status remains `review` pending the requested fixes.
   CHANGES REQUESTED by codex re-review 2026-07-12: (1) Finding (3) is only partially fixed: `useMedia` now purges a stale async URL, but its effect cleanup calls `store.stop()` and `MediaStore.stop()` only sets `stopped`; it never revokes Blob URLs already held in `blobUrls`. Add stop/unmount cleanup (and a regression test) so a kiosk unmount/restart cannot leak active object URLs. (2) Re-review remains blocked until this is fixed.
+  APPROVED by codex re-review 2026-07-12: `MediaStore.stop()` now calls `retainOnly(new Set())`, revoking every live Blob URL; the new regression test passes. Current committed HEAD verification: display tests PASS (40/40, including STEP-016 additions) and display typecheck PASS. The fix-era baseline was 28 tests; the higher current count is due to committed STEP-016 coverage.
 
 ### STEP-015: Display cursors + question rendering
-- status: review
+- status: done
 - owner: claude
 - tier: complex
 - depends-on: STEP-013
@@ -295,6 +296,7 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: CursorField (pure): 100 ms render-delay interpolation between last two ticks, stale-tick rejection, absent-cursor removal, join-halo progress, freeze semantics (ingest ignored while frozen); CursorCanvas rAF w/ destination-out fade trails, crisp full-clear while frozen; QuadrantOverlay pins q1 TR/q2 TL/q3 BL/q4 BR, live counts only when server sends them, winner/tie/empty highlight; store: question_status/resolved gated to current session+epoch, cleared on phase advance; cursors bypass React (direct CursorField ingest). freezeUntil display-side hold ends when server advances phase (server owns freezeMs timing). FIX 2026-07-12: freeze now derives from the reducer's session/epoch-gated resolution state via effect (stale question_resolved can no longer freeze the field); onMessage freeze shortcut removed. Back to review.
   CHANGES REQUESTED by codex review 2026-07-12: `displayReducer` correctly gates `question_status`/`question_resolved`, but `App` calls `cursorField.setFrozen(true)` for every `question_resolved` before reducer validation. A delayed prior-session or prior-epoch resolution can therefore freeze the cursor field even though its question frame is rejected from UI state. Gate the freeze side effect using the current session+epoch (or route it through the same authoritative state transition), and add a stale-resolution regression test. Keep server-owned `freezeMs` semantics.
   Verification by codex: `pnpm --filter @smartphonecracy/display exec vitest run --reporter=verbose` PASS (27 tests / 3 files); `pnpm --filter @smartphonecracy/display typecheck` PASS; `pnpm --filter @smartphonecracy/display build` PASS, 2026-07-12. Status remains `review` pending the requested fix.
+  APPROVED by codex re-review 2026-07-12: freeze now derives from reducer state whose resolution is gated by current session+epoch, and the pre-reducer `question_resolved` shortcut is deleted; stale resolutions therefore cannot freeze the field. Current committed HEAD verification: display tests PASS (40/40, including STEP-016 additions) and display typecheck PASS. The fix-era baseline was 28 tests; the higher current count is due to committed STEP-016 coverage.
 
 ### STEP-016: Display QR + heartbeat
 - status: done
