@@ -31,9 +31,11 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   if (event.request.method !== "GET" || url.origin !== self.location.origin) return;
-  if (url.pathname.startsWith("/media/") || url.pathname.startsWith("/media-cache/")) return;
-  if (url.pathname.startsWith("/ws")) return;
 
+  // App shell ONLY: hashed assets and page navigations. Everything else
+  // (media, media-manifest, /api/*, /ws, health endpoints) passes
+  // through untouched — the SW must never sit between the app and the
+  // server's live surfaces (review finding, plan §9).
   if (url.pathname.startsWith("/assets/")) {
     // Hashed, immutable: cache-first.
     event.respondWith(
@@ -49,20 +51,22 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // HTML and everything else: network-first with cache fallback so a
-  // brief server outage still boots the shell (plan §13).
-  event.respondWith(
-    (async () => {
-      const cache = await caches.open(SHELL_CACHE);
-      try {
-        const response = await fetch(event.request);
-        if (response.ok) await cache.put(event.request, response.clone());
-        return response;
-      } catch {
-        const cached = await cache.match(event.request);
-        if (cached) return cached;
-        throw new Error("offline and not cached");
-      }
-    })(),
-  );
+  if (event.request.mode === "navigate") {
+    // HTML entry points: network-first (no-cache semantics, plan §7)
+    // with cache fallback so a brief server outage still boots the shell.
+    event.respondWith(
+      (async () => {
+        const cache = await caches.open(SHELL_CACHE);
+        try {
+          const response = await fetch(event.request);
+          if (response.ok) await cache.put(event.request, response.clone());
+          return response;
+        } catch {
+          const cached = await cache.match(event.request);
+          if (cached) return cached;
+          throw new Error("offline and not cached");
+        }
+      })(),
+    );
+  }
 });
