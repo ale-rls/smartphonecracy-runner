@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@smartphonecracy/protocol": "workspace:*",
+    "@smartphonecracy/scenario": "workspace:^",
     "@smartphonecracy/shared": "workspace:*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

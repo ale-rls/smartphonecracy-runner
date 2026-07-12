@@ -94,6 +94,9 @@ importers:
       '@smartphonecracy/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
+      '@smartphonecracy/scenario':
+        specifier: workspace:^
+        version: link:../../packages/scenario
       '@smartphonecracy/shared':
         specifier: workspace:*
         version: link:../../packages/shared
