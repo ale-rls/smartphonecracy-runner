@@ -92,6 +92,92 @@ describe("HMAC admission tokens", () => {
 });
 
 describe("participant admission", () => {
+  it("instructs stale phone and display bundles to reload without blocking valid messages", () => {
+    const messages: string[] = [];
+    const admission = controller({
+      buildVersion: "test",
+      onClientMessage: (message) => messages.push(message.t),
+    });
+    const grant = admission.issueJoinGrant(1_000).token;
+
+    const matching = socket();
+    join(admission, matching, grant);
+    expect((matching as unknown as MockSocket).sent).not.toContainEqual(expect.objectContaining({ t: "reload" }));
+
+    const matchingDisplay = socket();
+    admission.handleConnection(matchingDisplay, request("198.51.100.4"));
+    matchingDisplay.emit("message", Buffer.from(JSON.stringify({
+      t: "display_join",
+      v: 1,
+      clientVersion: "test",
+      installationId: "inst-1",
+      roomId: "room-1",
+      displayToken: "token",
+    })));
+    expect((matchingDisplay as unknown as MockSocket).sent).not.toContainEqual(expect.objectContaining({ t: "reload" }));
+
+    const stalePhone = socket();
+    admission.handleConnection(stalePhone, request("198.51.100.2"));
+    stalePhone.emit("message", Buffer.from(JSON.stringify({
+      t: "join",
+      v: 1,
+      clientVersion: "old-build",
+      installationId: "inst-1",
+      roomId: "room-1",
+      joinGrant: grant,
+    })));
+    expect((stalePhone as unknown as MockSocket).sent).toEqual(expect.arrayContaining([
+      { t: "reload", v: 1, minVersion: "test", reason: "assets" },
+      expect.objectContaining({ t: "identity" }),
+    ]));
+
+    const staleDisplay = socket();
+    admission.handleConnection(staleDisplay, request("198.51.100.3"));
+    staleDisplay.emit("message", Buffer.from(JSON.stringify({
+      t: "display_join",
+      v: 1,
+      clientVersion: "old-build",
+      installationId: "inst-1",
+      roomId: "room-1",
+      displayToken: "token",
+    })));
+    expect(lastMessage(staleDisplay)).toEqual({
+      t: "reload", v: 1, minVersion: "test", reason: "assets",
+    });
+    expect(messages).toContain("display_join");
+  });
+
+  it("sends reload to an old join message that lacks clientVersion before rejecting it", () => {
+    const admission = controller({ buildVersion: "server-build" });
+    const oldClient = socket();
+    admission.handleConnection(oldClient, request());
+    oldClient.emit("message", Buffer.from(JSON.stringify({
+      t: "join",
+      v: 1,
+      installationId: "inst-1",
+      roomId: "room-1",
+      joinGrant: admission.issueJoinGrant(1_000).token,
+    })));
+    expect((oldClient as unknown as MockSocket).sent).toContainEqual({
+      t: "reload", v: 1, minVersion: "server-build", reason: "assets",
+    });
+    expect((oldClient as unknown as MockSocket).closeCalls[0]).toMatchObject({ code: 1008 });
+
+    const oldDisplay = socket();
+    admission.handleConnection(oldDisplay, request("198.51.100.2"));
+    oldDisplay.emit("message", Buffer.from(JSON.stringify({
+      t: "display_join",
+      v: 1,
+      installationId: "inst-1",
+      roomId: "room-1",
+      displayToken: "token",
+    })));
+    expect((oldDisplay as unknown as MockSocket).sent).toContainEqual({
+      t: "reload", v: 1, minVersion: "server-build", reason: "assets",
+    });
+    expect((oldDisplay as unknown as MockSocket).closeCalls[0]).toMatchObject({ code: 1008 });
+  });
+
   it("assigns stable identity and replaces a same-lease socket at capacity", () => {
     const admission = controller({
       policy: { maxParticipants: 2, joinGrantTtlMs: 120_000, participantLeaseTtlMs: 7_200_000 },
