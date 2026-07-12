@@ -384,15 +384,15 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: Added a Node WebSocket load harness that acquires a real signed grant through the display protocol, joins up to 30 phones, advances video phases, moves at 25 Hz during questions, pings for RTT samples, and reconnects half the clients using leases. The default 70-second profile respects the server's 30 joins/minute per-IP abuse limit before reconnecting. Reports input send/drop, join rejection, reconnect, cursor tick, and latency percentile statistics. Self-verified; reviewer none.
 
 ### STEP-021: Deployment + CI
-- status: todo
-- owner: —
+- status: review
+- owner: codex
 - tier: complex
 - depends-on: STEP-012, STEP-016, STEP-017, STEP-019
 - files: Dockerfile, infra/fly.toml, CI workflow
 - acceptance: versioned container serving all bundles (display/phone/admin); fly.toml (min_machines_running=1, health checks); CI runs tests + scenario validation + build; manual production deploy gate + deploy-window check; rollback instructions
-- verify: docker build + CI green
+- verify: `pnpm -r typecheck` → PASS (7 workspaces); `pnpm -r test` → 158/159 PASS, with only the known sandbox-blocked localhost WebSocket test (`listen EPERM 127.0.0.1`); `node --import tsx scripts/validate-scenario.ts content/scenarios/dev.json` → PASS (`OK: scenario valid`; the equivalent `pnpm validate-scenario` command could not create tsx's IPC pipe in this sandbox); production builds for display, phone, and admin → PASS; Ruby Psych parse of both CI workflow YAML files → PASS; `git diff --check` → PASS; Docker CLI unavailable (`command not found`), so the container image was NOT built; flyctl unavailable, so `fly config validate`/deployment were NOT run; GitHub CI was NOT run locally, 2026-07-12.
 - reviewer: claude
-- notes: provisioning/secrets moved to STEP-024. Split from venue hardening per codex review.
+- notes: provisioning/secrets moved to STEP-024. Split from venue hardening per codex review. Started by user direction while STEP-019's claude review was in flight; any STEP-019 review-triggered fixes take priority over finishing STEP-021. Added a SHA-versioned multi-stage Node container that builds and serves all three bundles, always-on Fly configuration with liveness/readiness checks, automatic verification/image-build CI, protected manual production deployment with an explicit closed-venue window confirmation, and rollback documentation. Hadolint-style self-review confirmed pinned Node/pnpm versions, non-root runtime, exec-form CMD, immutable build-version injection, and no baked secrets. UNCOMMITTED — claim commit and final step commit could not create `.git/index.lock` in this sandbox; needs commit with explicit STEP-021 paths.
 
 ### STEP-022: Operations + venue docs
 - status: todo
