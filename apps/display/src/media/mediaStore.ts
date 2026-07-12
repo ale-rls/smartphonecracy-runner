@@ -134,7 +134,10 @@ export class MediaStore {
         total: manifest.files.length,
         current: file.src,
       });
-      const response = await this.fetchFn(`/media/${file.src}`);
+      // Bypass the browser HTTP cache: /media is served immutable
+      // (STEP-029), so a corrupt response cached once would otherwise
+      // poison every retry forever. Cache Storage is our only cache.
+      const response = await this.fetchFn(`/media/${file.src}`, { cache: "no-store" });
       if (!response.ok) {
         throw new Error(`download failed for "${file.src}" (http ${response.status})`);
       }
