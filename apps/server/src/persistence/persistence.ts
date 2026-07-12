@@ -3,6 +3,7 @@ import { resolveSnapshot, type FinalVoteSnapshot } from "../votes/index.js";
 import type { PhaseCheckpoint } from "../engine/phase-engine.js";
 import { PersistenceWriteQueue, type SqlStatement } from "./write-queue.js";
 import type { AdminDataSource, AdminExport } from "../admin/index.js";
+import type { PersistenceQueueHealthEvent } from "./write-queue.js";
 
 const DAY_MS = 86_400_000;
 
@@ -105,6 +106,33 @@ export class InstallationPersistence implements AdminDataSource {
   recordError(entry: { message: string; at: string; path: string }): void {
     this.errors.push(entry); if (this.errors.length > 50) this.errors.shift();
     this.options.queue.enqueue([{ text: "insert into health_events (installation_id,component,status,payload_json,created_at) values ($1,'server','error',$2,$3)", values: [this.options.installationId, JSON.stringify(entry), entry.at] }]);
+  }
+
+  recordHealthEvent(event: PersistenceQueueHealthEvent, at = Date.now()): void {
+    const error = event.status === "degraded" && event.error instanceof Error
+      ? { name: event.error.name, message: event.error.message }
+      : undefined;
+    this.options.queue.enqueue([{
+      text: "insert into health_events (installation_id,component,status,payload_json,created_at) values ($1,'persistence',$2,$3,$4)",
+      values: [this.options.installationId, event.status, JSON.stringify({ ...event, error }), iso(at)],
+    }]);
+  }
+
+  async recoverAfterCrash(now = Date.now()): Promise<number> {
+    const active = await this.options.queue.query<{ id: string }>({
+      text: "select id from sessions where installation_id=$1 and status='active' order by started_at",
+      values: [this.options.installationId],
+    });
+    for (const session of active) {
+      this.options.queue.enqueue([{
+        text: "update sessions set status='ended',ended_at=$2,end_reason='crash-recovery',current_phase_id='idle',current_phase_deadline=null where id=$1 and status='active'",
+        values: [session.id, iso(now)],
+      }, {
+        text: "insert into events (session_id,type,payload_json,created_at) values ($1,'recovery',$2,$3)",
+        values: [session.id, JSON.stringify({ reason: "crash-recovery", recoveredAt: iso(now) }), iso(now)],
+      }]);
+    }
+    return active.length;
   }
 
   async recentErrors(): Promise<readonly unknown[]> { return this.errors.slice(-50); }

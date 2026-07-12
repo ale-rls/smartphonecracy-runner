@@ -56,6 +56,12 @@ describe("configuration", () => {
     const config = await fixture();
     expect(config.scenarioPath).toMatch(/content\/scenario\.json$/);
     expect(() => loadConfig({ PORT: "70000" })).toThrow(ConfigError);
+    expect(() => loadConfig({ DATABASE_URL: "postgres://db" })).toThrow(/INSTALLATION_CLOSES_AT/);
+    const persistent = loadConfig({
+      DATABASE_URL: "postgres://db",
+      INSTALLATION_CLOSES_AT: "2026-12-31T23:00:00+00:00",
+    });
+    expect(persistent.participantDataExpiresAt).toBe(Date.parse("2027-03-31T23:00:00Z"));
   });
 });
 

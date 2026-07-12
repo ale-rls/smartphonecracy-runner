@@ -509,12 +509,12 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: Filed 2026-07-12 during STEP-023 harness work; see STEP-030 notes for the discovery. Codex slice. §16: "A stale cached phone or display bundle receives reload, updates its app shell, and reconnects." Completed and self-verified by codex 2026-07-12. Admission now checks both join message types before normal parsing, sends an assets reload on missing/mismatched clientVersion, and preserves ordinary handling for schema-valid stale clients. Docker build stage now receives BUILD_VERSION so client bundles and runtime cannot diverge into a reload loop.
 
 ### STEP-032: Persistence + recovery boot wiring
-- status: todo
-- owner: —
+- status: review
+- owner: codex
 - tier: complex
 - depends-on: STEP-018, STEP-021
 - files: apps/server/src/index.ts, apps/server/src/config.ts (DATABASE_URL), apps/server/src/server.ts (health-event seam), infra docs snippet
 - acceptance: when DATABASE_URL is set, boot constructs pg client → PostgresPersistenceExecutor → PersistenceWriteQueue (onHealthEvent wired to logs and, on sustained degradation, an operational error record) → InstallationPersistence, passes it into buildServer, runs migrations or asserts schema presence, writes the boot-time recovery event / recoverAfterCrash path (plan §6 crash recovery steps 3-4), and bounds shutdown flush with a timeout (STEP-018 re-review FYI 1); without DATABASE_URL the server runs exactly as today (dev mode, no persistence)
-- verify: (pending)
+- verify: `pnpm --filter @smartphonecracy/server typecheck` PASS; full server suite 63/63 PASS (localhost binding approved); focused persistence/runtime/server suite 17/17 PASS; `git diff --check` PASS, 2026-07-12.
 - reviewer: claude
-- notes: Filed 2026-07-12: no production code constructs the persistence stack (it is injected in tests only), recoverAfterCrash() has no production caller (flagged in STEP-012 review), onHealthEvent defaults to a no-op (flagged in STEP-018 fable re-review), and shutdown flush needs a bound. Codex slice. Without this, the deployed container never persists sessions — §16 "Session outcomes are persisted" cannot hold.
+- notes: Filed 2026-07-12: no production code constructs the persistence stack (it is injected in tests only), recoverAfterCrash() has no production caller (flagged in STEP-012 review), onHealthEvent defaults to a no-op (flagged in STEP-018 fable re-review), and shutdown flush needs a bound. Codex slice. Without this, the deployed container never persists sessions — §16 "Session outcomes are persisted" cannot hold. Proceeding at risk past STEP-021's pending claude review under the confirmed quota-outage rule. Completed by codex 2026-07-12, ready for claude review and proceeding at risk pending that review: DATABASE_URL boot now holds a pg client, applies the existing migration, constructs the executor/queue/persistence chain, persists fixed closing-date+90-day retention, durably ends active pre-crash sessions with recovery events before listen, logs and persists degradation/recovery health events, and bounds shutdown flush. Database-free boot remains unchanged. Added pg runtime/types and focused fake-pool coverage; no live Supabase connection or provisioning was attempted (STEP-024 scope).

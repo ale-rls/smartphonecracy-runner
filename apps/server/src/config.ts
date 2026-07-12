@@ -9,6 +9,9 @@ const envSchema = z.object({
   HOST: z.string().min(1).default("0.0.0.0"),
   PORT: z.coerce.number().int().min(1).max(65_535).default(3_000),
   BUILD_VERSION: z.string().min(1).default("dev"),
+  DATABASE_URL: z.string().min(1).optional(),
+  INSTALLATION_CLOSES_AT: z.string().datetime({ offset: true }).optional(),
+  PERSISTENCE_FLUSH_TIMEOUT_MS: z.coerce.number().int().positive().default(5_000),
   INSTALLATION_ID: z.string().min(1).default("dev-installation"),
   ROOM_ID: z.string().min(1).default("main"),
   DISPLAY_TOKEN: z.string().min(1).default("dev-display-token"),
@@ -29,6 +32,9 @@ export type ServerConfig = {
   host: string;
   port: number;
   buildVersion: string;
+  databaseUrl?: string;
+  participantDataExpiresAt?: number;
+  persistenceFlushTimeoutMs: number;
   installationId: string;
   roomId: string;
   displayToken: string;
@@ -66,6 +72,9 @@ export function loadConfig(
   if (value.NODE_ENV === "production" && value.ADMIN_TOKEN === "dev-admin-token-please-change") {
     throw new ConfigError("invalid server configuration: ADMIN_TOKEN must be set in production");
   }
+  if (value.DATABASE_URL !== undefined && value.INSTALLATION_CLOSES_AT === undefined) {
+    throw new ConfigError("invalid server configuration: INSTALLATION_CLOSES_AT is required when DATABASE_URL is set");
+  }
   const fromRoot = (path: string | undefined, fallback: string) =>
     resolve(rootDir, path ?? fallback);
 
@@ -74,6 +83,11 @@ export function loadConfig(
     host: value.HOST,
     port: value.PORT,
     buildVersion: value.BUILD_VERSION,
+    ...(value.DATABASE_URL === undefined ? {} : {
+      databaseUrl: value.DATABASE_URL,
+      participantDataExpiresAt: Date.parse(value.INSTALLATION_CLOSES_AT!) + 90 * 86_400_000,
+    }),
+    persistenceFlushTimeoutMs: value.PERSISTENCE_FLUSH_TIMEOUT_MS,
     installationId: value.INSTALLATION_ID,
     roomId: value.ROOM_ID,
     displayToken: value.DISPLAY_TOKEN,
