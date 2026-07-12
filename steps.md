@@ -652,15 +652,15 @@ Claude's plan amendments folded into the steps: (1) server engine/vote logic doe
 - notes: Completed by codex 2026-07-13. Added the node palette, entry/end editor markers, runtime phase nodes, fixed and six-way typed outputs, exact q2/q1/q3/q4 visual placement (center documented as q4), one-edge-per-output and single-entry rules, shared-target support, deletion cleanup, and graph-to-runtime compilation with editor markers removed. Self-verified per the re-amended tiering; compile round-trip against dev.json is covered. (reviewer normalized per codex review point 4) codex-authored, not in the enumerated high-failure classes (misrendering is director-visible, not silent corruption) → self-verified. Escalate to fable only if codex flags uncertainty about compile-affecting behavior.
 
 ### STEP-040: Studio Phase C2 — properties inspector, defaults, undo/redo
-- status: todo
+- status: done
 - owner: codex
 - tier: complex
 - depends-on: STEP-039
 - files: apps/studio/src/inspector/**, undo/redo store
 - acceptance: plan §9 — typed forms from the node model; immediate draft application; unique runtime-ID validation; destructive type changes confirm + preserve old connections in undo history but exclude from compile; inline field errors; plain-language labels with runtime names as secondary text; read-only compiled-JSON inspector; session undo/redo; NEW-QUESTION DEFAULTS = STEP-000 group (a): durationMs 60000, freezeMs 5000, showLiveCounts true, countedStatuses ["valid","stale","disconnected"]; a complete show can be authored without touching JSON (plan §17-C exit); renaming a phase's runtime id remaps its runtimeExtensions sidecar key (STEP-036 re-review carry: extensions must not silently detach on rename)
-- verify: pnpm --filter studio test + typecheck; authoring walkthrough recorded in notes
+- verify: `pnpm --filter studio test` → PASS (10 tests incl. inspector/history); `pnpm --filter studio typecheck` → PASS; `pnpm --filter studio build` → PASS; `git diff --check` → PASS (2026-07-13). Typed-form authoring walkthrough completed through the production build.
 - reviewer: none
-- notes: (reviewer normalized per codex review point 4) self-verified — form correctness feeds compile but the STEP-036 adapter validator backstops every export. Escalate to fable if uncertainty.
+- notes: Completed by codex 2026-07-13. Added typed idle/video/question forms with immediate autosaved draft updates, plain-language and runtime labels, inline unique-ID errors, atomic rename with graph-target and runtimeExtensions sidecar remapping, director-approved question defaults, fixed/plurality transition editing, destructive-change confirmations, session undo/redo including connection restoration, and a read-only compiled-JSON panel. A complete show can be authored through the graph and forms without JSON editing. Self-verified per the normalized reviewer rule; the STEP-036 adapter validator remains the compile/export backstop.
 
 ### STEP-041: Studio Phase D — media library + diagnostics panel
 - status: todo
