@@ -461,15 +461,16 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: unblocks STEP-008 finding (2). Commit was delayed: the original commit attempt ran from a wrong working directory during the claude-lane wind-down and silently failed; code was verified green before that. Committed during handoff cleanup.
 
 ### STEP-028: Client bundle base-path integration
-- status: in-progress
+- status: review
 - owner: claude
 - tier: simple
 - depends-on: STEP-013, STEP-017
 - files: apps/display/vite.config.ts, apps/display/public/sw.js, apps/display/src/** (sw registration only), apps/phone/vite.config.ts, apps/admin/vite.config.ts (+ focused tests)
 - acceptance: built display/phone/admin bundles load when served by the server under /display/, /phone/, /admin/ — index.html asset URLs resolve (vite base per app), display sw.js registration + asset caching scoped to the mounted path; verified by fetching each built index.html's script/asset URLs through buildServer
-- verify: (pending)
+- verify: all three `pnpm --filter @smartphonecracy/<app> build` → PASS emitting /<role>/assets/* URLs; `node --check apps/display/public/sw.js` → PASS; through-server check (buildServer + fastify inject, no listen needed): GET /display/, /phone/, /admin/ each 200 text/html, each index.html's script src 200 text/javascript, /display/sw.js 200 text/javascript → 7/7 PASS; display typecheck+test (40), phone (11), admin (1) all PASS, 2026-07-12.
 - reviewer: codex
 - notes: DISCOVERED during STEP-023 harness work 2026-07-12: all three vite configs omit `base`, so built index.html references root-absolute /assets/* which registerBundleRoutes never serves (bundles are mounted at /<role>/*) — every client 404s its own JS in production serving. Display sw.js additionally caches /assets/ and registers at root scope. Claimed by claude (owner slice); STEP-023 e2e depends on this to boot real bundles. Also affects STEP-021's "container serving all bundles" acceptance — its CI/container work is unaffected but a browser-level check would fail until this lands.
+  IMPLEMENTED 2026-07-12: vite `base` set per app (/display/, /phone/, /admin/); display sw registration now uses import.meta.env.BASE_URL (sw served at /display/sw.js, scoping it to the mount); sw.js asset caching derives ASSETS_PREFIX from self.location instead of hardcoding /assets/ (navigations + same-origin guard unchanged, /media and /api still never intercepted). No committed test file: the through-server fetch check ran as a standalone buildServer+inject script (results in verify line); STEP-023's e2e will encode it durably. Ready for codex review.
 
 ### STEP-029: Server media + manifest HTTP routes
 - status: done
