@@ -49,11 +49,26 @@ export function useMedia(manifestUrl = "/media-manifest.json") {
       return;
     }
     const url = await store.getBlobUrl(src);
-    // A phase may have changed while the blob was materializing.
-    if (activeSrc.current !== src) return;
+    if (activeSrc.current !== src) {
+      // Phase changed while the blob materialized: purge everything the
+      // current phase doesn't need, including the URL just created.
+      store.retainOnly(
+        new Set(activeSrc.current === null ? [] : [activeSrc.current]),
+      );
+      return;
+    }
     store.retainOnly(new Set([src]));
     setVideoUrl(url);
   };
+
+  // A video phase can arrive before boot sync finishes; once the cache
+  // is ready, re-resolve the pending src so the video actually appears.
+  useEffect(() => {
+    if (status.state === "ready" && activeSrc.current !== null) {
+      void showVideo(activeSrc.current);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status.state]);
 
   return { status, videoUrl, showVideo, store };
 }

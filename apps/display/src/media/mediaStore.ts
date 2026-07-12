@@ -117,8 +117,11 @@ export class MediaStore {
       const key = cacheKeyFor(file.hash);
       const cached = await cache.match(key);
       if (cached) {
-        const bytes = Number(cached.headers.get("content-length") ?? -1);
-        if (bytes === file.bytes) {
+        // Full verification of cached entries too (plan §9: byte length
+        // AND hash) — disk corruption on a year-long kiosk is a real
+        // failure mode, and boot is the only cheap moment to catch it.
+        const body = await cached.arrayBuffer();
+        if (body.byteLength === file.bytes && (await this.digest(body)) === file.hash) {
           done += 1;
           continue;
         }

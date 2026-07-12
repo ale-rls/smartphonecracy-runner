@@ -127,6 +127,30 @@ describe("MediaStore.sync", () => {
     expect(retry && "lastError" in retry && retry.lastError).toContain("hash mismatch");
   });
 
+  it("re-hashes cached entries and redownloads corrupted ones", async () => {
+    const { caches, stores } = fakeCaches();
+    await makeStore({ caches }).sync(manifest);
+    // Corrupt the cached copy of a.mp4: right length, wrong content.
+    stores
+      .get("smartphonecracy-media-v1")!
+      .set(
+        "/media-cache/hash-a",
+        new Response(new TextEncoder().encode("XXX"), {
+          headers: { "content-length": "3" },
+        }),
+      );
+    const fetchSpy = vi.fn(fakeFetch());
+    const second = new MediaStore({
+      caches,
+      fetchFn: fetchSpy as typeof fetch,
+      digest: fakeDigest,
+      sleep: async () => {},
+    });
+    await expect(second.sync(manifest)).resolves.toBe(true);
+    expect(fetchSpy).toHaveBeenCalledTimes(1); // only the corrupted file
+    expect(String(fetchSpy.mock.calls[0]![0])).toContain("a.mp4");
+  });
+
   it("removes cache entries dropped from the manifest", async () => {
     const { caches, stores } = fakeCaches();
     const store = makeStore({ caches });
