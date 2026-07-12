@@ -244,7 +244,7 @@ export const identitySchema = z.object({
 export const joinRejectedSchema = z.object({
   t: z.literal("join_rejected"),
   v,
-  reason: z.enum(["expired_grant", "room_full", "rate_limited"]),
+  reason: z.enum(["expired_grant", "room_full", "rate_limited", "show_in_progress"]),
   retryAfterMs: z.number().int().positive().optional(),
 });
 

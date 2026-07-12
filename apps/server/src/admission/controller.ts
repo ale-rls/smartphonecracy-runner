@@ -36,6 +36,7 @@ export type AdmissionControllerOptions = {
   trustProxy?: boolean;
   disconnectGraceMs?: number;
   buildVersion?: string;
+  isNewParticipantAllowed?: () => boolean;
   onClientMessage?: (message: ClientToServerMessage, socket: WebSocket, request: IncomingMessage) => void;
   onParticipantJoin?: (participant: ParticipantRecord, socket: WebSocket) => void;
   onSocketClosed?: (socket: WebSocket) => void;
@@ -190,6 +191,10 @@ export class AdmissionController {
     const knownLease = parsed.message.participantLease && lease
       ? this.registry.get(parsed.message.participantLease)
       : undefined;
+    if (!knownLease && this.options.isNewParticipantAllowed?.() === false) {
+      this.send(socket, { t: "join_rejected", v: 1, reason: "show_in_progress" });
+      return;
+    }
     if (!knownLease && !this.registry.canAdmitNew(now)) {
       this.send(socket, { t: "join_rejected", v: 1, reason: "room_full" });
       return;
