@@ -1,6 +1,8 @@
 import type {
   PhaseSnapshotMessage,
   QrGrantMessage,
+  QuadrantCounts,
+  QuestionResolvedMessage,
   ReloadMessage,
   ServerToClientMessage,
 } from "@smartphonecracy/protocol";
@@ -23,6 +25,10 @@ export type DisplayState = {
   qrHidden: boolean;
   notice: { code: string; level: string; message: string } | null;
   reloadRequired: ReloadMessage | null;
+  /** Present only while the server sends showLiveCounts questions (plan §7). */
+  liveCounts: QuadrantCounts | null;
+  /** Set by question_resolved; cleared when the next phase arrives. */
+  resolution: QuestionResolvedMessage | null;
 };
 
 export const initialDisplayState: DisplayState = {
@@ -35,6 +41,8 @@ export const initialDisplayState: DisplayState = {
   qrHidden: false,
   notice: null,
   reloadRequired: null,
+  liveCounts: null,
+  resolution: null,
 };
 
 export type DisplayAction =
@@ -69,10 +77,22 @@ export function displayReducer(
         phaseEpoch: m.phaseEpoch,
         phase: m.phase,
         notice: null,
+        liveCounts: null,
+        resolution: null,
       };
     }
     case "presence":
       return { ...state, presenceCount: m.count };
+    case "question_status":
+      if (m.sessionId !== state.sessionId || m.phaseEpoch !== state.phaseEpoch) {
+        return state; // stale question frame
+      }
+      return { ...state, liveCounts: m.quadrantCounts ?? null };
+    case "question_resolved":
+      if (m.sessionId !== state.sessionId || m.phaseEpoch !== state.phaseEpoch) {
+        return state;
+      }
+      return { ...state, resolution: m };
     case "qr_grant":
       return { ...state, qrGrant: m, qrHidden: false };
     case "qr_hidden":
@@ -81,11 +101,9 @@ export function displayReducer(
       return { ...state, notice: { code: m.code, level: m.level, message: m.message } };
     case "reload":
       return { ...state, reloadRequired: m };
-    // Cursor batches and question status/resolution are consumed by the
-    // canvas/question layers (STEP-015), not the app-level store.
+    // Cursor batches go straight to the CursorField (never through
+    // React state — 20–30 Hz would thrash the tree).
     case "cursors":
-    case "question_status":
-    case "question_resolved":
     case "identity":
     case "join_rejected":
     case "status":
