@@ -5,7 +5,7 @@ import {
   type MediaManifest,
   type Scenario,
   type ScenarioIssue,
-} from "../../scenario/src/index.js";
+} from "@smartphonecracy/scenario";
 
 type UnknownRecord = Record<string, unknown>;
 
