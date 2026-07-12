@@ -241,15 +241,15 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: Reclaimed by codex 2026-07-12 and fixed all three Fable findings: input refreshes heartbeat liveness; fixed transitions emit winner:"fixed" with real positional counts; dirty question-status updates flush at a fixed 250 ms cadence. Added regressions for liveness, fixed resolution, and throttling. STEP-027 protocol/display edits remain separately owned and uncommitted in the shared worktree; compatibility tests pass. Ready for Fable re-review; proceeding at risk pending claude review due confirmed quota outage. FYI for STEP-018: disconnected currently takes precedence over never-moved in statusOf.
 
 ### STEP-009: Input pipeline + cursor tick loop
-- status: todo
-- owner: —
+- status: review
+- owner: codex
 - tier: complex
 - depends-on: STEP-006, STEP-007
-- files: apps/server/src/cursors/**
+- files: apps/server/src/cursors/**, apps/server/src/engine/phase-engine.ts
 - acceptance: input validation/clamping, latest-position store, fixed 20–30 Hz cursor batch tick to display, presence counts, ping/pong with serverTime
-- verify: pnpm --filter server test (cursor suite)
+- verify: `pnpm --filter @smartphonecracy/server typecheck` → PASS; focused cursor/engine/admission suites → PASS (21 tests); `pnpm -r typecheck` → PASS (7 workspaces); full server suite → 31/32 PASS with only the pre-existing sandbox-blocked localhost WebSocket test (`listen EPERM 127.0.0.1`), 2026-07-12.
 - reviewer: claude
-- notes: —
+- notes: Added defensive finite input validation/clamping, monotonic per-client sequence filtering, latest-position storage, full cursor batches at a fixed 25 Hz, membership-driven presence updates, immediate display presence sync, and replacement-safe participant cleanup. Existing admission parser/ping path supplies validated ping/pong with echoClientTime and serverTime. Ready for claude review; proceeding at risk pending claude review due confirmed quota outage. STEP-027 protocol/display edits remain separately owned and preserved.
 
 ### STEP-010: QR grant push loop
 - status: todo
