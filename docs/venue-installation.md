@@ -45,8 +45,11 @@ Do not add flags that disable TLS checks, browser security, or certificate
 validation. Confirm the browser has no toolbars, cursor, context menu, password
 prompts, first-run dialogs, or session-restore bubble during normal operation.
 
-Install the repository-provided watchdog/boot unit from `scripts/kiosk/` when
-STEP-024 supplies it. It must:
+Install `scripts/kiosk/smartphonecracy-kiosk.service` and copy
+`scripts/kiosk/kiosk.env.example` to `/etc/smartphonecracy/kiosk.env`, replacing
+the example URL. Install the repository at `/opt/smartphonecracy`, then run
+`systemctl daemon-reload && systemctl enable --now smartphonecracy-kiosk`.
+The unit and launcher:
 
 - wait for usable network connectivity before starting the browser;
 - restart Chrome/Chromium after a crash or hang without creating competing
@@ -56,9 +59,10 @@ STEP-024 supplies it. It must:
 - remain compatible with the server's authenticated second-display replacement
   behavior.
 
-Do not substitute an improvised infinite shell loop. Verify the installed unit
-name, log location, restart limits, and operator commands in the STEP-024
-provisioning record.
+Systemd owns bounded-backoff restart behavior; the launcher also uses `flock`
+to prevent competing instances. Diagnostic output is available through
+`journalctl -u smartphonecracy-kiosk`. Verify the unit name, log access,
+restart limits, and operator commands in `infra/provisioning.md`.
 
 ## Acceptance checklist
 
