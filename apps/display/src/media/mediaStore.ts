@@ -73,6 +73,7 @@ export class MediaStore {
 
   stop(): void {
     this.stopped = true;
+    this.retainOnly(new Set()); // revoke every live Blob URL on teardown
   }
 
   /**

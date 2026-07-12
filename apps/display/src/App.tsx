@@ -45,12 +45,6 @@ export function App() {
             cursorField.ingest(message, Date.now());
             return;
           }
-          if (message.t === "question_resolved") {
-            cursorField.setFrozen(true); // freeze the field at the snapshot
-          }
-          if (message.t === "phase" || message.t === "snapshot") {
-            cursorField.setFrozen(false); // next phase unfreezes
-          }
           dispatch({ type: "server-message", message });
         },
         onStatusChange: (status) => dispatch({ type: "connection-status", status }),
@@ -70,6 +64,13 @@ export function App() {
   useEffect(() => {
     if (state.reloadRequired) void performReload();
   }, [state.reloadRequired]);
+
+  // Freeze follows the reducer's session/epoch-gated resolution state,
+  // so a stale question_resolved frame can never freeze a live field
+  // (codex review finding). Phase advance clears resolution → unfreeze.
+  useEffect(() => {
+    cursorField.setFrozen(state.resolution !== null);
+  }, [cursorField, state.resolution]);
 
   const media = useMedia();
   const phase = state.phase;
