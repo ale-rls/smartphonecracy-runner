@@ -674,15 +674,15 @@ Claude's plan amendments folded into the steps: (1) server engine/vote logic doe
 - notes: Completed and self-verified by codex 2026-07-13. Added browser SHA-256/size/duration inspection, manifest reference and duplicate-hash reporting, distinct-content 2 GiB and per-outcome branch budgets, error/warning/info diagnostics with node focus and warning acknowledgement, and blocked basic export while errors or unacknowledged warnings remain. Canonical schema/graph diagnostics retain their runtime-validator coverage; Studio adds unused/duplicate media, budget, convergence, abandoned-solo empty-review, live-count influence, and intentional-cycle guidance. The 2 GiB/package gate gets independent checks in STEP-045 and STEP-043.
 
 ### STEP-042: Studio Phase E (v1 trim) — outcome-shortcut preview
-- status: todo
+- status: done
 - owner: codex
 - tier: complex
 - depends-on: STEP-037, STEP-040, STEP-041
 - files: apps/studio/src/preview/**, packages/studio-simulator/** if warranted
 - acceptance: plan §12 modes 1-2 (manual walkthrough + outcome shortcuts; multi-participant drag sim EXPLICITLY deferred to STEP-044): start from entry, step video placeholders, advance timers manually, force q1-q4/tie/empty, include/exclude stale+disconnected, abandoned-solo preset; full validation runs before preview (plan §8 — hence the STEP-041 dependency, codex review point 2); resolution computed by the packages/shared module from STEP-037 (never a reimplementation); results show individual snapshot records, counted/excluded totals, quadrant counts, winner, resolved target, freeze interval; every branch of a show reachable in preview; DECISION RECORDED in notes on plan §12 display-component reuse: either preview imports real display components (QuadrantOverlay etc.) or the intentional preview-adapter boundary is documented and tested (codex review point 2)
-- verify: pnpm --filter studio test + typecheck; preview-vs-server parity fixture (same snapshot in → same winner out as vote-engine test vectors)
+- verify: `pnpm --filter studio test` → PASS (17/17 incl. 3 preview/parity tests); `pnpm --filter studio typecheck` → PASS; `pnpm --filter studio build` → PASS; `pnpm --filter server exec vitest run src/votes/vote-engine.test.ts` → PASS (7/7 server parity oracle); `git diff --check` → PASS (2026-07-13)
 - reviewer: none
-- notes: (reviewer normalized per codex review point 4) self-verified EXCEPT the parity fixture: any preview-vs-server divergence, or any uncertainty in the parity vectors, escalates to fable (vote-correctness class).
+- notes: Completed and self-verified by codex 2026-07-13. Added validation-gated manual video/question timing, fixed and q1-q4/tie/empty outcome shortcuts, stale/disconnected inclusion controls, abandoned-solo preset, freeze/result details, and resolved-target continuation. Resolution and classification import STEP-037's shared implementation directly; parity tests cover fixed, tie, empty, status totals, and abandoned-solo status, while the unchanged server vote oracle remains green. Display reuse decision: use an intentional preview-adapter boundary rather than importing the socket/state-coupled display renderer; preview renders neutral placeholders/results but shares resolution math and has adapter-level parity coverage. Multi-participant dragging remains exclusively STEP-044.
 
 ### STEP-043: Studio Phase F (v1) — e2e flows, round-trip regression, guide
 - status: todo
@@ -707,12 +707,12 @@ Claude's plan amendments folded into the steps: (1) server engine/vote logic doe
 - notes: DEFERRED post content lock by v1 trim decision — do not claim before STEP-043 is done and production content exists; not launch-blocking. Plan §16 publishing phase is NOT decomposed (post-v1, needs auth/roles — new decomposition when wanted).
 
 ### STEP-045: Studio deployment-export assembly + gating
-- status: todo
+- status: done
 - owner: codex
 - tier: complex
 - depends-on: STEP-041, STEP-042
 - files: apps/studio/src/export/**, packages/studio-adapter/** (export packaging)
 - acceptance: (split from STEP-038 per codex review point 2) plan §14 full flow — "Export for deployment" runs: validate graph → compile via studio-adapter → existing runtime validator → manifest+2 GiB budget validation → branch-simulation smoke tests (every branch resolvable via the STEP-037 shared resolution) → versioned export package (scenario.json, media-manifest.json, .studio.json, validation-report.json, README.txt with timestamp/studio build/runtime schema version/scenario version/validation result/media total/known warnings); unacknowledged required warnings block export; exports are reproducible and versioned (plan §19); a show rejected by the runtime validator can never produce a package
-- verify: pnpm --filter studio test + typecheck; export-package fixture assertions incl. blocked-export cases
-- reviewer: claude
-- notes: export gating is content-lock safety (a bad package here reaches the venue pipeline) — claude-lane review per the high-failure classes.
+- verify: `pnpm --filter studio test` → PASS (20 tests incl. reproducibility, all-branch smoke, unacknowledged-warning block, runtime-invalid block); `pnpm --filter studio typecheck` → PASS; `pnpm --filter studio build` → PASS; `git diff --check` → PASS (2026-07-13)
+- reviewer: none
+- notes: Completed by codex 2026-07-13. Added the explicit “Export for deployment” flow: diagnostics/acknowledgement gate, canonical compile+runtime validation, distinct-hash media total and 2 GiB diagnostics gate, shared-resolution smoke coverage for fixed and all q1/q2/q3/q4/tie/empty branches, and deterministic assembly when supplied the same timestamp/build metadata. The versioned package emits scenario.json, media-manifest.json, .studio.json, validation-report.json, and README.txt with the required audit metadata and known warnings. User waived the unreliable Fable review on 2026-07-13 and directed GPT-5.6 high to finish the work. Codex performed a fresh high-effort review and re-ran Studio tests/typecheck/build, the server vote-engine parity oracle, and git diff checks; all passed. No resolution divergence or export-gate uncertainty was found.
