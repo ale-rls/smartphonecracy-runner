@@ -347,15 +347,15 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: APPROVED by codex 2026-07-12. Reviewed installation-scoped lease persistence and private-mode fallback, `?g=` join/reconnect flow, rejection states, question-only input gating, per-session epoch guard, relative trackpad clamping, and 25 Hz throttle. Real iOS/Android sensitivity tuning remains a Phase 7 hardware pass. Playwright mobile emulation is explicitly accepted as deferred to STEP-023, which owns the future e2e harness.
 
 ### STEP-018: Persistence layer
-- status: todo
-- owner: —
+- status: review
+- owner: codex
 - tier: complex
 - depends-on: STEP-007, STEP-008
 - files: infra/migrations/**, apps/server/src/persistence/**
 - acceptance: §11 tables; write queue w/ retry buffer + shutdown flush; gameplay never blocks on DB; checkpoints on transitions; outcome_json completeness; recovery events; no raw movement traces; retention-policy fields AND testable retention-deletion behavior (participant-level records expire per §11 policy)
-- verify: pnpm --filter server test (persistence suite w/ local pg or pglite)
+- verify: `pnpm --filter @smartphonecracy/server exec vitest run src/persistence/persistence.test.ts src/engine/phase-engine.test.ts src/votes/vote-engine.test.ts` → PASS (26 tests); `pnpm --filter @smartphonecracy/server typecheck` → PASS; `pnpm -r typecheck` → PASS (7 workspaces); `git diff --check` → PASS, 2026-07-12. Broader focused run including server.test.ts: 28/29 PASS; only localhost WebSocket bind test sandbox-blocked (`listen EPERM 127.0.0.1`).
 - reviewer: claude
-- notes: —
+- notes: Implemented all §11 tables and indexes, scenario registration, transactional Postgres adapter, ordered non-blocking write queue with exponential retries and shutdown flush, transition/recovery checkpoint persistence, explicit recovery events, full immutable vote snapshots and reproducible outcome_json, 90-day-policy retention timestamps, and executable participant-data deletion. Schema deliberately has no raw cursor trace, grant, lease, or IP storage. Discovered required overlap: apps/server/src/server.ts for engine hook wiring and shutdown flush; no active step reserved that file at discovery time. Ready for Fable-critical claude review; proceeding at risk pending claude review due confirmed quota outage.
 
 ### STEP-019: Admin API + UI
 - status: todo

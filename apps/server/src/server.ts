@@ -4,6 +4,7 @@ import { WebSocketServer, type WebSocket } from "ws";
 import { AdmissionController } from "./admission/index.js";
 import { loadConfig, type ServerConfig } from "./config.js";
 import { PhaseEngine } from "./engine/phase-engine.js";
+import type { InstallationPersistence } from "./persistence/index.js";
 import { loadScenarioReadiness, type ScenarioReadiness } from "./readiness.js";
 import { registerBundleRoutes } from "./static.js";
 
@@ -11,6 +12,7 @@ export type BuildServerOptions = {
   config?: ServerConfig;
   onWebSocketConnection?: (socket: WebSocket) => void;
   admission?: AdmissionController;
+  persistence?: InstallationPersistence;
 };
 
 export type ServerRuntime = {
@@ -50,6 +52,8 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Ser
         phoneJoinBaseUrl: config.phoneJoinBaseUrl,
         issueGrant: (now) => admission.issueJoinGrant(now),
       },
+      onCheckpoint: (checkpoint) => options.persistence?.checkpoint(checkpoint),
+      onVoteSnapshotEnqueued: (snapshot) => options.persistence?.voteSnapshot(snapshot),
     });
     engine.start();
   }
@@ -108,6 +112,7 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Ser
     engine?.stop();
     for (const socket of webSockets.clients) socket.terminate();
     await new Promise<void>((resolve) => webSockets.close(() => resolve()));
+    await options.persistence?.flush();
   });
 
   return { app, config, readiness, webSockets, admission, engine, startedAt };
