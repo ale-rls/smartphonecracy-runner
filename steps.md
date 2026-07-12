@@ -405,15 +405,15 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
   APPROVED on re-review by claude (fable, inline — scope was a single doc fix) 2026-07-12: docs/deployment.md rollback steps now match the exact procedure requested in the original finding (`fly releases --app <app> --image` → `fly deploy --app <app> --image registry.fly.io/<app>:<tag>`), state that no rollback subcommand exists, and warn that image rollback does not revert schema/secrets/fly.toml. Verified `grep -rn "releases rollback" docs/ infra/ .github/` is clean and that step 4's verification target is real (`/api/status` exposes `buildVersion` at apps/server/src/server.ts:74). Non-blocking notes from the original review (JOIN_GRANT_SECRET/DISPLAY_TOKEN production defaults, flyctl-actions pin, Dockerfile layer caching) remain carried on STEP-024's checklist.
 
 ### STEP-022: Operations + venue docs
-- status: todo
-- owner: —
+- status: done
+- owner: codex
 - tier: simple
 - depends-on: STEP-021
 - files: docs/operations.md, docs/venue-installation.md
 - acceptance: §13 venue checklist (kiosk flags, watchdog, BIOS, VPN), staff power-cycle procedure, monitoring/alert list (§14), handoff package checklist (§18)
-- verify: review pass
+- verify: acceptance-topic review + local-link existence checks → PASS; `git diff --check -- docs/operations.md docs/venue-installation.md steps.md` → PASS, 2026-07-12
 - reviewer: codex
-- notes: —
+- notes: Added an operator runbook with daily opening checks, no-SSH staff power-cycle recovery, incident classification, §14 monitoring/alert coverage, privacy-safe logging guidance, and the §18 handoff checklist. Added the venue guide covering the §13 hardware baseline, kiosk/autoplay/watchdog contract, BIOS power recovery, sleep/blanking controls, wired network/UPS, private VPN, asset records, and an evidence-based venue acceptance checklist including exact-machine soak tests. Self-reviewed as a simple step.
 
 ### STEP-023: E2E + reliability test suite
 - status: review
@@ -428,15 +428,15 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
   IMPLEMENTED 2026-07-12, ready for codex review (committed c745d33). Harness notes: (a) tests spawn their own server processes per test (they must kill/restart them), serial by design, no Playwright webServer; (b) servers are pinned BUILD_VERSION=0.0.0-dev to match the vite __BUILD_VERSION__ fallback baked into the bundles — otherwise every join trips the STEP-031 reload path; the stale-bundle specs override this deliberately and count page loads (≥3 proves reload→reconnect→reload since the bundle stays stale in-harness); (c) media-retry corrupts the media file on disk AFTER boot (readiness hashes only at boot) in a copied temp MEDIA_DIR, asserts the explicit "retrying" wording (bare .media-status also matches benign first-sync progress), then restores bytes and expects self-recovery; (d) tests/e2e/package.json ({type:module}, outside workspace globs) is required for Playwright to load the ESM helpers; (e) manual Phase 7 soak/venue items documented in tests/e2e/README.md per acceptance. DEFECT DISCOVERED AND SPLIT OUT: media-retry initially could never recover — one corrupt /media response was cached by the browser HTTP cache (immutable headers from STEP-029) and poisoned every retry; fixed as STEP-034 (MediaStore cache:"no-store"), on which the media-retry spec now depends.
 
 ### STEP-024: Venue hardening, monitoring, provisioning
-- status: todo
-- owner: —
+- status: in-progress
+- owner: codex
 - tier: complex
 - depends-on: STEP-021
 - files: infra/**, scripts/kiosk/**, docs snippets
 - acceptance: Fly/Supabase/CDN/domain provisioning (needs user credentials — flag when reached); secrets in host secret manager; kiosk watchdog script + boot config; monitoring + §14 alert set (server, display heartbeat, venue domains); alert on media-retry >2 min, abort frequency, memory/restart spikes
 - verify: alerts fire in staged failure drills
 - reviewer: claude
-- notes: split from STEP-021 per codex review.
+- notes: Claimed by codex 2026-07-12. Provisioning that requires user credentials will be documented and explicitly flagged; no external infrastructure mutation is attempted without those credentials.
 
 ### STEP-025: Launch gate — reliability, soak, handoff
 - status: todo
