@@ -5,6 +5,7 @@ import {
   type ClientToServerMessage,
   type IdentityMessage,
   type JoinRejectedMessage,
+  type ReloadMessage,
 } from "@smartphonecracy/protocol";
 import { DEFAULT_INSTALLATION_POLICY } from "@smartphonecracy/shared";
 import type { RawData, WebSocket } from "ws";
@@ -34,6 +35,7 @@ export type AdmissionControllerOptions = {
   rateLimiter?: InMemoryIpRateLimiter;
   trustProxy?: boolean;
   disconnectGraceMs?: number;
+  buildVersion?: string;
   onClientMessage?: (message: ClientToServerMessage, socket: WebSocket, request: IncomingMessage) => void;
   onParticipantJoin?: (participant: ParticipantRecord, socket: WebSocket) => void;
   onSocketClosed?: (socket: WebSocket) => void;
@@ -54,6 +56,20 @@ function asBytes(raw: RawData): unknown {
   if (Array.isArray(raw)) return Buffer.concat(raw);
   if (raw instanceof ArrayBuffer) return new Uint8Array(raw);
   return raw;
+}
+
+function joinClientVersion(raw: unknown): string | null | undefined {
+  try {
+    const value = typeof raw === "string"
+      ? JSON.parse(raw)
+      : JSON.parse(Buffer.from(raw as ArrayBuffer).toString("utf8"));
+    if (typeof value !== "object" || value === null) return undefined;
+    const message = value as Record<string, unknown>;
+    if (message.t !== "join" && message.t !== "display_join") return undefined;
+    return typeof message.clientVersion === "string" ? message.clientVersion : null;
+  } catch {
+    return undefined;
+  }
 }
 
 export class AdmissionController {
@@ -102,6 +118,19 @@ export class AdmissionController {
   }
 
   private async handleRaw(socket: WebSocket, request: IncomingMessage, raw: unknown): Promise<void> {
+    const clientVersion = joinClientVersion(raw);
+    if (
+      this.options.buildVersion !== undefined &&
+      clientVersion !== undefined &&
+      clientVersion !== this.options.buildVersion
+    ) {
+      this.send(socket, {
+        t: "reload",
+        v: 1,
+        minVersion: this.options.buildVersion,
+        reason: "assets",
+      });
+    }
     const parsed = parseClientMessage(raw);
     if (!parsed.ok) {
       this.close(socket, 1008, "invalid client message");
@@ -202,7 +231,7 @@ export class AdmissionController {
     await Promise.resolve();
   }
 
-  private send(socket: WebSocket, message: IdentityMessage | JoinRejectedMessage | { t: "pong"; v: 1; echoClientTime: number; serverTime: number }): void {
+  private send(socket: WebSocket, message: IdentityMessage | JoinRejectedMessage | ReloadMessage | { t: "pong"; v: 1; echoClientTime: number; serverTime: number }): void {
     if (socket.readyState === undefined || socket.readyState === 1) socket.send(encodeMessage(message));
   }
 

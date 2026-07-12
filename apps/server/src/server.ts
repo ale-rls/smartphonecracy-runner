@@ -39,6 +39,7 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Ser
     roomId: config.roomId,
     secret: config.joinGrantSecret,
     trustProxy: config.trustProxy,
+    buildVersion: config.buildVersion,
     onClientMessage: (message, socket, request) => engine?.handleClientMessage(message, socket, request),
     onParticipantJoin: (participant, socket) => engine?.participantJoined(socket, participant),
     onSocketClosed: (socket) => engine?.socketClosed(socket),

@@ -498,15 +498,15 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
   SCOPE SHRANK on investigation 2026-07-12: the protocol schemas ALREADY carry a required `clientVersion` in join + display_join, and both clients already send `__BUILD_VERSION__` with a "0.0.0-dev" fallback — the only missing link was that no vite config ever defined `__BUILD_VERSION__`, so every bundle baked the fallback. Fixed by adding `define.__BUILD_VERSION__` from process.env.BUILD_VERSION to display+phone vite configs. No protocol or App changes needed. IMPORTANT for STEP-031: (a) compare against `clientVersion` (existing field name), not a new buildVersion field; (b) the Dockerfile sets ARG/ENV BUILD_VERSION only in the *runtime* stage — the build stage runs the vite builds without it, so container bundles would bake "0.0.0-dev" while the server reports the real version, causing a reload loop the moment the server starts enforcing; STEP-031 must add ARG BUILD_VERSION + ENV to the build stage (Dockerfile is codex's STEP-021 file, same owner). Ready for codex review.
 
 ### STEP-031: Server build-version check + reload emit
-- status: todo
-- owner: —
+- status: done
+- owner: codex
 - tier: simple
 - depends-on: STEP-030
 - files: apps/server/src/admission/** (join/display_join handling), apps/server/src/config.ts if needed (+tests)
 - acceptance: plan §7 — on every join and display_join the server compares the client buildVersion against config.buildVersion; on mismatch sends { t: "reload", v, minVersion, reason: "assets" } (and still admits or rejects per admission rules — reload is an instruction, not a close); tests cover match, mismatch, and missing-field (old client ⇒ reload) paths
-- verify: (pending)
+- verify: `pnpm --filter @smartphonecracy/server typecheck` PASS; server tests 61/61 PASS (localhost-binding lifecycle test rerun with sandbox approval after expected EPERM); focused admission tests 10/10 PASS; `git diff --check` PASS, 2026-07-12.
 - reviewer: none
-- notes: Filed 2026-07-12 during STEP-023 harness work; see STEP-030 notes for the discovery. Codex slice. §16: "A stale cached phone or display bundle receives reload, updates its app shell, and reconnects."
+- notes: Filed 2026-07-12 during STEP-023 harness work; see STEP-030 notes for the discovery. Codex slice. §16: "A stale cached phone or display bundle receives reload, updates its app shell, and reconnects." Completed and self-verified by codex 2026-07-12. Admission now checks both join message types before normal parsing, sends an assets reload on missing/mismatched clientVersion, and preserves ordinary handling for schema-valid stale clients. Docker build stage now receives BUILD_VERSION so client bundles and runtime cannot diverge into a reload loop.
 
 ### STEP-032: Persistence + recovery boot wiring
 - status: todo
