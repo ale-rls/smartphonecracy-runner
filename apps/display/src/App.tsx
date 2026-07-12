@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useReducer } from "react";
 import { DisplayConnection } from "./lib/connection.js";
 import { applyKioskGuards, performReload } from "./lib/kiosk.js";
+import { useMedia } from "./media/useMedia.js";
 import { displayReducer, initialDisplayState } from "./state/store.js";
 import { Countdown } from "./components/Countdown.js";
 
@@ -51,15 +52,22 @@ export function App() {
     if (state.reloadRequired) void performReload();
   }, [state.reloadRequired]);
 
+  const media = useMedia();
   const phase = state.phase;
+  const mediaReady = media.status.state === "ready";
+
+  // Keep the Blob URL set aligned with the active phase (plan §9);
+  // preloading plausible next videos needs the id→src map from STEP-026.
+  useEffect(() => {
+    void media.showVideo(phase?.kind === "video" ? phase.src : null);
+  }, [phase?.kind === "video" ? phase.src : null]);
 
   return (
     <main className="display-root">
       {/* Layer 1: video */}
       <section className="layer layer-video">
-        {phase?.kind === "video" && (
-          // Plain src for now; STEP-014 swaps in cached Blob URLs.
-          <video key={phase.id} src={`/media/${phase.src}`} autoPlay />
+        {phase?.kind === "video" && media.videoUrl !== null && (
+          <video key={phase.id} src={media.videoUrl} autoPlay />
         )}
       </section>
 
@@ -67,6 +75,13 @@ export function App() {
       <section className="layer layer-ui">
         {state.connection !== "open" && (
           <div className="reconnecting">reconnecting…</div>
+        )}
+        {!mediaReady && (
+          <div className="media-status">
+            {media.status.state === "retrying"
+              ? `media sync retrying (attempt ${media.status.attempt}): ${media.status.lastError}`
+              : "preparing media…"}
+          </div>
         )}
         {phase === null || phase.kind === "idle" ? (
           <div className="idle">

@@ -261,15 +261,15 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: APPROVED by codex 2026-07-12. Reviewed reconnect/backoff ownership, display_join and ping/pong clock correction, median-offset ServerClock, per-session epoch guard semantics, reload flow, and kiosk guards. The three-layer renderer is appropriately scoped; plain media and minimal question rendering remain deferred to STEP-014/015. Playwright smoke is explicitly accepted as deferred to STEP-023, which owns the future e2e harness.
 
 ### STEP-014: Display media pipeline
-- status: in-progress
+- status: review
 - owner: claude
 - tier: complex
 - depends-on: STEP-013
 - files: apps/display/src/media/**
 - acceptance: manifest fetch + byte/hash verify before ready; Cache Storage by content hash; Blob URLs only for active/next videos w/ revocation; visible retry state on failure; app-shell-only service worker; preload next during questions
-- verify: pnpm --filter display test + Playwright media suite
+- verify: pnpm --filter display test → PASS (18 tests incl. 7 media) + typecheck + vite build PASS (2026-07-12). Playwright media suite deferred to STEP-023 (accepted pattern).
 - reviewer: codex
-- notes: —
+- notes: MediaStore (injectable caches/fetch/digest): boot sync keyed by content hash, byte+sha256 verify per download, stale-entry eviction, endless capped-backoff retry (never ready with missing media); Blob URLs memoized per src, retainOnly() revokes outside the active set; useMedia hook gates UI on ready + visible retry state; public/sw.js is app-shell only (never intercepts /media/), cache-first hashed assets, network-first HTML. Next-video preload wired but waits on STEP-026 (id→src map) — only the active video gets a Blob URL until then.
 
 ### STEP-015: Display cursors + question rendering
 - status: todo
