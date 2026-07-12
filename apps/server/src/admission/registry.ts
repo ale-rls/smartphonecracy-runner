@@ -68,6 +68,11 @@ export class ParticipantRegistry {
     return this.participants.get(participantLease);
   }
 
+  /** Return the current lease records for session/vote consumers. */
+  values(): readonly ParticipantRecord[] {
+    return [...this.participants.values()];
+  }
+
   canAdmitNew(now = Date.now()): boolean {
     this.pruneExpired(now);
     // A disconnected lease still holds its slot during the grace period, but

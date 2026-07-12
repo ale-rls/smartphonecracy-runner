@@ -4,6 +4,7 @@ import { scenarioSchema } from "@smartphonecracy/scenario";
 import type { WebSocket } from "ws";
 import { ParticipantRegistry } from "../admission/index.js";
 import { PhaseEngine, type PhaseCheckpoint } from "./phase-engine.js";
+import type { FinalVoteSnapshot } from "../votes/index.js";
 
 class MockSocket extends EventEmitter {
   readyState = 1;
@@ -54,6 +55,7 @@ function setup(options: {
   interactiveIdleTimeoutMs?: number;
   maxSessionDurationMs?: number;
   testScenario?: typeof scenario;
+  onVoteSnapshotEnqueued?: (snapshot: FinalVoteSnapshot) => void;
 } ) {
   const registry = new ParticipantRegistry(2, 50);
   const checkpoints = options.checkpoints ?? [];
@@ -73,6 +75,9 @@ function setup(options: {
       noParticipantGraceMs: 100,
     },
     onCheckpoint: (checkpoint) => checkpoints.push(checkpoint),
+    ...(options.onVoteSnapshotEnqueued === undefined
+      ? {}
+      : { onVoteSnapshotEnqueued: options.onVoteSnapshotEnqueued }),
   });
   return { engine, registry, checkpoints };
 }
@@ -81,6 +86,13 @@ const longVideoScenario = scenarioSchema.parse({
   ...scenario,
   phases: scenario.phases.map((phase) => phase.id === "intro"
     ? { ...phase, expectedDurationMs: 220_000 }
+    : phase),
+});
+
+const liveCountsScenario = scenarioSchema.parse({
+  ...scenario,
+  phases: scenario.phases.map((phase) => phase.kind === "position-question"
+    ? { ...phase, showLiveCounts: true }
     : phase),
 });
 
@@ -208,7 +220,12 @@ describe("PhaseEngine lifecycle", () => {
     now = 1_300;
     engine.tick(now);
     engine.tick(1_400);
-    expect(checkpoints.map((checkpoint) => checkpoint.reason)).toEqual(["lobby-start", "session-start", "video-complete"]);
+    expect(checkpoints.map((checkpoint) => checkpoint.reason)).toEqual([
+      "lobby-start",
+      "session-start",
+      "video-complete",
+      "question-freeze-complete",
+    ]);
   });
 
   it("aborts to idle on interactive inactivity, max duration, no participants, and display loss", () => {
@@ -278,5 +295,79 @@ describe("PhaseEngine lifecycle", () => {
     engine.recoverAfterCrash(now);
     expect(engine.lifecycleState).toBe("idle");
     expect(checkpoints.at(-2)?.kind).toBe("recovery");
+  });
+
+  it("finalizes once, enqueues before resolution, hides live counts, and holds through freeze", () => {
+    let now = 1_000;
+    const checkpoints: PhaseCheckpoint[] = [];
+    let snapshot: FinalVoteSnapshot | undefined;
+    const { engine, registry } = setup({
+      now: () => now,
+      checkpoints,
+      interactiveIdleTimeoutMs: 1_000,
+      onVoteSnapshotEnqueued: (value) => {
+        snapshot = value;
+        expect(engine.currentPhaseId).toBe("question");
+      },
+    });
+    const phone = new MockSocket();
+    const display = new MockSocket();
+    addParticipant(registry, phone as unknown as WebSocket, now, "p1");
+    engine.participantJoined(phone as unknown as WebSocket, registry.get("lease-p1"));
+    connectDisplay(engine, display as unknown as WebSocket);
+    now = 1_100;
+    engine.tick(now);
+    engine.completeVideo("session-1", "intro", engine.currentPhaseEpoch, now);
+    const questionEpoch = engine.currentPhaseEpoch;
+
+    const status = display.sent.find((message) => message.t === "question_status");
+    expect(status).toBeDefined();
+    expect(status).not.toHaveProperty("quadrantCounts");
+    engine.handleClientMessage({
+      t: "input", v: 1, sessionId: "session-1", phaseEpoch: questionEpoch, seq: 1, x: 0.5, y: 0.5,
+    }, phone as unknown as WebSocket);
+    now = 1_300;
+    engine.tick(now);
+
+    const resolved = display.sent.find((message) => message.t === "question_resolved");
+    expect(resolved).toMatchObject({
+      sessionId: "session-1",
+      phaseEpoch: questionEpoch,
+      quadrantCounts: { q1: 0, q2: 0, q3: 0, q4: 0 },
+      winner: "empty",
+      resolvedTarget: "idle",
+      freezeUntil: 1_320,
+    });
+    expect(snapshot?.votes[0]).toMatchObject({ participantId: "p1", x: 0.5, y: 0.5 });
+    expect(engine.currentPhaseId).toBe("question");
+
+    now = 1_310;
+    engine.handleClientMessage({
+      t: "input", v: 1, sessionId: "session-1", phaseEpoch: questionEpoch, seq: 2, x: 0, y: 0,
+    }, phone as unknown as WebSocket);
+    expect(snapshot?.votes[0]?.x).toBe(0.5);
+    engine.tick(1_319);
+    expect(engine.currentPhaseId).toBe("question");
+    engine.tick(1_320);
+    expect(engine.currentPhaseId).toBe("idle");
+  });
+
+  it("includes live quadrant counts only for a question that enables them", () => {
+    let now = 1_000;
+    const { engine, registry } = setup({
+      now: () => now,
+      interactiveIdleTimeoutMs: 1_000,
+      testScenario: liveCountsScenario,
+    });
+    const phone = new MockSocket();
+    const display = new MockSocket();
+    addParticipant(registry, phone as unknown as WebSocket, now, "p1");
+    engine.participantJoined(phone as unknown as WebSocket, registry.get("lease-p1"));
+    connectDisplay(engine, display as unknown as WebSocket);
+    now = 1_100;
+    engine.tick(now);
+    engine.completeVideo("session-1", "intro", engine.currentPhaseEpoch, now);
+    const status = display.sent.find((message) => message.t === "question_status");
+    expect(status).toMatchObject({ quadrantCounts: { q1: 0, q2: 0, q3: 0, q4: 0 } });
   });
 });
