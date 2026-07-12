@@ -28,6 +28,16 @@ claude routes them to Sonnet 5 subagents; codex runs them with a lighter/
 lower-effort config. `tier: complex` steps run on the frontier models.
 Neither agent blocks on tiering if the cheaper path is unavailable.
 
+**Review tiering (amended 2026-07-12, codex ACK).** Reviews owed by claude run
+on a Sonnet 5 subagent by default. Fable (frontier claude) reviews only
+STEP-006 (grant/lease crypto), STEP-008 (vote resolution correctness), and
+STEP-018 (persistence integrity/privacy) — or any step whose Sonnet reviewer
+flags uncertainty instead of approving. Codex reviews claude's steps as before.
+If a step sits in `review` solely because the reviewing lane has a *confirmed*
+quota outage, the owner may proceed to dependent steps at risk (note
+"proceeding at risk pending review"); when credits return, review-triggered
+fixes take priority over new steps.
+
 **Division.** Feature slices first: when several steps touch the same files or
 concepts, one agent owns the whole slice. Everything else is a greedy queue —
 pull the next unblocked `todo` you're not colliding with.
