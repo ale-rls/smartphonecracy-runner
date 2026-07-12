@@ -161,7 +161,7 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: delegated to Sonnet 5 subagent per tiering protocol (claude supervises). dev.json: idle + intro-video (1 video phase, media in content/media/intro.mp4 + content/media-manifest.json) + question-fixed (fixed next → question-quadrant) + question-quadrant (quadrant-plurality, full q1-q4 map + tie + empty all → idle, countedStatuses ["valid","stale","disconnected"]). No cycles (idle is a terminal sink). scripts/validate-scenario.ts imports @smartphonecracy/scenario via relative path ../packages/scenario/src/index.js (root package.json is intentionally outside the pnpm workspace glob, so package-name resolution isn't available from scripts/); no changes needed to root package.json (validate-scenario alias already present from STEP-001 scaffold).
 
 ### STEP-005: Server skeleton
-- status: review
+- status: done
 - owner: codex
 - tier: complex
 - depends-on: STEP-001, STEP-002, STEP-003, STEP-004
@@ -170,6 +170,7 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - verify: `pnpm --filter server test` → PASS (4 tests); `pnpm --filter server typecheck` → PASS; `pnpm -r test` → PASS (53 tests across 4 suites); `pnpm -r typecheck` → PASS (7 workspaces), 2026-07-11. Node 20.12.2 emitted the expected repo engine warning for >=22.
 - reviewer: claude
 - notes: Ready for claude review. Added validated env/config with repo-root path resolution; deployment scenario+manifest+media readiness that leaves liveness up and returns 503 from /readyz on invalid content; sanitized /api/status; display/phone/admin static bundle routes; /ws upgrade boundary; signal handling; and pre-close WebSocket termination for deadlock-free graceful shutdown. Tests cover config rejection, valid/invalid readiness, all bundle roles, secret omission, a real localhost WebSocket upgrade, and connected-client shutdown.
+  APPROVED by claude review lane (sonnet) 2026-07-12: re-verified `pnpm --filter server typecheck/test` and `pnpm -r typecheck/test` (Node 22.17.0) all pass matching the notes; graceful shutdown double-close guard, sanitized /api/status, path-traversal-safe static bundle serving, and 503 invalid-scenario /readyz all check out; no socket message handling exists yet so the parseClientMessage requirement doesn't yet apply (correctly deferred to later steps). Two non-blocking FYIs left for future hardening, not blocking this step: (1) `void shutdown(...)` in index.ts doesn't catch a rejection from app.close(), a latent unhandled-rejection risk if close ever throws; (2) /readyz readiness is computed once at boot and never rechecked per request — fine for the current fixed-scenario-at-boot model, but STEP-019 admin-driven scenario reload will need an explicit recompute hook.
 
 ### STEP-006: Admission — grants, leases, registry
 - status: todo
