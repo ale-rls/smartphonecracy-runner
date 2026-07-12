@@ -263,15 +263,15 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
 - notes: Added a QR grant push loop with signed URL construction, 60-second rotation while a display is connected, large idle/lobby and corner active placement, and active-policy hiding. Authenticated display join, refresh requests, and lifecycle transitions now push current QR state; unauthenticated refresh requests are ignored. Discovered QR delivery required PhaseEngine/server integration and expanded the reservation after coordinating that STEP-011 was unclaimed.
 
 ### STEP-011: Video phase handling
-- status: todo
-- owner: —
+- status: review
+- owner: codex
 - tier: complex
 - depends-on: STEP-007
-- files: apps/server/src/engine/video.ts
+- files: apps/server/src/engine/video.ts, apps/server/src/engine/video.test.ts, apps/server/src/engine/phase-engine.ts, apps/server/src/engine/phase-engine.test.ts
 - acceptance: video_ended accepted only from authenticated display with matching phase+epoch; expectedDurationMs+5 s fallback; idempotent (late video_ended cannot double-advance)
-- verify: pnpm --filter server test (video suite)
+- verify: `pnpm --filter @smartphonecracy/server exec vitest run src/engine/video.test.ts src/engine/phase-engine.test.ts` → PASS (16 tests); `pnpm --filter @smartphonecracy/server typecheck` → PASS; full server suite → 41/42 PASS with only the pre-existing sandbox-blocked localhost WebSocket test (`listen EPERM 127.0.0.1`), 2026-07-12.
 - reviewer: claude
-- notes: —
+- notes: Added a one-shot video-phase handler shared by authenticated display completion and the expectedDurationMs+5 s fallback, with stale identity rejection and cancellation on every phase transition. Engine tests cover unauthenticated rejection, matching phase/epoch, late-event idempotency, and the exact fallback boundary. Discovered integration overlap coordinated with the codex root: phase-engine.ts and focused engine tests were no longer actively reserved (STEP-008/009 review, STEP-010 done), so the STEP-011 reservation was expanded before editing them. Ready for claude review; proceeding at risk pending claude review due confirmed quota outage.
 
 ### STEP-012: Server integration tests over fake scenario
 - status: todo
