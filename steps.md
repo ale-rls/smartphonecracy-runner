@@ -296,15 +296,15 @@ Feature slices (decomposition reviewed by codex 2026-07-11, CHANGES REQUIRED ame
   Verification by codex: `pnpm --filter @smartphonecracy/display exec vitest run --reporter=verbose` PASS (27 tests / 3 files); `pnpm --filter @smartphonecracy/display typecheck` PASS; `pnpm --filter @smartphonecracy/display build` PASS, 2026-07-12. Status remains `review` pending the requested fix.
 
 ### STEP-016: Display QR + heartbeat
-- status: in-progress
+- status: done
 - owner: claude
 - tier: simple
 - depends-on: STEP-013
 - files: apps/display/src/qr/**, heartbeat
 - acceptance: renders latest qr_grant (large/corner), hides at expiresAt on corrected time; display_heartbeat loop; display_replaced notice handling
-- verify: pnpm --filter display test
+- verify: pnpm --filter @smartphonecracy/display typecheck && pnpm --filter @smartphonecracy/display test && pnpm --filter @smartphonecracy/display build → all PASS (40 tests incl. 12 new: 8 qr + 4 heartbeat) (2026-07-12)
 - reviewer: none
-- notes: —
+- notes: QrBadge (src/components/QrBadge.tsx) renders the latest qr_grant via the `qrcode` npm package (added as a dependency; generated fully client-side, no network fetch — Vite resolves its `browser` package.json field, verified no Node-only APIs in the built bundle). Visibility is a pure `shouldShowGrant(grant, nowServerTime, qrHidden)` helper (src/qr/shouldShowGrant.ts) polled ~1x/s against connection.clock (corrected server time) plus reactive to qr_hidden; placement/sizing is a pure `placementClassName`/`qrSizePx` (src/qr/placement.ts) — server picks large (idle/lobby, centered) vs corner (small), the display's `corner` prop only picks which screen corner, default bottom-right. Heartbeat (src/lib/heartbeat.ts, `startHeartbeat`) sends display_heartbeat every 5s only while `isOpen()` is true, reading sessionId/phaseId/phaseEpoch fresh each tick via a getter backed by a React ref (never a stale closure), clientTime from an injectable `now`. Idle-session convention confirmed in apps/server/src/engine/phase-engine.ts: sessionId="idle" and phaseId="idle" are the literal placeholders the engine itself uses pre-session (phaseEpoch 0), matched exactly (IDLE_PLACEHOLDER="idle") for the pre-first-snapshot state, satisfying the protocol's nonEmpty-string schema and the server's `matches()` equality check. display_replaced already landed in state.notice (STEP-013); App.tsx now adds a `notice-prominent` class specifically for that code so it's visually distinct from routine notices. Note: App.tsx had a concurrent edit in flight from another lane (question_resolved freeze moved to a session/epoch-gated useEffect) when this step started; merged cleanly on top without reverting it.
 
 ### STEP-017: Phone client
 - status: done
