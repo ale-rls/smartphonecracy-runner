@@ -641,15 +641,15 @@ Claude's plan amendments folded into the steps: (1) server engine/vote logic doe
 - notes: Completed by codex 2026-07-13 after claude restored dependencies and updated the reserved lockfile. Fixed the remaining UUID-typed test fixture, verified the Studio shell and adapter regression suite, and confirmed the production build. Implements the local/dev-only app shell, project home operations, IndexedDB autosave with bounded revisions/recovery, runtime/backup import, basic three-artifact export, and persisted auto-layout/viewport without runtime leakage. Self-verified per the re-amended tiering; NOT exposed as a production route (plan §13).
 
 ### STEP-039: Studio Phase C1 — graph canvas, nodes, typed handles, edge rules
-- status: todo
+- status: done
 - owner: codex
 - tier: complex
 - depends-on: STEP-038
 - files: apps/studio/src/canvas/**, node components
 - acceptance: plan §7/§8 — node palette (entry marker, idle, video, position-question; NO allow-skip field); question nodes switch between one `next` handle (fixed) and six handles q1/q2/q3/q4/tie/empty (quadrant-plurality) with the runtime quadrant placement rendered exactly (q2 TL, q1 TR, q3 BL, q4 BR; center→q4 convention displayed, never reinvented); edge-time structural validation (single entry edge, no dangling targets, handles may share a target); deleting nodes cleans edges; editor-only nodes compile away (entry marker → entryPhaseId; end → existing idle target)
-- verify: pnpm --filter studio test (canvas/edge-rule units) + typecheck + build
+- verify: `pnpm --filter studio test` → PASS (7 tests, including 3 canvas/edge-rule units); `pnpm --filter studio typecheck` → PASS; `pnpm --filter studio build` → PASS; `git diff --check` → PASS (2026-07-13)
 - reviewer: none
-- notes: (reviewer normalized per codex review point 4) codex-authored, not in the enumerated high-failure classes (misrendering is director-visible, not silent corruption) → self-verified. Escalate to fable only if codex flags uncertainty about compile-affecting behavior.
+- notes: Completed by codex 2026-07-13. Added the node palette, entry/end editor markers, runtime phase nodes, fixed and six-way typed outputs, exact q2/q1/q3/q4 visual placement (center documented as q4), one-edge-per-output and single-entry rules, shared-target support, deletion cleanup, and graph-to-runtime compilation with editor markers removed. Self-verified per the re-amended tiering; compile round-trip against dev.json is covered. (reviewer normalized per codex review point 4) codex-authored, not in the enumerated high-failure classes (misrendering is director-visible, not silent corruption) → self-verified. Escalate to fable only if codex flags uncertainty about compile-affecting behavior.
 
 ### STEP-040: Studio Phase C2 — properties inspector, defaults, undo/redo
 - status: todo
