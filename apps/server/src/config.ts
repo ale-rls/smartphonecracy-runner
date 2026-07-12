@@ -12,6 +12,7 @@ const envSchema = z.object({
   INSTALLATION_ID: z.string().min(1).default("dev-installation"),
   ROOM_ID: z.string().min(1).default("main"),
   DISPLAY_TOKEN: z.string().min(1).default("dev-display-token"),
+  ADMIN_TOKEN: z.string().min(16).default("dev-admin-token-please-change"),
   JOIN_GRANT_SECRET: z.string().min(16).default("dev-join-grant-secret-please-change"),
   TRUST_PROXY: z.enum(["true", "false"]).default("false"),
   PHONE_JOIN_BASE_URL: z.string().url().default("http://localhost:5174/"),
@@ -31,6 +32,7 @@ export type ServerConfig = {
   installationId: string;
   roomId: string;
   displayToken: string;
+  adminToken: string;
   joinGrantSecret: string;
   trustProxy: boolean;
   phoneJoinBaseUrl: string;
@@ -61,6 +63,9 @@ export function loadConfig(
   }
 
   const value = parsed.data;
+  if (value.NODE_ENV === "production" && value.ADMIN_TOKEN === "dev-admin-token-please-change") {
+    throw new ConfigError("invalid server configuration: ADMIN_TOKEN must be set in production");
+  }
   const fromRoot = (path: string | undefined, fallback: string) =>
     resolve(rootDir, path ?? fallback);
 
@@ -72,6 +77,7 @@ export function loadConfig(
     installationId: value.INSTALLATION_ID,
     roomId: value.ROOM_ID,
     displayToken: value.DISPLAY_TOKEN,
+    adminToken: value.ADMIN_TOKEN,
     joinGrantSecret: value.JOIN_GRANT_SECRET,
     trustProxy: value.TRUST_PROXY === "true",
     phoneJoinBaseUrl: value.PHONE_JOIN_BASE_URL,

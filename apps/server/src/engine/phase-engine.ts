@@ -100,6 +100,7 @@ export class PhaseEngine {
   private lastInputAt: number | null = null;
   private noParticipantSince: number | null = null;
   private displayDisconnectedAt: number | null = null;
+  private displayHeartbeatAt: number | null = null;
   private deadlineNotified = false;
   private displaySocket: WebSocket | undefined;
   private readonly participantIds = new Map<WebSocket, string>();
@@ -156,6 +157,44 @@ export class PhaseEngine {
 
   get isDisplayConnected(): boolean {
     return this.displaySocket !== undefined;
+  }
+
+  get displayHeartbeatAgeMs(): number | null {
+    return this.displaySocket === undefined || this.displayHeartbeatAt === null
+      ? null
+      : Math.max(0, this.now() - this.displayHeartbeatAt);
+  }
+
+  adminStart(now = this.now()): TransitionResult {
+    if (this.lifecycle === "active" || this.displaySocket === undefined || this.registry.connectedCount < 1) {
+      return { ok: false, reason: "wrong-phase" };
+    }
+    this.startSession(now);
+    return { ok: true };
+  }
+
+  adminIdle(now = this.now()): TransitionResult {
+    this.abortToIdle("admin-idle", now);
+    return { ok: true };
+  }
+
+  adminSkip(now = this.now()): TransitionResult {
+    if (this.lifecycle !== "active") return { ok: false, reason: "wrong-phase" };
+    const phase = this.currentPhase();
+    if (phase.kind === "video") return this.advanceTo(phase.next, now, "admin-skip");
+    if (phase.kind === "position-question") {
+      this.resolveQuestionAtDeadline(now, phase);
+      return { ok: true };
+    }
+    return { ok: false, reason: "wrong-phase" };
+  }
+
+  adminRestart(now = this.now()): TransitionResult {
+    if (this.lifecycle !== "active") return { ok: false, reason: "wrong-phase" };
+    this.sessionId = this.sessionIdFactory();
+    this.sessionStartedAt = now;
+    this.enterPhase(this.scenario.entryPhaseId, now, "admin-restart");
+    return { ok: true };
   }
 
   get connectedParticipantCount(): number {
@@ -320,6 +359,7 @@ export class PhaseEngine {
     if (this.displaySocket === socket) {
       this.displaySocket = undefined;
       this.displayDisconnectedAt = this.now();
+      this.displayHeartbeatAt = null;
     }
   }
 
@@ -339,6 +379,7 @@ export class PhaseEngine {
       case "display_heartbeat":
         if (socket === this.displaySocket && this.matches(message.sessionId, message.phaseId, message.phaseEpoch)) {
           this.displayDisconnectedAt = null;
+          this.displayHeartbeatAt = this.now();
         }
         return;
       case "qr_grant_request":
@@ -444,6 +485,7 @@ export class PhaseEngine {
       this.close(this.displaySocket, 4002, "display replaced");
     }
     this.displaySocket = socket;
+    this.displayHeartbeatAt = this.now();
     this.clients.add(socket);
     this.displayDisconnectedAt = null;
     this.send(socket, this.getSnapshotMessage());
