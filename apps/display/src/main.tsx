@@ -1,5 +1,6 @@
 import { createRoot } from "react-dom/client";
 import { App } from "./App.js";
+import "./style.css";
 
 // App-shell-only service worker (plan §9); media stays app-controlled.
 if ("serviceWorker" in navigator) {

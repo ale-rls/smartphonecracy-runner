@@ -4,7 +4,7 @@ import "@xyflow/react/dist/style.css";
 import { Autosave, IndexedDbDraftDatabase, recoverDraft, type SaveStatus } from "./drafts.js";
 import { exportArtifacts, exportBackup, importBackup, importRuntime } from "./io.js";
 import type { Draft } from "./model.js";
-import { applyEdges, END_NODE_ID, ENTRY_NODE_ID, graphEdges, pruneEdges, validateConnection, withoutOutputEdge } from "./canvas/graph.js";
+import { applyEdges, END_NODE_ID, ENTRY_NODE_ID, graphEdges, phaseOutputHandles, pruneEdges, replacePluralityLayoutEdges, validateConnection, withoutOutputEdge } from "./canvas/graph.js";
 import { nodeDataForPhase, nodeTypes } from "./canvas/nodes.js";
 import { changePhaseKind, renamePhase, type Phase, type PhaseKind } from "./inspector/model.js";
 import { Inspector } from "./inspector/Inspector.js";
@@ -21,6 +21,23 @@ const download = (name: string, value: unknown) => {
   const link = Object.assign(document.createElement("a"), { href: url, download: name });
   link.click();
   URL.revokeObjectURL(url);
+};
+
+const nodesForDraft = (draft: Draft, current: Node[] = []): Node[] => {
+  const layout = new Map(draft.document.nodes.map((node) => [node.id, node]));
+  const currentPositions = new Map(current.map((node) => [node.id, node.position]));
+  const phaseNodes: Node[] = draft.project.scenario.phases.map((phase, index) => ({
+    id: phase.id,
+    type: "phase",
+    deletable: phase.kind !== "idle",
+    position: currentPositions.get(phase.id) ?? layout.get(phase.id) ?? { x: 360 + (index % 3) * 300, y: 80 + Math.floor(index / 3) * 220 },
+    data: nodeDataForPhase(phase),
+  }));
+  return [
+    { id: ENTRY_NODE_ID, type: "entry", deletable: false, position: currentPositions.get(ENTRY_NODE_ID) ?? layout.get(ENTRY_NODE_ID) ?? { x: 30, y: 80 }, data: {} },
+    ...phaseNodes,
+    { id: END_NODE_ID, type: "end", deletable: false, position: currentPositions.get(END_NODE_ID) ?? layout.get(END_NODE_ID) ?? { x: 1250, y: 500 }, data: {} },
+  ];
 };
 
 export function App() {
@@ -43,9 +60,7 @@ export function App() {
   useEffect(() => void db.list().then(setRecent), [db]);
   useEffect(() => {
     if (!draft) return;
-    const layout = new Map(draft.document.nodes.map((node) => [node.id, node]));
-    const phaseNodes: Node[] = draft.project.scenario.phases.map((phase, index) => ({ id: phase.id, type: "phase", deletable: phase.kind !== "idle", position: layout.get(phase.id) ?? { x: 360 + (index % 3) * 300, y: 80 + Math.floor(index / 3) * 220 }, data: nodeDataForPhase(phase) }));
-    setNodes([{ id: ENTRY_NODE_ID, type: "entry", deletable: false, position: layout.get(ENTRY_NODE_ID) ?? { x: 30, y: 80 }, data: {} }, ...phaseNodes, { id: END_NODE_ID, type: "end", deletable: false, position: layout.get(END_NODE_ID) ?? { x: 1250, y: 500 }, data: {} }]);
+    setNodes(nodesForDraft(draft));
     setEdges(graphEdges(draft.project));
   }, [draft?.id, setEdges, setNodes]);
 
@@ -56,7 +71,11 @@ export function App() {
       if (value === "saved") void db.list().then(setRecent);
     });
   };
-  const applyHistory = (state: HistoryState) => { setEdges(state.edges); save(state.draft); };
+  const applyHistory = (state: HistoryState) => {
+    setNodes((current) => nodesForDraft(state.draft, current));
+    setEdges(state.edges);
+    save(state.draft);
+  };
   const record = (nextDraft: Draft, nextEdges = edges) => {
     if (!history.current || history.current.value.draft.id !== nextDraft.id) history.current = new SessionHistory({ draft: draft ?? nextDraft, edges });
     applyHistory(history.current.apply({ draft: nextDraft, edges: nextEdges }));
@@ -144,7 +163,10 @@ export function App() {
     if (!confirm("Changing phase type replaces its fields and connections. You can undo this change.")) return;
     const nextPhase = changePhaseKind(phase, kind);
     const retained = edges.filter((edge) => edge.source !== selectedId);
-    const nextEdges = kind === "idle" ? retained : [...retained, { id: `${nextPhase.id}:next`, source: nextPhase.id, sourceHandle: "next", target: END_NODE_ID }];
+    const nextEdges = [
+      ...retained,
+      ...phaseOutputHandles(nextPhase).map((handle) => ({ id: `${nextPhase.id}:${handle}`, source: nextPhase.id, sourceHandle: handle, target: END_NODE_ID })),
+    ];
     const phases = draft.project.scenario.phases.map((item) => item.id === selectedId ? nextPhase : item) as Draft["project"]["scenario"]["phases"];
     record({ ...draft, project: { ...draft.project, scenario: { ...draft.project.scenario, phases } }, document: { ...draft.document, edges: nextEdges }, updatedAt: Date.now() }, nextEdges);
     setNodes((current) => current.map((node) => node.id === selectedId ? { ...node, data: nodeDataForPhase(nextPhase) } : node));
@@ -193,9 +215,9 @@ export function App() {
         : { q1: "idle", q2: "idle", q3: "idle", q4: "idle" },
     };
     const nextPhase = { ...phase, field, next } as Phase;
-    const retained = edges.filter((edge) => edge.source !== selectedId);
-    const handles = next.type === "fixed" ? ["next"] : field.type === "two-quadrant" ? ["min", "max", "tie", "empty"] : ["q1", "q2", "q3", "q4", "tie", "empty"];
-    const nextEdges = [...retained, ...handles.map((handle) => ({ id: `${selectedId}:${handle}`, source: selectedId, sourceHandle: handle, target: END_NODE_ID }))];
+    const nextEdges = next.type === "quadrant-plurality"
+      ? replacePluralityLayoutEdges(edges, nextPhase as Extract<Phase, { kind: "position-question" }>)
+      : edges;
     const phases = draft.project.scenario.phases.map((item) => item.id === selectedId ? nextPhase : item) as Draft["project"]["scenario"]["phases"];
     record({ ...draft, project: { ...draft.project, scenario: { ...draft.project.scenario, phases } }, document: { ...draft.document, edges: nextEdges }, updatedAt: Date.now() }, nextEdges);
     setNodes((current) => current.map((node) => node.id === selectedId ? { ...node, data: nodeDataForPhase(nextPhase) } : node));

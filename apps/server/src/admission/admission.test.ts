@@ -2,6 +2,7 @@ import { EventEmitter } from "node:events";
 import type { IncomingMessage } from "node:http";
 import { describe, expect, it } from "vitest";
 import { parseServerMessage } from "@smartphonecracy/protocol";
+import { z } from "zod";
 import { AdmissionController, InMemoryIpRateLimiter, issueJoinGrant, issueParticipantLease, verifyJoinGrant, verifyParticipantLease } from "./index.js";
 import type { WebSocket } from "ws";
 
@@ -171,6 +172,12 @@ describe("participant admission", () => {
   });
 
   it("sends reload to an old join message that lacks clientVersion before rejecting it", () => {
+    const legacyReloadSchema = z.object({
+      t: z.literal("reload"),
+      v: z.literal(1),
+      minVersion: z.string().min(1),
+      reason: z.enum(["protocol", "scenario", "assets"]),
+    });
     const admission = controller({ buildVersion: "server-build" });
     const oldClient = socket();
     admission.handleConnection(oldClient, request());
@@ -182,8 +189,10 @@ describe("participant admission", () => {
       joinGrant: admission.issueJoinGrant(1_000).token,
     })));
     expect((oldClient as unknown as MockSocket).sent).toContainEqual({
-      t: "reload", v: 2, minVersion: "server-build", reason: "assets",
+      t: "reload", v: 1, minVersion: "server-build", reason: "assets",
     });
+    expect(legacyReloadSchema.safeParse(lastMessage(oldClient)).success).toBe(true);
+    expect(parseServerMessage(lastMessage(oldClient)).ok).toBe(true);
     expect((oldClient as unknown as MockSocket).closeCalls[0]).toMatchObject({ code: 1008 });
 
     const oldDisplay = socket();
@@ -196,8 +205,9 @@ describe("participant admission", () => {
       displayToken: "token",
     })));
     expect((oldDisplay as unknown as MockSocket).sent).toContainEqual({
-      t: "reload", v: 2, minVersion: "server-build", reason: "assets",
+      t: "reload", v: 1, minVersion: "server-build", reason: "assets",
     });
+    expect(legacyReloadSchema.safeParse(lastMessage(oldDisplay)).success).toBe(true);
     expect((oldDisplay as unknown as MockSocket).closeCalls[0]).toMatchObject({ code: 1008 });
   });
 

@@ -1,4 +1,5 @@
-import { Handle, Position, type NodeProps } from "@xyflow/react";
+import { useEffect } from "react";
+import { Handle, Position, useUpdateNodeInternals, type NodeProps } from "@xyflow/react";
 import type { StudioProject } from "@smartphonecracy/studio-adapter";
 
 type NodeData = {
@@ -46,8 +47,11 @@ export function nodeDataForPhase(phase: Phase): NodeData {
   return data;
 }
 
-export function PhaseNode({ data }: NodeProps) {
+export function PhaseNode({ id, data }: NodeProps) {
   const value = data as NodeData;
+  const updateNodeInternals = useUpdateNodeInternals();
+  const outputSignature = value.outcomes?.map((outcome) => outcome.id).join(":") ?? (value.kind === "idle" ? "" : "next");
+  useEffect(() => updateNodeInternals(id), [id, outputSignature, updateNodeInternals]);
   const outputs = value.outcomes
     ? value.outcomes.map(({ id, label, tone }) => <OutPort key={id} id={id} label={label} tone={tone} />)
     : value.kind !== "idle" ? [<OutPort key="next" id="next" label="next" />] : [];

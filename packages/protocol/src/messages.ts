@@ -178,7 +178,9 @@ export const presenceSchema = z.object({
  */
 export const reloadSchema = z.object({
   t: z.literal("reload"),
-  v,
+  // Reload is the one cross-version envelope: a v1 client must be able to
+  // parse the instruction that tells it to fetch the v2 application shell.
+  v: z.union([z.literal(1), v]),
   minVersion: nonEmpty,
   reason: z.enum(["protocol", "scenario", "assets"]),
 });

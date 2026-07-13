@@ -1,7 +1,7 @@
 export class SessionHistory<T> {
   private past: T[] = [];
   private future: T[] = [];
-  constructor(private current: T, private readonly clone: (value: T) => T = structuredClone) {}
+  constructor(private current: T, private readonly clone: (value: T) => T = (value) => structuredClone(value)) {}
   get value() { return this.current; }
   get canUndo() { return this.past.length > 0; }
   get canRedo() { return this.future.length > 0; }

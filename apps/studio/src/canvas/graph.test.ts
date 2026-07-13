@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { parseRuntimeScenario } from "@smartphonecracy/studio-adapter";
 import scenario from "../../../../content/scenarios/dev.json";
 import manifest from "../../../../content/media-manifest.json";
-import { acceptsInput, applyEdges, END_NODE_ID, ENTRY_NODE_ID, graphEdges, outputHandles, pruneEdges, validateConnection, withoutOutputEdge } from "./graph.js";
+import { acceptsInput, applyEdges, END_NODE_ID, ENTRY_NODE_ID, graphEdges, outputHandles, phaseOutputHandles, pruneEdges, replacePluralityLayoutEdges, validateConnection, withoutOutputEdge } from "./graph.js";
 
 const project = () => parseRuntimeScenario(structuredClone(scenario), manifest);
 
@@ -26,6 +26,43 @@ describe("Studio canvas graph", () => {
     expect(edges.filter((edge) => edge.source === "question-two-quadrant").map((edge) => edge.sourceHandle)).toEqual(["min", "max", "tie", "empty"]);
     expect(validateConnection(value, edges.filter((edge) => edge.source !== "question-two-quadrant"), { source: "question-two-quadrant", sourceHandle: "q1", target: END_NODE_ID, targetHandle: null })).toMatch(/does not exist/);
     expect(applyEdges(value, edges).scenario.phases.find((phase) => phase.id === "question-two-quadrant")).toMatchObject({ field: { type: "two-quadrant", axis: "x" }, next: { map: { min: "idle", max: "idle" } } });
+  });
+
+  it("derives node handles directly from the current phase shape", () => {
+    const phases = project().scenario.phases;
+    expect(phaseOutputHandles(phases.find((phase) => phase.id === "question-quadrant"))).toEqual(["q1", "q2", "q3", "q4", "tie", "empty"]);
+    expect(phaseOutputHandles(phases.find((phase) => phase.id === "question-two-quadrant"))).toEqual(["min", "max", "tie", "empty"]);
+    expect(phaseOutputHandles(phases.find((phase) => phase.id === "question-fixed"))).toEqual(["next"]);
+  });
+
+  it("preserves tie and empty routes when replacing only spatial layout outputs", () => {
+    const value = project();
+    const original = value.scenario.phases.find((phase) => phase.id === "question-quadrant");
+    if (!original || original.kind !== "position-question" || original.field.type !== "four-quadrant" || original.next.type !== "quadrant-plurality") throw new Error("fixture question missing");
+    const labels = original.field.xAxis;
+    const routed = {
+      ...original,
+      next: { ...original.next, tie: "intro-video", empty: "question-fixed" },
+    };
+    const routedProject = {
+      ...value,
+      scenario: { ...value.scenario, phases: value.scenario.phases.map((phase) => phase.id === routed.id ? routed : phase) as typeof value.scenario.phases },
+    };
+    const switched = {
+      ...routed,
+      field: { type: "two-quadrant" as const, axis: "x" as const, labels },
+      next: { ...routed.next, map: { min: "idle", max: "idle" } },
+    };
+    const switchedProject = {
+      ...routedProject,
+      scenario: { ...routedProject.scenario, phases: routedProject.scenario.phases.map((phase) => phase.id === switched.id ? switched : phase) as typeof routedProject.scenario.phases },
+    };
+    const nextEdges = replacePluralityLayoutEdges(graphEdges(routedProject), switched);
+    expect(nextEdges.find((edge) => edge.id === `${switched.id}:tie`)?.target).toBe("intro-video");
+    expect(nextEdges.find((edge) => edge.id === `${switched.id}:empty`)?.target).toBe("question-fixed");
+    expect(applyEdges(switchedProject, nextEdges).scenario.phases.find((phase) => phase.id === switched.id)).toMatchObject({
+      next: { map: { min: "idle", max: "idle" }, tie: "intro-video", empty: "question-fixed" },
+    });
   });
 
   it("enforces one edge per typed output while allowing shared targets", () => {

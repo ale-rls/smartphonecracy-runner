@@ -60,7 +60,7 @@ function asBytes(raw: RawData): unknown {
   return raw;
 }
 
-function joinClientVersion(raw: unknown): string | null | undefined {
+function joinMetadata(raw: unknown): { clientVersion: string | null; protocolVersion: number } | undefined {
   try {
     const value = typeof raw === "string"
       ? JSON.parse(raw)
@@ -68,7 +68,10 @@ function joinClientVersion(raw: unknown): string | null | undefined {
     if (typeof value !== "object" || value === null) return undefined;
     const message = value as Record<string, unknown>;
     if (message.t !== "join" && message.t !== "display_join") return undefined;
-    return typeof message.clientVersion === "string" ? message.clientVersion : null;
+    return {
+      clientVersion: typeof message.clientVersion === "string" ? message.clientVersion : null,
+      protocolVersion: typeof message.v === "number" ? message.v : PROTOCOL_VERSION,
+    };
   } catch {
     return undefined;
   }
@@ -120,15 +123,15 @@ export class AdmissionController {
   }
 
   private async handleRaw(socket: WebSocket, request: IncomingMessage, raw: unknown): Promise<void> {
-    const clientVersion = joinClientVersion(raw);
+    const metadata = joinMetadata(raw);
     if (
       this.options.buildVersion !== undefined &&
-      clientVersion !== undefined &&
-      clientVersion !== this.options.buildVersion
+      metadata !== undefined &&
+      metadata.clientVersion !== this.options.buildVersion
     ) {
       this.send(socket, {
         t: "reload",
-        v: PROTOCOL_VERSION,
+        v: metadata.protocolVersion === 1 ? 1 : PROTOCOL_VERSION,
         minVersion: this.options.buildVersion,
         reason: "assets",
       });
