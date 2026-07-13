@@ -177,6 +177,7 @@ input:focus, select:focus { outline: none; border-color: var(--flow); }
 .inspector .check > span { display: inline-flex; flex: 1; }
 .inspector fieldset { margin: 0 0 .9rem; border: 1px solid var(--line); border-radius: 8px; }
 .field-error { color: var(--red); margin: -.55rem 0 .8rem; font-size: .85rem; }
+.field-hint { color: var(--muted); margin: -.55rem 0 .8rem; font-size: .85rem; }
 .inspector details { margin-top: 1.2rem; }
 
 /* Diagnostics */

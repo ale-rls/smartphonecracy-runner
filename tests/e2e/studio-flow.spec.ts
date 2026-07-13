@@ -15,6 +15,13 @@ test.describe("Show Studio v1", () => {
     await expect(page.getByText(/Local media: \d+ files? found in content\/media\./)).toBeVisible();
     await page.getByRole("button", { name: "New show" }).click();
     await expect(page.getByRole("cell", { name: "intro.mp4" })).toBeVisible();
+
+    await page.getByRole("button", { name: "Add", exact: true }).click();
+    await page.getByRole("menuitem", { name: "Video phase" }).click();
+    await page.locator('.react-flow__node[data-id^="video-"]').click();
+    await page.getByLabel("Media source").fill("video-1.mp4");
+    await expect(page.getByLabel("Expected duration (ms)")).toHaveValue("15042");
+    await expect(page.getByText("Detected from video: 15.042 seconds")).toBeVisible();
   });
 
   test("imports, edits, validates, previews, and exports a gated package", async ({ page }) => {

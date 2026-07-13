@@ -5,6 +5,7 @@ import { compiledJson, phaseIdError, type AuthorablePhaseKind, type Phase } from
 type Props = {
   project: StudioProject;
   selectedId: string | undefined;
+  localMedia: Array<{ src: string; durationMs?: number }>;
   onRename: (nextId: string) => void;
   onChange: (phase: Phase) => void;
   onKindChange: (kind: AuthorablePhaseKind) => void;
@@ -17,11 +18,14 @@ const numberValue = (value: string, fallback: number) => {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
 };
 
-export function Inspector({ project, selectedId, onRename, onChange, onKindChange, onTransitionChange, onQuestionLayoutChange }: Props) {
+export function Inspector({ project, selectedId, localMedia, onRename, onChange, onKindChange, onTransitionChange, onQuestionLayoutChange }: Props) {
   const phase = project.scenario.phases.find((item) => item.id === selectedId);
   const [idInput, setIdInput] = useState(phase?.id ?? "");
   useEffect(() => setIdInput(phase?.id ?? ""), [phase?.id]);
   const idProblem = phase ? phaseIdError(project, phase.id, idInput) : undefined;
+  const detectedDuration = phase?.kind === "video"
+    ? localMedia.find((file) => file.src === phase.src)?.durationMs
+    : undefined;
 
   if (!phase) return <aside className="inspector" aria-label="Properties inspector"><h2>Properties</h2><p>Select a runtime phase to edit it.</p><Compiled project={project} /></aside>;
   const label = (plain: string, runtime: string) => <span>{plain}<small>{runtime}</small></span>;
@@ -33,8 +37,13 @@ export function Inspector({ project, selectedId, onRename, onChange, onKindChang
     {idProblem && <p className="field-error" role="alert">{idProblem}</p>}
     {phase.kind !== "idle" && <label>{label("Phase type", "kind")}<select value={phase.kind} onChange={(event) => onKindChange(event.target.value as AuthorablePhaseKind)}><option value="video">Video</option><option value="position-question">Position question</option></select></label>}
     {phase.kind === "video" && <>
-      <label>{label("Media source", "src")}<input list="studio-media-sources" value={phase.src} onChange={(event) => onChange({ ...phase, src: event.target.value })} /><datalist id="studio-media-sources">{project.manifest.files.map((file) => <option key={file.src} value={file.src} />)}</datalist></label>
+      <label>{label("Media source", "src")}<input list="studio-media-sources" value={phase.src} onChange={(event) => {
+        const src = event.target.value;
+        const expectedDurationMs = localMedia.find((file) => file.src === src)?.durationMs;
+        onChange({ ...phase, src, ...(expectedDurationMs === undefined ? {} : { expectedDurationMs }) });
+      }} /><datalist id="studio-media-sources">{project.manifest.files.map((file) => <option key={file.src} value={file.src} />)}</datalist></label>
       {number("Expected duration (ms)", "expectedDurationMs", phase.expectedDurationMs, (expectedDurationMs) => onChange({ ...phase, expectedDurationMs }))}
+      {detectedDuration !== undefined && <p className="field-hint">Detected from video: {(detectedDuration / 1000).toFixed(3)} seconds</p>}
     </>}
     {phase.kind === "position-question" && <>
       {text("Question", "text", phase.text, (value) => onChange({ ...phase, text: value }))}
