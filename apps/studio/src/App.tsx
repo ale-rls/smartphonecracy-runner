@@ -4,7 +4,7 @@ import "@xyflow/react/dist/style.css";
 import { Autosave, IndexedDbDraftDatabase, recoverDraft, type SaveStatus } from "./drafts.js";
 import { exportArtifacts, exportBackup, importBackup, importRuntime } from "./io.js";
 import type { Draft } from "./model.js";
-import { applyEdges, END_NODE_ID, ENTRY_NODE_ID, graphEdges, phaseOutputHandles, pruneEdges, replacePluralityLayoutEdges, validateConnection, withoutOutputEdge } from "./canvas/graph.js";
+import { applyEdges, END_NODE_ID, ENTRY_NODE_ID, graphEdges, graphPhases, phaseOutputHandles, pruneEdges, replacePluralityLayoutEdges, validateConnection, withoutOutputEdge } from "./canvas/graph.js";
 import { nodeDataForPhase, nodeTypes } from "./canvas/nodes.js";
 import { changePhaseKind, renamePhase, type Phase, type PhaseKind } from "./inspector/model.js";
 import { Inspector } from "./inspector/Inspector.js";
@@ -26,10 +26,9 @@ const download = (name: string, value: unknown) => {
 const nodesForDraft = (draft: Draft, current: Node[] = []): Node[] => {
   const layout = new Map(draft.document.nodes.map((node) => [node.id, node]));
   const currentPositions = new Map(current.map((node) => [node.id, node.position]));
-  const phaseNodes: Node[] = draft.project.scenario.phases.map((phase, index) => ({
+  const phaseNodes: Node[] = graphPhases(draft.project).map((phase, index) => ({
     id: phase.id,
     type: "phase",
-    deletable: phase.kind !== "idle",
     position: currentPositions.get(phase.id) ?? layout.get(phase.id) ?? { x: 360 + (index % 3) * 300, y: 80 + Math.floor(index / 3) * 220 },
     data: nodeDataForPhase(phase),
   }));

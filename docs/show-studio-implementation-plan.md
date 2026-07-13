@@ -212,11 +212,11 @@ Editor-only marker for the runtime’s configured first phase.
 - One outgoing connection
 - Not emitted as an additional runtime phase
 
-### Idle/attract node
+### Idle/attract runtime phase
 
-Represents the existing idle phase or idle target.
+The required runtime idle phase remains in the scenario data, but is represented
+on the canvas by the editor-only End node rather than by a duplicate phase node.
 
-- Shows that the experience returns to attract mode
 - Cannot contain runtime fields that do not already exist
 
 ### Video node
@@ -281,7 +281,9 @@ a different one.
 
 ### End
 
-Use an editor-only convenience node only if it compiles to an existing runtime idle target. Do not add a new runtime phase type merely to support the editor.
+Use one editor-only End node as the canvas representation of the existing
+runtime idle target. It compiles to `idle`; do not render a second Idle node or
+add a new runtime phase type merely to support the editor.
 
 ## 8. Connection rules
 
