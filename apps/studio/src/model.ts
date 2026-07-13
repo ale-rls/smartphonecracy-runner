@@ -1,8 +1,10 @@
 import type { StudioProject } from "@smartphonecracy/studio-adapter";
+import { END_NODE_ID, ENTRY_NODE_ID, graphEdges, graphPhases } from "./canvas/graph.js";
 
 export type StudioNodeLayout = { id: string; x: number; y: number };
 export type StudioDocument = {
   studioFormatVersion: 1;
+  canvasFormatVersion?: 1;
   runtimeScenarioVersion: string;
   showId: string;
   nodes: StudioNodeLayout[];
@@ -22,31 +24,22 @@ export type Draft = {
 export type StudioBackup = { format: "smartphonecracy-studio-backup"; version: 1; draft: Draft };
 
 export function autoLayout(project: StudioProject, showId = crypto.randomUUID()): StudioDocument {
-  const nodes = project.scenario.phases.map((phase, index) => ({
+  const nodes = graphPhases(project).map((phase, index) => ({
     id: phase.id,
-    x: 100 + (index % 3) * 280,
-    y: 80 + Math.floor(index / 3) * 180,
+    x: 360 + (index % 3) * 300,
+    y: 80 + Math.floor(index / 3) * 220,
   }));
-  const targets = (phase: StudioProject["scenario"]["phases"][number]) => {
-    if (phase.kind === "idle") return [];
-    if (phase.kind === "video") return [phase.next];
-    return phase.next.type === "fixed"
-      ? [phase.next.target]
-      : [...Object.values(phase.next.map), phase.next.tie, phase.next.empty];
-  };
-  const edges = project.scenario.phases.flatMap((phase) =>
-    [...new Set(targets(phase))].map((target, index) => ({
-      id: `${phase.id}-${target}-${index}`,
-      source: phase.id,
-      target,
-    })),
-  );
   return {
     studioFormatVersion: 1,
+    canvasFormatVersion: 1,
     runtimeScenarioVersion: project.scenario.version,
     showId,
-    nodes,
-    edges,
+    nodes: [
+      { id: ENTRY_NODE_ID, x: 30, y: 80 },
+      ...nodes,
+      { id: END_NODE_ID, x: 1250, y: 500 },
+    ],
+    edges: graphEdges(project),
     viewport: { x: 0, y: 0, zoom: 1 },
   };
 }

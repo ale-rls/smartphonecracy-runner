@@ -72,6 +72,53 @@ test.describe("Show Studio v1", () => {
     await expect(page.getByRole("button", { name: "Landing actions", exact: true })).toHaveCount(1);
   });
 
+  test("restores node positions and connections after saving and reopening a show", async ({ page }) => {
+    const savedEdgeCount = () => page.evaluate(() => new Promise<number>((resolve, reject) => {
+      const open = indexedDB.open("smartphonecracy-studio", 1);
+      open.onerror = () => reject(open.error);
+      open.onsuccess = () => {
+        const read = open.result.transaction("drafts").objectStore("drafts").getAll();
+        read.onerror = () => reject(read.error);
+        read.onsuccess = () => resolve((read.result.find(({ key }) => key.endsWith(":latest"))?.draft.document.edges ?? []).length);
+      };
+    }));
+    await page.goto(studio.baseUrl);
+    await page.getByLabel("Import show or backup").setInputFiles([
+      { name: "scenario.json", mimeType: "application/json", buffer: await fixture("content/scenarios/dev.json") },
+      { name: "media-manifest.json", mimeType: "application/json", buffer: await fixture("content/media-manifest.json") },
+    ]);
+
+    const node = page.locator('.react-flow__node[data-id="intro-video"]');
+    const transform = () => node.evaluate((element) => (element as HTMLElement).style.transform);
+    const before = await transform();
+    const edgeCount = await page.locator(".react-flow__edge").count();
+    const box = await node.boundingBox();
+    expect(box).not.toBeNull();
+    await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box!.x + box!.width / 2 + 140, box!.y + box!.height / 2 + 80, { steps: 8 });
+    await page.mouse.up();
+
+    await expect.poll(transform).not.toBe(before);
+    const moved = await transform();
+    await expect(page.getByText("saved", { exact: true })).toBeVisible();
+
+    await page.getByRole("button", { name: "View", exact: true }).click();
+    await page.getByRole("menuitem", { name: "Save layout" }).click();
+    await expect(page.locator(".react-flow__edge")).toHaveCount(edgeCount);
+    await expect(page.getByText("saving", { exact: true })).toBeVisible();
+    await expect(page.getByText("saved", { exact: true })).toBeVisible();
+    await expect.poll(savedEdgeCount).toBe(edgeCount);
+
+    await page.getByRole("button", { name: "File" }).click();
+    await page.getByRole("menuitem", { name: "Close show" }).click();
+    await page.getByRole("button", { name: "Imported show", exact: true }).click();
+
+    await expect.poll(transform).toBe(moved);
+    await expect.poll(savedEdgeCount).toBe(edgeCount);
+    await expect(page.locator(".react-flow__edge")).toHaveCount(edgeCount);
+  });
+
   test("supports keyboard entry and renders a large graph within the interaction budget", async ({ page }) => {
     await page.goto(studio.baseUrl);
     await page.keyboard.press("Tab");
@@ -89,7 +136,7 @@ test.describe("Show Studio v1", () => {
     ]);
     await expect(page.getByLabel("Show name")).toBeVisible({ timeout: 10_000 });
     expect(Date.now() - started).toBeLessThan(10_000);
-    await expect(page.locator(".react-flow__node")).toHaveCount(153);
+    await expect(page.locator(".react-flow__node")).toHaveCount(152);
   });
 
   test("switches question handles and restores them with undo and redo", async ({ page }) => {
