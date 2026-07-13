@@ -4,7 +4,7 @@ import {
   type CursorsMessage,
   type ServerToClientMessage,
 } from "@smartphonecracy/protocol";
-import { CursorField, JOIN_HALO_MS, RENDER_DELAY_MS } from "./cursorField.js";
+import { CursorField, RENDER_DELAY_MS } from "./cursorField.js";
 import { displayReducer, initialDisplayState, type DisplayState } from "../state/store.js";
 
 const batch = (tick: number, cursors: Array<[string, number, number]>): CursorsMessage => ({
@@ -42,13 +42,6 @@ describe("CursorField", () => {
     expect(field.size).toBe(1);
     const [a] = field.renderAt(5000);
     expect(a!.x).toBe(0.1);
-  });
-
-  it("reports a join halo that expires", () => {
-    const field = new CursorField();
-    field.ingest(batch(1, [["a", 0.5, 0.5]]), 1000);
-    expect(field.renderAt(1000 + JOIN_HALO_MS / 2)[0]!.halo).toBeCloseTo(0.5);
-    expect(field.renderAt(1000 + JOIN_HALO_MS + 1)[0]!.halo).toBeNull();
   });
 
   it("ignores batches while frozen", () => {

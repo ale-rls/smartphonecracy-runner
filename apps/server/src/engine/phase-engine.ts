@@ -420,13 +420,16 @@ export class PhaseEngine {
         if (
           this.participantSockets.has(socket) &&
           this.lifecycle === "active" &&
-          this.currentPhase().kind === "position-question" &&
           this.matches(message.sessionId, this.phaseId, message.phaseEpoch)
         ) {
           const participantId = this.participantIds.get(socket);
           if (participantId !== undefined) {
             if (this.cursors.recordInput(participantId, message.seq, message.x, message.y)) {
-              this.recordInput(this.now(), participantId, message.x, message.y);
+              // Video movement updates only the projected cursor. Votes and
+              // question activity remain scoped to position-question phases.
+              if (this.currentPhase().kind === "position-question") {
+                this.recordInput(this.now(), participantId, message.x, message.y);
+              }
             }
           }
         }
