@@ -136,15 +136,9 @@ export function App() {
         {phase?.kind === "position-question" && (
           <div className="question">
             <h2>{phase.text}</h2>
-            <div className="axis axis-x">
-              <span>{phase.xAxis.minLabel}</span>
-              <span>{phase.xAxis.maxLabel}</span>
-            </div>
-            <div className="axis axis-y">
-              <span>{phase.yAxis.minLabel}</span>
-              <span>{phase.yAxis.maxLabel}</span>
-            </div>
             <QuadrantOverlay
+              field={phase.field}
+              liveField={state.liveField}
               liveCounts={state.liveCounts}
               resolution={state.resolution}
             />

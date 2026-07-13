@@ -4,9 +4,12 @@ import type { Connection, Edge } from "@xyflow/react";
 export const ENTRY_NODE_ID = "__studio_entry__";
 export const END_NODE_ID = "__studio_end__";
 export const FIXED_HANDLE = "next";
-export const OUTCOME_HANDLES = ["q1", "q2", "q3", "q4", "tie", "empty"] as const;
+export const FOUR_OUTCOME_HANDLES = ["q1", "q2", "q3", "q4", "tie", "empty"] as const;
+export const TWO_OUTCOME_HANDLES = ["min", "max", "tie", "empty"] as const;
+export const OUTCOME_HANDLES = [...FOUR_OUTCOME_HANDLES, "min", "max"] as const;
 
 export type OutcomeHandle = (typeof OUTCOME_HANDLES)[number];
+type Phase = StudioProject["scenario"]["phases"][number];
 
 export function acceptsInput(project: StudioProject, target: string): boolean {
   return target === END_NODE_ID || project.scenario.phases.some((phase) => phase.id === target);
@@ -17,14 +20,17 @@ export function withoutOutputEdge(edges: Edge[], source: string | null, sourceHa
   return edges.filter((edge) => edge.source !== source || (edge.sourceHandle ?? FIXED_HANDLE) !== handle);
 }
 
+export function phaseOutputHandles(phase: Phase | undefined): readonly string[] {
+  if (!phase || phase.kind === "idle") return [];
+  return phase.kind === "position-question" && phase.next.type === "quadrant-plurality"
+    ? phase.field.type === "two-quadrant" ? TWO_OUTCOME_HANDLES : FOUR_OUTCOME_HANDLES
+    : [FIXED_HANDLE];
+}
+
 export function outputHandles(project: StudioProject, source: string): readonly string[] {
   if (source === ENTRY_NODE_ID) return [FIXED_HANDLE];
   if (source === END_NODE_ID) return [];
-  const phase = project.scenario.phases.find((item) => item.id === source);
-  if (!phase || phase.kind === "idle") return [];
-  return phase.kind === "position-question" && phase.next.type === "quadrant-plurality"
-    ? OUTCOME_HANDLES
-    : [FIXED_HANDLE];
+  return phaseOutputHandles(project.scenario.phases.find((item) => item.id === source));
 }
 
 export function runtimeTarget(target: string): string {
@@ -33,6 +39,25 @@ export function runtimeTarget(target: string): string {
 
 export function edgeTarget(target: string): string {
   return target === "idle" ? END_NODE_ID : target;
+}
+
+export function replacePluralityLayoutEdges(
+  edges: Edge[],
+  phase: Extract<Phase, { kind: "position-question" }>,
+): Edge[] {
+  if (phase.next.type !== "quadrant-plurality") return edges;
+  const next = phase.next;
+  const retained = edges.filter((edge) => edge.source !== phase.id);
+  return [
+    ...retained,
+    ...phaseOutputHandles(phase).map((handle) => {
+      const commonTarget = handle === "tie" || handle === "empty"
+        ? edges.find((edge) => edge.source === phase.id && edge.sourceHandle === handle)?.target
+          ?? edgeTarget(next[handle])
+        : END_NODE_ID;
+      return { id: `${phase.id}:${handle}`, source: phase.id, sourceHandle: handle, target: commonTarget };
+    }),
+  ];
 }
 
 export function graphEdges(project: StudioProject): Edge[] {
@@ -48,8 +73,10 @@ export function graphEdges(project: StudioProject): Edge[] {
       edges.push({ id: `${phase.id}:next`, source: phase.id, sourceHandle: FIXED_HANDLE, target: edgeTarget(target) });
       continue;
     }
-    for (const handle of OUTCOME_HANDLES) {
-      const target = handle === "tie" || handle === "empty" ? phase.next[handle] : phase.next.map[handle];
+    for (const handle of outputHandles(project, phase.id)) {
+      const target = handle === "tie" || handle === "empty"
+        ? phase.next[handle]
+        : (phase.next.map as Record<string, string>)[handle]!;
       edges.push({ id: `${phase.id}:${handle}`, source: phase.id, sourceHandle: handle, target: edgeTarget(target) });
     }
   }
@@ -88,12 +115,16 @@ export function applyEdges(project: StudioProject, edges: Edge[]): StudioProject
       if (!edge) throw new Error(`Phase “${phase.id}” has a dangling next output.`);
       return { ...phase, next: { ...phase.next, target: runtimeTarget(edge.target) } };
     }
-    const targets = Object.fromEntries(OUTCOME_HANDLES.map((handle) => {
+    const handles = outputHandles(project, phase.id) as readonly OutcomeHandle[];
+    const targets = Object.fromEntries(handles.map((handle) => {
       const edge = edgeFor(phase.id, handle);
       if (!edge) throw new Error(`Phase “${phase.id}” has a dangling ${handle} output.`);
       return [handle, runtimeTarget(edge.target)];
     })) as Record<OutcomeHandle, string>;
-    return { ...phase, next: { ...phase.next, map: { q1: targets.q1, q2: targets.q2, q3: targets.q3, q4: targets.q4 }, tie: targets.tie, empty: targets.empty } };
+    const map = phase.field.type === "two-quadrant"
+      ? { min: targets.min, max: targets.max }
+      : { q1: targets.q1, q2: targets.q2, q3: targets.q3, q4: targets.q4 };
+    return { ...phase, next: { ...phase.next, map, tie: targets.tie, empty: targets.empty } };
   });
   return { ...project, scenario: { ...project.scenario, entryPhaseId: runtimeTarget(entry.target), phases: phases as StudioProject["scenario"]["phases"] } };
 }

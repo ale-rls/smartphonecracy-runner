@@ -2,7 +2,7 @@ import { SCENARIO_SCHEMA_VERSION } from "../../../../packages/scenario/src/index
 import { compileStudioGraph } from "@smartphonecracy/studio-adapter";
 import type { Draft } from "../model.js";
 import { diagnosticKey, diagnostics, exportBlocked, type Diagnostic } from "../diagnostics/diagnostics.js";
-import { resolvePreview, startPreview, type ForcedOutcome } from "../preview/preview.js";
+import { forcedOutcomes, resolvePreview, startPreview, type ForcedOutcome } from "../preview/preview.js";
 
 export type BranchSmokeResult = {
   phaseId: string;
@@ -41,13 +41,13 @@ export class DeploymentExportError extends Error {
   }
 }
 
-const outcomes = ["q1", "q2", "q3", "q4", "tie", "empty"] as const;
-
 export function smokeAllBranches(draft: Draft): BranchSmokeResult[] {
   const results: BranchSmokeResult[] = [];
   for (const phase of draft.project.scenario.phases) {
     if (phase.kind !== "position-question") continue;
-    const candidates = phase.next.type === "fixed" ? (["q1"] as const) : outcomes;
+    const candidates: Array<Exclude<ForcedOutcome, "abandoned-solo">> = phase.next.type === "fixed"
+      ? [phase.field.type === "two-quadrant" ? "min" : "q1"]
+      : forcedOutcomes(phase.field).filter((outcome): outcome is Exclude<ForcedOutcome, "abandoned-solo"> => outcome !== "abandoned-solo");
     for (const outcome of candidates) {
       const session = startPreview({
         ...draft.project,

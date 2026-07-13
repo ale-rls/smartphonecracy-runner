@@ -14,7 +14,7 @@ describe("CursorPipeline", () => {
     expect(pipeline.recordInput("p1", 2, Number.NaN, 0.3)).toBe(false);
     expect(pipeline.recordInput("missing", 2, 0.3, 0.3)).toBe(false);
     pipeline.tick();
-    expect(batches).toEqual([{ t: "cursors", v: 1, tick: 0, cursors: [
+    expect(batches).toEqual([{ t: "cursors", v: 2, tick: 0, cursors: [
       { clientId: "p1", color: "#abc", x: 0, y: 1 },
     ] }]);
   });

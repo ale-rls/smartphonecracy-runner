@@ -56,4 +56,29 @@ test.describe("Show Studio v1", () => {
     expect(Date.now() - started).toBeLessThan(10_000);
     await expect(page.locator(".react-flow__node")).toHaveCount(153);
   });
+
+  test("switches question handles and restores them with undo and redo", async ({ page }) => {
+    await page.addInitScript(() => { window.confirm = () => true; });
+    await page.goto(studio.baseUrl);
+    await page.getByLabel("Import show or backup").setInputFiles([
+      { name: "scenario.json", mimeType: "application/json", buffer: await fixture("content/scenarios/dev.json") },
+      { name: "media-manifest.json", mimeType: "application/json", buffer: await fixture("content/media-manifest.json") },
+    ]);
+    const node = page.locator('.react-flow__node[data-id="question-quadrant"]');
+    await node.click();
+    const handles = () => node.locator(".port-out .port-name").allTextContents();
+    await expect.poll(handles).toEqual(["q1 · top right", "q2 · top left", "q3 · bottom left", "q4 · bottom right / center", "tie", "no votes"]);
+
+    await page.getByLabel("Quadrant layout").selectOption("two-quadrant-x");
+    await expect(page.getByLabel("Quadrant layout")).toHaveValue("two-quadrant-x");
+    await expect.poll(handles).toEqual(["min · left · Deregulate", "max · right · Regulate", "tie", "no votes"]);
+
+    await page.getByRole("button", { name: "Edit" }).click();
+    await page.getByRole("menuitem", { name: "Undo" }).click();
+    await expect.poll(handles).toEqual(["q1 · top right", "q2 · top left", "q3 · bottom left", "q4 · bottom right / center", "tie", "no votes"]);
+
+    await page.getByRole("button", { name: "Edit" }).click();
+    await page.getByRole("menuitem", { name: "Redo" }).click();
+    await expect.poll(handles).toEqual(["min · left · Deregulate", "max · right · Regulate", "tie", "no votes"]);
+  });
 });

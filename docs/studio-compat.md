@@ -12,7 +12,8 @@ it does not maintain a second runtime schema.
 | Entry and cycles | `entryPhaseId` plus scenario-level `cyclesAllowed` | Preserved and graph-validated |
 | Idle | `{ kind: "idle", id: "idle" }` | Preserved |
 | Video transition | `next` is a phase-ID string | Preserved; no hypothetical transition object |
-| Position-question transition | Discriminated `fixed` or `quadrant-plurality` object | Preserved and graph-validated |
+| Position-question field | `four-quadrant` with X+Y axes, or `two-quadrant` with one active X/Y axis | Preserved, rendered, and correlated with transition outcomes |
+| Position-question transition | Discriminated `fixed` or `quadrant-plurality`; plurality maps are q1–q4 for four quadrants and min/max for two | Preserved and graph-validated |
 | Media manifest | `{ files: [{ src, bytes, hash }] }` | Preserved; durations belong to video phases, not the manifest |
 | Unknown runtime fields | Not interpreted by the current canonical schema | Raw-carried and restored on export; phase and manifest-file extensions follow stable `id`/`src` identities through collection edits |
 
@@ -26,6 +27,12 @@ validator-enforced unique `id` and `src`; index alignment is used only inside
 collections without a stable runtime identity. Known edited values win over sidecar values. Studio-only layout and
 viewport data therefore cannot leak into runtime JSON, while a no-edit
 import/export does not silently destroy fields written by a newer runtime.
+
+Legacy position questions with top-level `xAxis` and `yAxis` fields are consumed
+as canonical `field: { type: "four-quadrant", ... }` before extension capture.
+Canonical exports therefore use the schema-v2 field shape without leaking the
+legacy keys through the raw-carry sidecar. The migration is lossless because the
+legacy format could only describe four-quadrant questions.
 
 An incompatible change to a known field still fails canonical parsing; it is
 not disguised as an extension. `compileStudioGraph()` reparses both artifacts

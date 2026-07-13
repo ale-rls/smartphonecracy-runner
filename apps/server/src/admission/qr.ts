@@ -1,4 +1,4 @@
-import type { QrGrantMessage, QrHiddenMessage } from "@smartphonecracy/protocol";
+import { PROTOCOL_VERSION, type QrGrantMessage, type QrHiddenMessage } from "@smartphonecracy/protocol";
 
 export type QrLifecycle = "idle" | "lobby" | "active";
 export type QrPushMessage = QrGrantMessage | QrHiddenMessage;
@@ -43,7 +43,7 @@ export class QrGrantPushLoop {
       lifecycle === "active" &&
       (this.options.allowLateJoin === false || this.options.activeQrVisibility === "hidden")
     ) {
-      this.options.send({ t: "qr_hidden", v: 1 });
+      this.options.send({ t: "qr_hidden", v: PROTOCOL_VERSION });
       return;
     }
 
@@ -53,7 +53,7 @@ export class QrGrantPushLoop {
     url.searchParams.set("g", grant.token);
     this.options.send({
       t: "qr_grant",
-      v: 1,
+      v: PROTOCOL_VERSION,
       url: url.toString(),
       expiresAt: grant.claims.expiresAt,
       placement: lifecycle === "active" ? "corner" : "large",

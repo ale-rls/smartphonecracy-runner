@@ -35,7 +35,7 @@ function begin(
 ): void {
   voteEngine.beginQuestion({
     sessionId: "session-1",
-    question: { ...question, next },
+    question: { ...question, next } as PositionQuestionPhase,
     phaseEpoch: 4,
     phaseStartedAt: 0,
     phaseDeadline: 1_000,
@@ -131,6 +131,7 @@ describe("VoteEngine", () => {
     const snapshot = votes.finalize(20)!.snapshot;
     const resolved = resolveSnapshot({ ...question, next: { type: "fixed", target: "fixed-target" } }, snapshot);
     expect(resolved).toEqual({
+      field: question.field,
       quadrantCounts: { q1: 0, q2: 0, q3: 0, q4: 1 },
       winner: "fixed",
       resolvedTarget: "fixed-target",
@@ -152,5 +153,98 @@ describe("VoteEngine", () => {
     votes.recordHeartbeat("participant", 10);
     votes.recordInput("participant", 0.5, 0.5, 10);
     expect(votes.liveStatus(20)?.quadrantCounts).toEqual({ q1: 0, q2: 0, q3: 0, q4: 1 });
+  });
+
+  it("resolves a two-quadrant x field with the center boundary on max/right", () => {
+    const twoQuestion = scenarioSchema.parse({
+      version: "two-x",
+      entryPhaseId: "question",
+      phases: [{ kind: "idle", id: "idle" }, {
+        kind: "position-question",
+        id: "question",
+        text: "Agree?",
+        field: {
+          type: "two-quadrant",
+          axis: "x",
+          labels: { minLabel: "Disagree", maxLabel: "Agree" },
+        },
+        durationMs: 1_000,
+        freezeMs: 30,
+        connectionStaleAfterMs: 100,
+        showLiveCounts: true,
+        next: {
+          type: "quadrant-plurality",
+          map: { min: "min-target", max: "max-target" },
+          tie: "tie-target",
+          empty: "empty-target",
+          countedStatuses: ["valid"],
+        },
+      }],
+    }).phases[1] as PositionQuestionPhase;
+    const votes = new VoteEngine();
+    votes.beginQuestion({
+      sessionId: "session-1",
+      question: twoQuestion,
+      phaseEpoch: 1,
+      phaseStartedAt: 0,
+      phaseDeadline: 1_000,
+      participants: ["left", "boundary", "right"].map((participantId) => ({
+        participantId,
+        connected: true,
+        lastHeartbeatAt: 0,
+      })),
+    });
+    votes.recordInput("left", 0.49, 0.1, 900);
+    votes.recordInput("boundary", 0.5, 0.1, 900);
+    votes.recordInput("right", 0.9, 0.9, 900);
+
+    expect(votes.liveStatus(950)).toMatchObject({
+      field: { type: "two-quadrant", axis: "x" },
+      quadrantCounts: { min: 1, max: 2 },
+    });
+    expect(votes.finalize(950)).toMatchObject({
+      quadrantCounts: { min: 1, max: 2 },
+      winner: "max",
+      resolvedTarget: "max-target",
+    });
+  });
+
+  it("uses y for a two-quadrant y field while preserving both input coordinates", () => {
+    const twoQuestion = scenarioSchema.parse({
+      version: "two-y",
+      entryPhaseId: "question",
+      phases: [{ kind: "idle", id: "idle" }, {
+        kind: "position-question",
+        id: "question",
+        text: "Where?",
+        field: {
+          type: "two-quadrant",
+          axis: "y",
+          labels: { minLabel: "Top", maxLabel: "Bottom" },
+        },
+        durationMs: 1_000,
+        freezeMs: 0,
+        connectionStaleAfterMs: 100,
+        showLiveCounts: true,
+        next: { type: "fixed", target: "fixed-target" },
+      }],
+    }).phases[1] as PositionQuestionPhase;
+    const votes = new VoteEngine();
+    votes.beginQuestion({
+      sessionId: "session-1",
+      question: twoQuestion,
+      phaseEpoch: 1,
+      phaseStartedAt: 0,
+      phaseDeadline: 1_000,
+      participants: [{ participantId: "boundary", connected: true, lastHeartbeatAt: 0 }],
+    });
+    votes.recordInput("boundary", 0.17, 0.5, 900);
+
+    expect(votes.finalize(950)).toMatchObject({
+      quadrantCounts: { min: 0, max: 1 },
+      winner: "fixed",
+      resolvedTarget: "fixed-target",
+      snapshot: { votes: [{ x: 0.17, y: 0.5 }] },
+    });
   });
 });

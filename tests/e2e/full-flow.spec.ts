@@ -26,6 +26,12 @@ test.describe("full scenario flow", () => {
     // must render the idle attract layer once ready.
     await expect(display.locator(".idle")).toBeVisible();
     await expect(display.locator(".media-status")).toBeHidden({ timeout: 20_000 });
+    const cursorGeometry = await display.locator(".layer-cursors").evaluate((layer) => {
+      const layerRect = layer.getBoundingClientRect();
+      const canvasRect = layer.querySelector("canvas")!.getBoundingClientRect();
+      return { layer: [layerRect.width, layerRect.height], canvas: [canvasRect.width, canvasRect.height] };
+    });
+    expect(cursorGeometry.canvas).toEqual(cursorGeometry.layer);
     await expect.poll(async () => (await adminStatus(server.baseUrl)).displayConnected).toBe(true);
 
     // Large QR is shown while idle (plan §9).
@@ -50,17 +56,44 @@ test.describe("full scenario flow", () => {
       .poll(async () => (await adminStatus(server.baseUrl)).phaseId, { timeout: 20_000 })
       .toBe("question-fixed");
     await expect(display.locator(".question h2")).toHaveText(/public transit funding/);
+    await expect(display.locator(".quadrant-overlay-four-quadrant")).toBeVisible();
+    expect(await display.locator(".axis-cross").evaluate((element) => ({
+      position: getComputedStyle(element).position,
+      verticalRule: getComputedStyle(element, "::before").content,
+      horizontalRule: getComputedStyle(element, "::after").content,
+    }))).toEqual({ position: "absolute", verticalRule: '\"\"', horizontalRule: '\"\"' });
 
     // Trackpad input while the question is live; live counts are enabled
     // in the scenario, so the overlay eventually shows a count.
     await dragTrackpad(phone);
     await expect(display.locator(".quadrant-count").first()).toBeVisible({ timeout: 10_000 });
 
-    // Fixed resolution → quadrant question → quadrant-plurality → idle.
+    // Fixed resolution → four-quadrant question → two-quadrant question.
     await expect
       .poll(async () => (await adminStatus(server.baseUrl)).phaseId, { timeout: 20_000 })
       .toBe("question-quadrant");
     await expect(display.locator(".question h2")).toHaveText(/housing policy/);
+    await dragTrackpad(phone);
+
+    await expect
+      .poll(async () => (await adminStatus(server.baseUrl)).phaseId, { timeout: 20_000 })
+      .toBe("question-two-quadrant");
+    await expect(display.locator(".question h2")).toHaveText(/automated decisions/);
+    const split = await display.locator(".quadrant-overlay-two-quadrant").evaluate((overlay) => {
+      const min = overlay.querySelector<HTMLElement>("[data-quadrant=min]")!;
+      const max = overlay.querySelector<HTMLElement>("[data-quadrant=max]")!;
+      const divider = overlay.querySelector<HTMLElement>(".axis-divider")!;
+      return {
+        overlayPosition: getComputedStyle(overlay).position,
+        minPosition: getComputedStyle(min).position,
+        maxPosition: getComputedStyle(max).position,
+        minRight: min.getBoundingClientRect().right,
+        maxLeft: max.getBoundingClientRect().left,
+        dividerRule: getComputedStyle(divider, "::before").content,
+      };
+    });
+    expect(split).toMatchObject({ overlayPosition: "absolute", minPosition: "absolute", maxPosition: "absolute", dividerRule: '\"\"' });
+    expect(Math.abs(split.minRight - split.maxLeft)).toBeLessThan(1);
     await dragTrackpad(phone);
 
     await expect

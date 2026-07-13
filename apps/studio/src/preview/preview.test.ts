@@ -26,4 +26,11 @@ describe("outcome preview", () => {
     expect(preview.resolution?.votes[0]).toMatchObject({ participantId: "solo", status: "disconnected" });
     expect(preview.resolution).toMatchObject({ winner: "q4", includedTotal: 1 });
   });
+  it("uses the same shared oracle for two-quadrant min/max, tie, and empty", () => {
+    const two = startPreview({ ...project, scenario: { ...project.scenario, entryPhaseId: "question-two-quadrant" } });
+    expect(resolvePreview(two, "min", false, false).resolution).toMatchObject({ field: { type: "two-quadrant", axis: "x" }, winner: "min", quadrantCounts: { min: 1, max: 0 }, resolvedTarget: "idle" });
+    expect(resolvePreview(two, "max", true, true).resolution).toMatchObject({ winner: "max", quadrantCounts: { min: 0, max: 3 } });
+    expect(resolvePreview(two, "tie", false, false).resolution).toMatchObject({ winner: "tie", quadrantCounts: { min: 1, max: 1 } });
+    expect(resolvePreview(two, "empty").resolution).toMatchObject({ winner: "empty", quadrantCounts: { min: 0, max: 0 } });
+  });
 });

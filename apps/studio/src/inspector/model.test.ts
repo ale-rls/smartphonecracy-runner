@@ -19,7 +19,7 @@ describe("properties inspector model", () => {
 
   it("uses the director-approved defaults for new questions", () => {
     const question = changePhaseKind({ id: "idle", kind: "idle" }, "position-question");
-    expect(question).toMatchObject({ durationMs: QUESTION_DEFAULTS.durationMs, freezeMs: QUESTION_DEFAULTS.freezeMs, showLiveCounts: true, next: { countedStatuses: ["valid", "stale", "disconnected"] } });
+    expect(question).toMatchObject({ field: { type: "four-quadrant" }, durationMs: QUESTION_DEFAULTS.durationMs, freezeMs: QUESTION_DEFAULTS.freezeMs, showLiveCounts: true, next: { countedStatuses: ["valid", "stale", "disconnected"] } });
   });
 
   it("undoes destructive type changes with their old connections", () => {

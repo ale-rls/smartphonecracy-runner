@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { DisplayHeartbeatMessage } from "@smartphonecracy/protocol";
+import {
+  PROTOCOL_VERSION,
+  type DisplayHeartbeatMessage,
+} from "@smartphonecracy/protocol";
 import { IDLE_PLACEHOLDER, startHeartbeat } from "./heartbeat.js";
 
 describe("startHeartbeat", () => {
@@ -27,7 +30,7 @@ describe("startHeartbeat", () => {
     expect(sent).toHaveLength(1);
     expect(sent[0]).toMatchObject({
       t: "display_heartbeat",
-      v: 1,
+      v: PROTOCOL_VERSION,
       sessionId: IDLE_PLACEHOLDER,
       phaseId: IDLE_PLACEHOLDER,
       phaseEpoch: 0,

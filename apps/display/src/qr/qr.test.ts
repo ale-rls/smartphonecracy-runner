@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
-import type { QrGrantMessage } from "@smartphonecracy/protocol";
+import {
+  PROTOCOL_VERSION,
+  type QrGrantMessage,
+} from "@smartphonecracy/protocol";
 import { shouldShowGrant } from "./shouldShowGrant.js";
 import { placementClassName, qrSizePx } from "./placement.js";
 
 const grant = (overrides: Partial<QrGrantMessage> = {}): QrGrantMessage => ({
   t: "qr_grant",
-  v: 1,
+  v: PROTOCOL_VERSION,
   url: "https://x.example/j?g=abc",
   expiresAt: 10_000,
   placement: "large",
