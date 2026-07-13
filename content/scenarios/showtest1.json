@@ -1,0 +1,63 @@
+{
+  "version": "1.0.0",
+  "entryPhaseId": "video-5c6497",
+  "cyclesAllowed": false,
+  "phases": [
+    {
+      "kind": "idle",
+      "id": "idle"
+    },
+    {
+      "kind": "video",
+      "id": "video-5c6497",
+      "src": "video-1.mp4",
+      "expectedDurationMs": 15042,
+      "next": "position-question-068b73"
+    },
+    {
+      "kind": "position-question",
+      "id": "position-question-068b73",
+      "text": "Crazy or weird?",
+      "field": {
+        "type": "two-quadrant",
+        "axis": "x",
+        "labels": {
+          "minLabel": "Crazy",
+          "maxLabel": "Weird"
+        }
+      },
+      "durationMs": 60000,
+      "freezeMs": 5000,
+      "connectionStaleAfterMs": 10000,
+      "showLiveCounts": true,
+      "next": {
+        "type": "quadrant-plurality",
+        "map": {
+          "min": "video-3f7f2c",
+          "max": "video-242f2a"
+        },
+        "tie": "idle",
+        "empty": "idle",
+        "countedStatuses": [
+          "valid",
+          "stale",
+          "disconnected"
+        ]
+      }
+    },
+    {
+      "kind": "video",
+      "id": "video-3f7f2c",
+      "src": "video-3.mp4",
+      "expectedDurationMs": 15042,
+      "next": "idle"
+    },
+    {
+      "kind": "video",
+      "id": "video-242f2a",
+      "src": "video-2.mp4",
+      "expectedDurationMs": 15042,
+      "next": "idle"
+    }
+  ]
+}
