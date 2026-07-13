@@ -4,13 +4,17 @@ import type {
   PositionVoteStatus,
 } from "@smartphonecracy/scenario";
 import {
-  countQuadrants,
+  countPositionQuadrants,
   materializePositionStatus,
-  resolveQuadrantPlurality,
-  resolveFixedTransition,
-  type Quadrant,
+  resolvePositionPlurality,
+  resolvePositionFixedTransition,
+  type FourQuadrant,
+  type FourQuadrantField,
+  type PositionField,
+  type PositionQuadrantCounts,
+  type TwoQuadrant,
+  type TwoQuadrantField,
 } from "@smartphonecracy/shared";
-import type { QuadrantCounts } from "@smartphonecracy/protocol";
 
 export type VoteParticipantSeed = {
   participantId: string;
@@ -40,17 +44,27 @@ export type FinalVoteSnapshot = {
   votes: readonly PositionVote[];
 };
 
-export type VoteResolution = {
-  snapshot: FinalVoteSnapshot;
-  quadrantCounts: QuadrantCounts;
-  winner: Quadrant | "tie" | "empty" | "fixed";
+type FourQuadrantResolution = {
+  field: FourQuadrantField;
+  quadrantCounts: PositionQuadrantCounts<FourQuadrantField>;
+  winner: FourQuadrant | "tie" | "empty" | "fixed";
   resolvedTarget: string;
 };
 
-export type LiveQuestionStatus = {
+type TwoQuadrantResolution = {
+  field: TwoQuadrantField;
+  quadrantCounts: PositionQuadrantCounts<TwoQuadrantField>;
+  winner: TwoQuadrant | "tie" | "empty" | "fixed";
+  resolvedTarget: string;
+};
+
+export type VoteResolution = (FourQuadrantResolution | TwoQuadrantResolution) & {
+  snapshot: FinalVoteSnapshot;
+};
+
+export type LiveQuestionStatus = (Pick<FourQuadrantResolution, "field" | "quadrantCounts"> | Pick<TwoQuadrantResolution, "field" | "quadrantCounts">) & {
   connectedCount: number;
   positionedCount: number;
-  quadrantCounts: QuadrantCounts;
 };
 
 type MutableVote = {
@@ -61,10 +75,6 @@ type MutableVote = {
   lastInputAt: number | null;
   lastHeartbeatAt: number | null;
 };
-
-function emptyCounts(): QuadrantCounts {
-  return { q1: 0, q2: 0, q3: 0, q4: 0 };
-}
 
 function clampCoordinate(value: number): number {
   return Math.min(1, Math.max(0, value));
@@ -88,16 +98,27 @@ export function resolveSnapshot(
   snapshot: FinalVoteSnapshot,
 ): Omit<VoteResolution, "snapshot"> {
   if (question.next.type === "fixed") {
-    return resolveFixedTransition(snapshot.votes, question.next.target);
+    return question.field.type === "four-quadrant"
+      ? resolvePositionFixedTransition(question.field, snapshot.votes, question.next.target)
+      : resolvePositionFixedTransition(question.field, snapshot.votes, question.next.target);
   }
 
   const counted = new Set<CountablePositionVoteStatus>(question.next.countedStatuses);
-  const outcome = resolveQuadrantPlurality(snapshot.votes, counted);
+  if (question.field.type === "four-quadrant") {
+    const outcome = resolvePositionPlurality(question.field, snapshot.votes, counted);
+    const resolvedTarget = outcome.winner === "empty"
+      ? question.next.empty
+      : outcome.winner === "tie"
+        ? question.next.tie
+        : (question.next.map as Record<FourQuadrant, string>)[outcome.winner];
+    return { ...outcome, resolvedTarget };
+  }
+  const outcome = resolvePositionPlurality(question.field, snapshot.votes, counted);
   const resolvedTarget = outcome.winner === "empty"
     ? question.next.empty
     : outcome.winner === "tie"
       ? question.next.tie
-      : question.next.map[outcome.winner];
+      : (question.next.map as Record<TwoQuadrant, string>)[outcome.winner];
   return { ...outcome, resolvedTarget };
 }
 
@@ -218,14 +239,19 @@ export class VoteEngine {
     const question = this.question;
     if (!question) return null;
     const status = this.statusForVotes(question.votes.values(), now, question.question.connectionStaleAfterMs);
-    const counts = this.countVotes(question.votes.values(), status, question.question.next);
+    const counts = this.countVotes(
+      question.votes.values(),
+      status,
+      question.question.field,
+      question.question.next,
+    );
     let connectedCount = 0;
     let positionedCount = 0;
     for (const vote of question.votes.values()) {
       if (vote.connected) connectedCount += 1;
       if (vote.x !== null && vote.y !== null) positionedCount += 1;
     }
-    return { connectedCount, positionedCount, quadrantCounts: counts };
+    return { field: question.question.field, connectedCount, positionedCount, quadrantCounts: counts } as LiveQuestionStatus;
   }
 
   finalize(now: number): VoteResolution | null {
@@ -249,7 +275,7 @@ export class VoteEngine {
     this.onSnapshotEnqueued?.(snapshot);
 
     const resolved = resolveSnapshot(question.question, snapshot);
-    const resolution: VoteResolution = { snapshot, ...resolved };
+    const resolution = { snapshot, ...resolved } as VoteResolution;
     question.resolution = resolution;
     return resolution;
   }
@@ -279,16 +305,18 @@ export class VoteEngine {
   private countVotes(
     votes: Iterable<MutableVote>,
     statuses: Map<string, PositionVoteStatus>,
+    field: PositionField,
     next: PositionQuestionPhase["next"],
-  ): QuadrantCounts {
-    if (next.type !== "quadrant-plurality") return emptyCounts();
-    const counted = new Set<CountablePositionVoteStatus>(next.countedStatuses);
+  ): PositionQuadrantCounts {
+    const counted = next.type === "quadrant-plurality"
+      ? new Set<CountablePositionVoteStatus>(next.countedStatuses)
+      : undefined;
     const positioned = [...votes].map((vote) => ({
       x: vote.x,
       y: vote.y,
       status: statuses.get(vote.participantId) ?? "never-moved",
     }));
-    return countQuadrants(positioned, counted);
+    return countPositionQuadrants(field, positioned, counted);
   }
 
   private snapshotVotes(

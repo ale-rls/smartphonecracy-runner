@@ -1,12 +1,18 @@
 import { z } from "zod";
-import { phaseSchema, quadrantSchema } from "@smartphonecracy/scenario";
+import {
+  fourQuadrantFieldSchema,
+  phaseSchema,
+  quadrantSchema,
+  twoQuadrantFieldSchema,
+  twoQuadrantSchema,
+} from "@smartphonecracy/scenario";
 
 /**
  * WebSocket protocol (plan §7). All messages are JSON with a discriminator
  * field `t` and a protocol version `v`.
  */
 
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 2;
 
 const v = z.literal(PROTOCOL_VERSION);
 const nonEmpty = z.string().min(1);
@@ -35,12 +41,20 @@ export const cursorSchema = z.object({
   color: nonEmpty,
 });
 
-export const quadrantCountsSchema = z.object({
+export const fourQuadrantCountsSchema = z.object({
   q1: z.number().int().nonnegative(),
   q2: z.number().int().nonnegative(),
   q3: z.number().int().nonnegative(),
   q4: z.number().int().nonnegative(),
 });
+
+export const twoQuadrantCountsSchema = z.object({
+  min: z.number().int().nonnegative(),
+  max: z.number().int().nonnegative(),
+});
+
+/** Compatibility name for the original four-quadrant counts schema. */
+export const quadrantCountsSchema = fourQuadrantCountsSchema;
 
 // ---------------------------------------------------------------- phone → server
 
@@ -164,7 +178,9 @@ export const presenceSchema = z.object({
  */
 export const reloadSchema = z.object({
   t: z.literal("reload"),
-  v,
+  // Reload is the one cross-version envelope: a v1 client must be able to
+  // parse the instruction that tells it to fetch the v2 application shell.
+  v: z.union([z.literal(1), v]),
   minVersion: nonEmpty,
   reason: z.enum(["protocol", "scenario", "assets"]),
 });
@@ -178,35 +194,59 @@ export const cursorsSchema = z.object({
   cursors: z.array(cursorSchema),
 });
 
-export const questionStatusSchema = z.object({
+const questionStatusBaseSchema = z.object({
   t: z.literal("question_status"),
   v,
   sessionId: nonEmpty,
   phaseEpoch: z.number().int().nonnegative(),
   connectedCount: z.number().int().nonnegative(),
   positionedCount: z.number().int().nonnegative(),
-  // Present only when the question's showLiveCounts is true (plan §7);
-  // when hidden, the server omits the field entirely.
-  quadrantCounts: quadrantCountsSchema.optional(),
 });
 
-export const questionResolvedSchema = z.object({
+export const fourQuadrantQuestionStatusSchema = questionStatusBaseSchema.extend({
+  field: fourQuadrantFieldSchema,
+  // Present only when the question's showLiveCounts is true (plan §7).
+  quadrantCounts: fourQuadrantCountsSchema.optional(),
+});
+
+export const twoQuadrantQuestionStatusSchema = questionStatusBaseSchema.extend({
+  field: twoQuadrantFieldSchema,
+  quadrantCounts: twoQuadrantCountsSchema.optional(),
+});
+
+export const questionStatusSchema = z.union([
+  fourQuadrantQuestionStatusSchema,
+  twoQuadrantQuestionStatusSchema,
+]);
+
+const questionResolvedBaseSchema = z.object({
   t: z.literal("question_resolved"),
   v,
   sessionId: nonEmpty,
   phaseEpoch: z.number().int().nonnegative(),
-  quadrantCounts: quadrantCountsSchema,
-  // "fixed" = the question had a fixed transition: counts are still real
-  // evidence, but no quadrant outcome should be dramatized by the display.
-  winner: z.union([
-    quadrantSchema,
-    z.literal("tie"),
-    z.literal("empty"),
-    z.literal("fixed"),
-  ]),
   resolvedTarget: nonEmpty,
   freezeUntil: timestamp,
 });
+
+const nonQuadrantWinnerSchema = z.enum(["tie", "empty", "fixed"]);
+
+export const fourQuadrantQuestionResolvedSchema = questionResolvedBaseSchema.extend({
+  field: fourQuadrantFieldSchema,
+  quadrantCounts: fourQuadrantCountsSchema,
+  // "fixed" means counts remain evidence but no outcome is dramatized.
+  winner: z.union([quadrantSchema, nonQuadrantWinnerSchema]),
+});
+
+export const twoQuadrantQuestionResolvedSchema = questionResolvedBaseSchema.extend({
+  field: twoQuadrantFieldSchema,
+  quadrantCounts: twoQuadrantCountsSchema,
+  winner: z.union([twoQuadrantSchema, nonQuadrantWinnerSchema]),
+});
+
+export const questionResolvedSchema = z.union([
+  fourQuadrantQuestionResolvedSchema,
+  twoQuadrantQuestionResolvedSchema,
+]);
 
 export const qrGrantSchema = z.object({
   t: z.literal("qr_grant"),
@@ -263,7 +303,7 @@ export const pongSchema = z.object({
 });
 
 /** Everything a client can receive from the server. */
-export const serverToClientSchema = z.discriminatedUnion("t", [
+export const serverToClientSchema = z.union([
   snapshotSchema,
   phaseMessageSchema,
   presenceSchema,
@@ -285,6 +325,8 @@ export const serverToClientSchema = z.discriminatedUnion("t", [
 export type PhaseSnapshotMessage = z.infer<typeof phaseSnapshotSchema>;
 export type Cursor = z.infer<typeof cursorSchema>;
 export type QuadrantCounts = z.infer<typeof quadrantCountsSchema>;
+export type FourQuadrantCounts = z.infer<typeof fourQuadrantCountsSchema>;
+export type TwoQuadrantCounts = z.infer<typeof twoQuadrantCountsSchema>;
 
 export type JoinMessage = z.infer<typeof joinSchema>;
 export type InputMessage = z.infer<typeof inputSchema>;

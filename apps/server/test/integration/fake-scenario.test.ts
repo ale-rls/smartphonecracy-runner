@@ -85,7 +85,7 @@ function createHarness(policy: { noParticipantGraceMs?: number } = {}) {
     const socket = new TestSocket();
     connect(socket, "192.0.2.1");
     socket.message({
-      t: "display_join", v: 1, clientVersion: "test", installationId: "inst-1",
+      t: "display_join", v: 2, clientVersion: "test", installationId: "inst-1",
       roomId: "room-1", displayToken: "display-secret",
     });
     return socket;
@@ -94,7 +94,7 @@ function createHarness(policy: { noParticipantGraceMs?: number } = {}) {
     const socket = new TestSocket();
     connect(socket, `198.51.100.${suffix}`);
     socket.message({
-      t: "join", v: 1, clientVersion: "test", installationId: "inst-1", roomId: "room-1",
+      t: "join", v: 2, clientVersion: "test", installationId: "inst-1", roomId: "room-1",
       joinGrant: admission.issueJoinGrant(now).token,
       ...(participantLease === undefined ? {} : { participantLease }),
     });
@@ -107,7 +107,7 @@ function createHarness(policy: { noParticipantGraceMs?: number } = {}) {
   };
   const input = (socket: TestSocket, seq: number, x: number, y: number) => {
     socket.message({
-      t: "input", v: 1, sessionId: engine.currentSessionId, phaseId: engine.currentPhaseId,
+      t: "input", v: 2, sessionId: engine.currentSessionId, phaseId: engine.currentPhaseId,
       phaseEpoch: engine.currentPhaseEpoch, seq, x, y, clientTime: now,
     });
   };
@@ -116,7 +116,7 @@ function createHarness(policy: { noParticipantGraceMs?: number } = {}) {
 }
 
 describe("fake scenario server integration", () => {
-  it("drives join through lobby, video, both resolutions, and back to idle", async () => {
+  it("drives join through lobby, video, all question resolutions, and back to idle", async () => {
     const h = createHarness();
     const display = h.display();
     const phone = await h.phone(1);
@@ -127,7 +127,7 @@ describe("fake scenario server integration", () => {
     expect(h.engine.currentPhaseId).toBe("intro-video");
 
     display.message({
-      t: "video_ended", v: 1, sessionId: h.engine.currentSessionId, phaseId: "intro-video",
+      t: "video_ended", v: 2, sessionId: h.engine.currentSessionId, phaseId: "intro-video",
       phaseEpoch: h.engine.currentPhaseEpoch, mediaId: "intro.mp4",
     });
     expect(h.engine.currentPhaseId).toBe("question-fixed");
@@ -141,7 +141,19 @@ describe("fake scenario server integration", () => {
     h.input(phone, 2, 0.8, 0.2);
     await Promise.resolve();
     h.advance(20_000);
-    expect(last(display, "question_resolved")).toMatchObject({ winner: "q1", resolvedTarget: "idle" });
+    expect(last(display, "question_resolved")).toMatchObject({ winner: "q1", resolvedTarget: "question-two-quadrant" });
+    h.advance(3_000);
+    expect(h.engine.currentPhaseId).toBe("question-two-quadrant");
+
+    h.input(phone, 3, 0.8, 0.2);
+    await Promise.resolve();
+    h.advance(20_000);
+    expect(last(display, "question_resolved")).toMatchObject({
+      field: { type: "two-quadrant", axis: "x" },
+      quadrantCounts: { min: 0, max: 1 },
+      winner: "max",
+      resolvedTarget: "idle",
+    });
     h.advance(3_000);
     expect(h.engine.lifecycleState).toBe("idle");
     expect(h.engine.currentPhaseId).toBe("idle");
@@ -157,7 +169,7 @@ describe("fake scenario server integration", () => {
     const firstLease = last(first, "identity").participantLease as string;
     h.advance(100);
     display.message({
-      t: "video_ended", v: 1, sessionId: h.engine.currentSessionId, phaseId: "intro-video",
+      t: "video_ended", v: 2, sessionId: h.engine.currentSessionId, phaseId: "intro-video",
       phaseEpoch: h.engine.currentPhaseEpoch, mediaId: "intro.mp4",
     });
     const late = await h.phone(2);
@@ -174,6 +186,11 @@ describe("fake scenario server integration", () => {
     h.input(reconnected, 2, 0.2, 0.2);
     await Promise.resolve();
     h.advance(20_000);
+    h.advance(3_000);
+    h.input(reconnected, 3, 0.2, 0.2);
+    await Promise.resolve();
+    h.advance(20_000);
+    expect(last(display, "question_resolved")).toMatchObject({ winner: "min", resolvedTarget: "idle" });
     h.advance(3_000);
     expect(h.engine.lifecycleState).toBe("idle");
   });

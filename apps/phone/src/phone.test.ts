@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ServerToClientMessage } from "@smartphonecracy/protocol";
+import { PROTOCOL_VERSION, type ServerToClientMessage } from "@smartphonecracy/protocol";
 import { clearLease, loadLease, storeLease } from "./lib/lease.js";
 import { applyDelta, InputThrottle, TRACKPAD_CENTER } from "./lib/trackpad.js";
 import {
@@ -81,7 +81,7 @@ const phase = (
   sessionId = "s1",
 ): ServerToClientMessage => ({
   t: "phase",
-  v: 1,
+  v: PROTOCOL_VERSION,
   sessionId,
   phaseEpoch: epoch,
   serverTime: 0,
@@ -101,8 +101,7 @@ const phase = (
           kind: "position-question",
           id: "q",
           text: "t",
-          xAxis: { minLabel: "a", maxLabel: "b" },
-          yAxis: { minLabel: "c", maxLabel: "d" },
+          field: { type: "four-quadrant", xAxis: { minLabel: "a", maxLabel: "b" }, yAxis: { minLabel: "c", maxLabel: "d" } },
           durationMs: 60_000,
           freezeMs: 3_000,
           connectionStaleAfterMs: 30_000,
@@ -142,7 +141,7 @@ describe("phoneReducer", () => {
     expect(s.join.kind).toBe("joining");
     s = apply(s, {
       t: "identity",
-      v: 1,
+      v: PROTOCOL_VERSION,
       clientId: "c1",
       color: "#fff",
       sessionId: "s1",
@@ -150,7 +149,7 @@ describe("phoneReducer", () => {
       leaseExpiresAt: 99,
     });
     expect(s.join.kind).toBe("accepted");
-    s = apply(s, { t: "join_rejected", v: 1, reason: "rate_limited", retryAfterMs: 2000 });
+    s = apply(s, { t: "join_rejected", v: PROTOCOL_VERSION, reason: "rate_limited", retryAfterMs: 2000 });
     expect(s.join).toEqual({ kind: "rejected", reason: "rate_limited", retryAfterMs: 2000 });
   });
 

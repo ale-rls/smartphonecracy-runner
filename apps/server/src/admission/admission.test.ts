@@ -2,6 +2,7 @@ import { EventEmitter } from "node:events";
 import type { IncomingMessage } from "node:http";
 import { describe, expect, it } from "vitest";
 import { parseServerMessage } from "@smartphonecracy/protocol";
+import { z } from "zod";
 import { AdmissionController, InMemoryIpRateLimiter, issueJoinGrant, issueParticipantLease, verifyJoinGrant, verifyParticipantLease } from "./index.js";
 import type { WebSocket } from "ws";
 
@@ -51,7 +52,7 @@ function join(
   controller.handleConnection(s, request(ip, forwarded));
   s.emit("message", Buffer.from(JSON.stringify({
     t: "join",
-    v: 1,
+    v: 2,
     clientVersion: "test",
     installationId: "inst-1",
     roomId: "room-1",
@@ -131,7 +132,7 @@ describe("participant admission", () => {
     admission.handleConnection(matchingDisplay, request("198.51.100.4"));
     matchingDisplay.emit("message", Buffer.from(JSON.stringify({
       t: "display_join",
-      v: 1,
+      v: 2,
       clientVersion: "test",
       installationId: "inst-1",
       roomId: "room-1",
@@ -143,14 +144,14 @@ describe("participant admission", () => {
     admission.handleConnection(stalePhone, request("198.51.100.2"));
     stalePhone.emit("message", Buffer.from(JSON.stringify({
       t: "join",
-      v: 1,
+      v: 2,
       clientVersion: "old-build",
       installationId: "inst-1",
       roomId: "room-1",
       joinGrant: grant,
     })));
     expect((stalePhone as unknown as MockSocket).sent).toEqual(expect.arrayContaining([
-      { t: "reload", v: 1, minVersion: "test", reason: "assets" },
+      { t: "reload", v: 2, minVersion: "test", reason: "assets" },
       expect.objectContaining({ t: "identity" }),
     ]));
 
@@ -158,19 +159,25 @@ describe("participant admission", () => {
     admission.handleConnection(staleDisplay, request("198.51.100.3"));
     staleDisplay.emit("message", Buffer.from(JSON.stringify({
       t: "display_join",
-      v: 1,
+      v: 2,
       clientVersion: "old-build",
       installationId: "inst-1",
       roomId: "room-1",
       displayToken: "token",
     })));
     expect(lastMessage(staleDisplay)).toEqual({
-      t: "reload", v: 1, minVersion: "test", reason: "assets",
+      t: "reload", v: 2, minVersion: "test", reason: "assets",
     });
     expect(messages).toContain("display_join");
   });
 
   it("sends reload to an old join message that lacks clientVersion before rejecting it", () => {
+    const legacyReloadSchema = z.object({
+      t: z.literal("reload"),
+      v: z.literal(1),
+      minVersion: z.string().min(1),
+      reason: z.enum(["protocol", "scenario", "assets"]),
+    });
     const admission = controller({ buildVersion: "server-build" });
     const oldClient = socket();
     admission.handleConnection(oldClient, request());
@@ -184,6 +191,8 @@ describe("participant admission", () => {
     expect((oldClient as unknown as MockSocket).sent).toContainEqual({
       t: "reload", v: 1, minVersion: "server-build", reason: "assets",
     });
+    expect(legacyReloadSchema.safeParse(lastMessage(oldClient)).success).toBe(true);
+    expect(parseServerMessage(lastMessage(oldClient)).ok).toBe(true);
     expect((oldClient as unknown as MockSocket).closeCalls[0]).toMatchObject({ code: 1008 });
 
     const oldDisplay = socket();
@@ -198,6 +207,7 @@ describe("participant admission", () => {
     expect((oldDisplay as unknown as MockSocket).sent).toContainEqual({
       t: "reload", v: 1, minVersion: "server-build", reason: "assets",
     });
+    expect(legacyReloadSchema.safeParse(lastMessage(oldDisplay)).success).toBe(true);
     expect((oldDisplay as unknown as MockSocket).closeCalls[0]).toMatchObject({ code: 1008 });
   });
 

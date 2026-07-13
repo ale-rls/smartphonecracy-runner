@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { classifyPositionVotes, countQuadrants, materializePositionStatus, resolveFixedTransition, resolveQuadrantPlurality } from "./resolution.js";
+import {
+  classifyPositionVotes,
+  classifyPositionVotesForField,
+  countPositionQuadrants,
+  countQuadrants,
+  materializePositionStatus,
+  resolveFixedTransition,
+  resolvePositionFixedTransition,
+  resolvePositionPlurality,
+  resolveQuadrantPlurality,
+} from "./resolution.js";
 
 describe("resolution math", () => {
   const votes = [
@@ -48,5 +58,61 @@ describe("resolution math", () => {
     [0.75, 0.25, "q1"], [0.25, 0.25, "q2"], [0.25, 0.75, "q3"], [0.75, 0.75, "q4"],
   ] as const)("resolves a unique %s/%s winner", (x, y, winner) => {
     expect(resolveQuadrantPlurality([{ x, y, status: "valid" }], new Set(["valid"])).winner).toBe(winner);
+  });
+});
+
+describe("two-quadrant resolution math", () => {
+  const xField = {
+    type: "two-quadrant" as const,
+    axis: "x" as const,
+    labels: { minLabel: "disagree", maxLabel: "agree" },
+  };
+  const yField = {
+    type: "two-quadrant" as const,
+    axis: "y" as const,
+    labels: { minLabel: "top", maxLabel: "bottom" },
+  };
+  const votes = [
+    { x: 0.25, y: 0.75, status: "valid" },
+    { x: 0.5, y: 0.25, status: "valid" },
+    { x: 0.75, y: 0.5, status: "stale" },
+    { x: null, y: null, status: "valid" },
+  ] as const;
+
+  it("counts only the active axis and assigns exact .5 to max", () => {
+    expect(countPositionQuadrants(xField, votes)).toEqual({ min: 1, max: 2 });
+    expect(countPositionQuadrants(yField, votes)).toEqual({ min: 1, max: 2 });
+  });
+
+  it("classifies inclusion totals with typed min/max counts", () => {
+    expect(classifyPositionVotesForField(xField, votes, new Set(["valid"]))).toEqual({
+      field: xField,
+      quadrantCounts: { min: 1, max: 1 },
+      includedByStatus: { valid: 2 },
+      excludedByStatus: { stale: 1, valid: 1 },
+      includedTotal: 2,
+      excludedTotal: 2,
+    });
+  });
+
+  it("resolves unique, tie, empty, and fixed outcomes", () => {
+    expect(resolvePositionPlurality(xField, votes, new Set(["valid", "stale"]))).toMatchObject({
+      winner: "max",
+      quadrantCounts: { min: 1, max: 2 },
+    });
+    expect(resolvePositionPlurality(xField, votes, new Set(["valid"]))).toMatchObject({
+      winner: "tie",
+      quadrantCounts: { min: 1, max: 1 },
+    });
+    expect(resolvePositionPlurality(xField, votes, new Set(["missing"]))).toMatchObject({
+      winner: "empty",
+      quadrantCounts: { min: 0, max: 0 },
+    });
+    expect(resolvePositionFixedTransition(xField, votes, "next")).toEqual({
+      field: xField,
+      winner: "fixed",
+      quadrantCounts: { min: 1, max: 2 },
+      resolvedTarget: "next",
+    });
   });
 });

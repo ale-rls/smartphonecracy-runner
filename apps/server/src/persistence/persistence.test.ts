@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import scenarioJson from "../../../../content/scenarios/dev.json";
-import type { Scenario } from "@smartphonecracy/scenario";
+import { scenarioSchema, type Scenario } from "@smartphonecracy/scenario";
 import type { FinalVoteSnapshot } from "../votes/index.js";
 import { InstallationPersistence, PersistenceWriteQueue, PostgresPersistenceExecutor, type PersistenceExecutor, type PersistenceQueueHealthEvent, type SqlStatement } from "./index.js";
 
@@ -152,6 +152,81 @@ describe("persistence", () => {
     const phaseWrite = batch.find((statement) => statement.text.includes("insert into session_phases"))!;
     const outcome = JSON.parse(phaseWrite.values![9] as string);
     expect(outcome).toMatchObject({ winner: "fixed", resolvedTarget: "question-quadrant", includedTotal: 1, excludedTotal: 1, boundaryConvention: expect.any(String) });
+  });
+
+  it("persists a canonical two-quadrant layout, active labels, counts, and boundary rule", async () => {
+    const twoScenario = scenarioSchema.parse({
+      version: "persist-two-y",
+      entryPhaseId: "question-two",
+      phases: [{ kind: "idle", id: "idle" }, {
+        kind: "position-question",
+        id: "question-two",
+        text: "Top or bottom?",
+        field: {
+          type: "two-quadrant",
+          axis: "y",
+          labels: { minLabel: "Top", maxLabel: "Bottom" },
+        },
+        durationMs: 100,
+        freezeMs: 0,
+        connectionStaleAfterMs: 100,
+        showLiveCounts: true,
+        next: {
+          type: "quadrant-plurality",
+          map: { min: "idle", max: "idle" },
+          tie: "idle",
+          empty: "idle",
+          countedStatuses: ["valid"],
+        },
+      }],
+    });
+    const executor = new RecordingExecutor();
+    const persistence = new InstallationPersistence({
+      queue: new PersistenceWriteQueue(executor),
+      installationId: "i",
+      scenario: twoScenario,
+      participantDataExpiresAt: expires,
+    });
+    const snapshot: FinalVoteSnapshot = Object.freeze({
+      sessionId: "s",
+      questionId: "question-two",
+      phaseEpoch: 3,
+      recordedAt: 200,
+      votes: Object.freeze([Object.freeze({
+        sessionId: "s",
+        questionId: "question-two",
+        participantId: "p1",
+        x: 0.12,
+        y: 0.5,
+        status: "valid",
+        lastInputAt: 190,
+        lastHeartbeatAt: 195,
+        currentPhaseStartedAt: 100,
+        currentPhaseDeadline: 200,
+        recordedAt: 200,
+      })]),
+    });
+
+    persistence.voteSnapshot(snapshot);
+    await persistence.flush();
+    const phaseWrite = executor.calls.flat().find((statement) => statement.text.includes("insert into session_phases"))!;
+    expect(phaseWrite.values?.[7]).toBe("null");
+    expect(JSON.parse(phaseWrite.values?.[8] as string)).toEqual({ minLabel: "Top", maxLabel: "Bottom" });
+    expect(JSON.parse(phaseWrite.values?.[9] as string)).toMatchObject({
+      layout: "two-quadrant",
+      activeAxis: "y",
+      field: {
+        type: "two-quadrant",
+        axis: "y",
+        labels: { minLabel: "Top", maxLabel: "Bottom" },
+      },
+      quadrantCounts: { min: 0, max: 1 },
+      winner: "max",
+      resolvedTarget: "idle",
+      includedTotal: 1,
+      excludedTotal: 0,
+      boundaryConvention: "y=0.5 belongs to the max/bottom quadrant",
+    });
   });
 
   it("exposes testable participant deletion without leases, grants, IPs, or traces", async () => {

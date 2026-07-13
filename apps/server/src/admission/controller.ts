@@ -2,6 +2,7 @@ import type { IncomingMessage } from "node:http";
 import {
   encodeMessage,
   parseClientMessage,
+  PROTOCOL_VERSION,
   type ClientToServerMessage,
   type IdentityMessage,
   type JoinRejectedMessage,
@@ -59,7 +60,7 @@ function asBytes(raw: RawData): unknown {
   return raw;
 }
 
-function joinClientVersion(raw: unknown): string | null | undefined {
+function joinMetadata(raw: unknown): { clientVersion: string | null; protocolVersion: number } | undefined {
   try {
     const value = typeof raw === "string"
       ? JSON.parse(raw)
@@ -67,7 +68,10 @@ function joinClientVersion(raw: unknown): string | null | undefined {
     if (typeof value !== "object" || value === null) return undefined;
     const message = value as Record<string, unknown>;
     if (message.t !== "join" && message.t !== "display_join") return undefined;
-    return typeof message.clientVersion === "string" ? message.clientVersion : null;
+    return {
+      clientVersion: typeof message.clientVersion === "string" ? message.clientVersion : null,
+      protocolVersion: typeof message.v === "number" ? message.v : PROTOCOL_VERSION,
+    };
   } catch {
     return undefined;
   }
@@ -119,15 +123,15 @@ export class AdmissionController {
   }
 
   private async handleRaw(socket: WebSocket, request: IncomingMessage, raw: unknown): Promise<void> {
-    const clientVersion = joinClientVersion(raw);
+    const metadata = joinMetadata(raw);
     if (
       this.options.buildVersion !== undefined &&
-      clientVersion !== undefined &&
-      clientVersion !== this.options.buildVersion
+      metadata !== undefined &&
+      metadata.clientVersion !== this.options.buildVersion
     ) {
       this.send(socket, {
         t: "reload",
-        v: 1,
+        v: metadata.protocolVersion === 1 ? 1 : PROTOCOL_VERSION,
         minVersion: this.options.buildVersion,
         reason: "assets",
       });
@@ -141,7 +145,7 @@ export class AdmissionController {
     if (parsed.message.t === "ping") {
       this.send(socket, {
         t: "pong",
-        v: 1,
+        v: PROTOCOL_VERSION,
         echoClientTime: parsed.message.clientTime,
         serverTime: this.now(),
       });
@@ -161,7 +165,7 @@ export class AdmissionController {
     if (!rate.allowed) {
       this.send(socket, {
         t: "join_rejected",
-        v: 1,
+        v: PROTOCOL_VERSION,
         reason: "rate_limited",
         ...(rate.retryAfterMs === undefined ? {} : { retryAfterMs: rate.retryAfterMs }),
       });
@@ -176,7 +180,7 @@ export class AdmissionController {
       now,
     });
     if (!grant) {
-      this.send(socket, { t: "join_rejected", v: 1, reason: "expired_grant" });
+      this.send(socket, { t: "join_rejected", v: PROTOCOL_VERSION, reason: "expired_grant" });
       return;
     }
 
@@ -192,11 +196,11 @@ export class AdmissionController {
       ? this.registry.get(parsed.message.participantLease)
       : undefined;
     if (!knownLease && this.options.isNewParticipantAllowed?.() === false) {
-      this.send(socket, { t: "join_rejected", v: 1, reason: "show_in_progress" });
+      this.send(socket, { t: "join_rejected", v: PROTOCOL_VERSION, reason: "show_in_progress" });
       return;
     }
     if (!knownLease && !this.registry.canAdmitNew(now)) {
-      this.send(socket, { t: "join_rejected", v: 1, reason: "room_full" });
+      this.send(socket, { t: "join_rejected", v: PROTOCOL_VERSION, reason: "room_full" });
       return;
     }
 
@@ -218,14 +222,14 @@ export class AdmissionController {
       now,
     });
     if (!admitted.ok) {
-      this.send(socket, { t: "join_rejected", v: 1, reason: "room_full" });
+      this.send(socket, { t: "join_rejected", v: PROTOCOL_VERSION, reason: "room_full" });
       return;
     }
     if (admitted.replacedSocket) this.close(admitted.replacedSocket, 4001, "lease replaced");
     state.joined = true;
     this.send(socket, {
       t: "identity",
-      v: 1,
+      v: PROTOCOL_VERSION,
       clientId: admitted.participant.clientId,
       color: admitted.participant.color,
       sessionId: typeof this.options.sessionId === "function" ? this.options.sessionId() : this.options.sessionId ?? "idle",
@@ -236,7 +240,7 @@ export class AdmissionController {
     await Promise.resolve();
   }
 
-  private send(socket: WebSocket, message: IdentityMessage | JoinRejectedMessage | ReloadMessage | { t: "pong"; v: 1; echoClientTime: number; serverTime: number }): void {
+  private send(socket: WebSocket, message: IdentityMessage | JoinRejectedMessage | ReloadMessage | { t: "pong"; v: typeof PROTOCOL_VERSION; echoClientTime: number; serverTime: number }): void {
     if (socket.readyState === undefined || socket.readyState === 1) socket.send(encodeMessage(message));
   }
 

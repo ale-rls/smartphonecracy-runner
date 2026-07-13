@@ -1,6 +1,13 @@
-import { Handle, Position, type NodeProps } from "@xyflow/react";
+import { useEffect } from "react";
+import { Handle, Position, useUpdateNodeInternals, type NodeProps } from "@xyflow/react";
+import type { StudioProject } from "@smartphonecracy/studio-adapter";
 
-type NodeData = { label: string; kind: string; outcome?: boolean };
+type NodeData = {
+  label: string;
+  kind: string;
+  outcomes?: Array<{ id: string; label: string; tone: "quad" | "special" }>;
+};
+type Phase = StudioProject["scenario"]["phases"][number];
 
 const KIND_TITLE: Record<string, string> = { idle: "Idle", video: "Video", "position-question": "Question" };
 
@@ -11,15 +18,42 @@ const OutPort = ({ id, label, tone }: { id: string; label: string; tone?: "quad"
   <div className={`port port-out ${tone ?? ""}`}><span className="port-name">{label}</span><Handle id={id} type="source" position={Position.Right} /></div>
 );
 
-const OUTCOMES: readonly [string, string, "quad" | "special"][] = [
-  ["q1", "q1", "quad"], ["q2", "q2", "quad"], ["q3", "q3", "quad"], ["q4", "q4", "quad"],
-  ["tie", "tie", "special"], ["empty", "no votes", "special"],
-];
+export function nodeDataForPhase(phase: Phase): NodeData {
+  const data: NodeData = {
+    label: phase.kind === "position-question" ? phase.text : phase.id,
+    kind: phase.kind,
+  };
+  if (phase.kind !== "position-question" || phase.next.type !== "quadrant-plurality") return data;
+  if (phase.field.type === "four-quadrant") {
+    data.outcomes = [
+      { id: "q1", label: "q1 · top right", tone: "quad" },
+      { id: "q2", label: "q2 · top left", tone: "quad" },
+      { id: "q3", label: "q3 · bottom left", tone: "quad" },
+      { id: "q4", label: "q4 · bottom right / center", tone: "quad" },
+      { id: "tie", label: "tie", tone: "special" },
+      { id: "empty", label: "no votes", tone: "special" },
+    ];
+    return data;
+  }
+  const [minPosition, maxPosition] = phase.field.axis === "x"
+    ? (["left", "right"] as const)
+    : (["top", "bottom"] as const);
+  data.outcomes = [
+    { id: "min", label: `min · ${minPosition} · ${phase.field.labels.minLabel}`, tone: "quad" },
+    { id: "max", label: `max · ${maxPosition} · ${phase.field.labels.maxLabel}`, tone: "quad" },
+    { id: "tie", label: "tie", tone: "special" },
+    { id: "empty", label: "no votes", tone: "special" },
+  ];
+  return data;
+}
 
-export function PhaseNode({ data }: NodeProps) {
+export function PhaseNode({ id, data }: NodeProps) {
   const value = data as NodeData;
-  const outputs = value.outcome
-    ? OUTCOMES.map(([id, label, tone]) => <OutPort key={id} id={id} label={label} tone={tone} />)
+  const updateNodeInternals = useUpdateNodeInternals();
+  const outputSignature = value.outcomes?.map((outcome) => outcome.id).join(":") ?? (value.kind === "idle" ? "" : "next");
+  useEffect(() => updateNodeInternals(id), [id, outputSignature, updateNodeInternals]);
+  const outputs = value.outcomes
+    ? value.outcomes.map(({ id, label, tone }) => <OutPort key={id} id={id} label={label} tone={tone} />)
     : value.kind !== "idle" ? [<OutPort key="next" id="next" label="next" />] : [];
   return (
     <div className={`studio-node kind-${value.kind}`}>
