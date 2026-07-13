@@ -37,6 +37,41 @@ test.describe("Show Studio v1", () => {
     expect(new Set(downloads.map((name) => name.match(/^(.*)-(?:scenario|media-manifest|\.studio|validation-report|README)/)?.[1])).size).toBe(1);
   });
 
+  test("supports every recent-draft action, including deleting persisted drafts", async ({ page }) => {
+    await page.addInitScript(() => { window.confirm = () => true; });
+    await page.goto(studio.baseUrl);
+
+    await page.getByRole("button", { name: "New show" }).click();
+    await page.getByLabel("Show name").fill("Landing actions");
+    await expect(page.getByText("saved", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "File" }).click();
+    await page.getByRole("menuitem", { name: "Close show" }).click();
+
+    const draft = page.getByRole("button", { name: "Landing actions", exact: true }).locator("..");
+    await expect(draft).toBeVisible();
+    await draft.getByRole("button", { name: "Landing actions" }).click();
+    await expect(page.getByLabel("Show name")).toHaveValue("Landing actions");
+    await page.getByRole("button", { name: "File" }).click();
+    await page.getByRole("menuitem", { name: "Close show" }).click();
+
+    await draft.getByRole("button", { name: "Duplicate" }).click();
+    await expect(page.getByLabel("Show name")).toHaveValue("Landing actions copy");
+    await expect(page.getByText("saved", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "File" }).click();
+    await page.getByRole("menuitem", { name: "Close show" }).click();
+
+    const downloadPromise = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Landing actions", exact: true }).locator("..").getByRole("button", { name: "Export backup" }).click();
+    expect((await downloadPromise).suggestedFilename()).toBe("Landing actions.studio-backup.json");
+
+    await page.getByRole("button", { name: "Landing actions copy", exact: true }).locator("..").getByRole("button", { name: "Delete" }).click();
+    await expect(page.getByRole("button", { name: "Landing actions copy", exact: true })).toHaveCount(0);
+
+    await page.reload();
+    await expect(page.getByRole("button", { name: "Landing actions copy", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Landing actions", exact: true })).toHaveCount(1);
+  });
+
   test("supports keyboard entry and renders a large graph within the interaction budget", async ({ page }) => {
     await page.goto(studio.baseUrl);
     await page.keyboard.press("Tab");
