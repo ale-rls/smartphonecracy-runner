@@ -29,8 +29,8 @@
   --green: #34d399;
 
   --k-idle: #64748b;
-  --k-video: #3b82f6;
-  --k-question: #8b5cf6;
+  --k-video: #3b82f6;    /* blue */
+  --k-question: #ec4899; /* pink — clearly distinct from video */
 
   --radius: 10px;
 
@@ -66,14 +66,24 @@ input::placeholder { color: #55606f; }
 input:focus, select:focus { outline: none; border-color: var(--flow); }
 
 /* Project home */
-.home { max-width: 900px; margin: 4rem auto; padding: 0 2rem; }
-.home h1 { font-size: 2.1rem; }
-.home > p { color: var(--muted); }
+.home { max-width: 860px; margin: 4rem auto; padding: 0 2rem; }
+.home h1 { font-size: 2.3rem; margin-bottom: .3rem; }
+.home h2 { font-size: 1.3rem; margin: 0 0 .8rem; }
+.home .lede { color: var(--muted); margin-top: .2rem; }
+.home-actions { display: flex; gap: .6rem; margin: 1.4rem 0 2.4rem; }
 .home article {
-  display: flex; align-items: center; gap: .7rem; background: var(--panel);
-  padding: .9rem 1rem; margin: .7rem 0; border: 1px solid var(--line); border-radius: 12px;
+  display: flex; align-items: center; gap: .55rem; background: var(--panel);
+  padding: .7rem .9rem; margin: .6rem 0; border: 1px solid var(--line); border-radius: 12px;
 }
-.home article small { margin-right: auto; color: var(--muted); }
+.home article small { margin-right: auto; color: var(--muted); font-size: .8rem; }
+.home .draft-open {
+  background: transparent; color: var(--text); border: 0; padding: .2rem .1rem;
+  font-family: var(--font-display); font-weight: 600; font-size: 1.1rem;
+}
+.home .draft-open:hover { color: var(--flow); filter: none; }
+.home article .ghost { padding: .3rem .7rem; font-size: .82rem; }
+.home .danger { background: transparent; color: var(--red); border: 1px solid #5c2b2b; }
+.home .danger:hover { background: rgba(248, 113, 113, .1); filter: none; }
 
 /* Editor shell (two columns; inspector/diagnostics collapse) */
 .editor {
@@ -144,7 +154,7 @@ input:focus, select:focus { outline: none; border-color: var(--flow); }
 }
 .port-in .react-flow__handle { left: -1rem; }
 .port-out .react-flow__handle { right: -1rem; }
-.port-out.quad .react-flow__handle { background: var(--purple); }
+.port-out.quad .react-flow__handle { background: var(--k-question); }
 .port-out.special .react-flow__handle { background: var(--orange); }
 
 .status { text-transform: capitalize; font-size: .8rem; color: var(--muted); }
