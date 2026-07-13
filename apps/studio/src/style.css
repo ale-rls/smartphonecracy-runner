@@ -125,29 +125,32 @@ input:focus, select:focus { outline: none; border-color: var(--flow); }
 .react-flow__attribution { opacity: .25; }
 .react-flow__controls button { background: var(--panel-2); border-bottom: 1px solid var(--line); color: var(--text); fill: var(--text); }
 
-/* Graph nodes: title-bar card + labeled flow-port rows */
+/* Graph nodes: type-bar header, content anchor, then a divided port list */
 .studio-node {
-  min-width: 200px; background: var(--node); border: 1px solid var(--node-border);
+  min-width: 176px; background: var(--node); border: 1px solid var(--node-border);
   border-radius: var(--radius); box-shadow: 0 10px 26px #0009;
 }
 .studio-node .node-head {
-  padding: .38rem .7rem; border-radius: 9px 9px 0 0; font-family: var(--font-display);
-  font-weight: 700; font-size: .88rem; color: #fff; letter-spacing: .01em;
+  position: relative; padding: .34rem .7rem; border-radius: 9px 9px 0 0;
+  font-family: var(--font-display); font-weight: 600; font-size: .8rem;
+  color: #fff; letter-spacing: .02em;
 }
 .studio-node.kind-idle .node-head { background: var(--k-idle); }
 .studio-node.kind-video .node-head { background: var(--k-video); }
 .studio-node.kind-position-question .node-head { background: var(--k-question); }
-.studio-node .node-body { padding: .55rem .65rem; display: grid; gap: .4rem; }
-.studio-node .node-title { color: var(--text); font-size: .88rem; line-height: 1.3; }
+.studio-node .node-body { padding: .55rem .7rem; }
+.studio-node .node-title { color: var(--text); font-size: .92rem; line-height: 1.3; }
+.studio-node .node-title.muted { color: var(--muted); font-size: .8rem; }
 .studio-node.marker { min-width: 130px; background: #10151c; border-style: dashed; border-color: var(--flow); }
-.studio-node.marker .node-head { background: transparent; color: var(--flow); }
+.studio-node.marker .node-head { background: transparent; color: var(--flow); font-family: var(--font-display); }
 
-.port { position: relative; display: flex; align-items: center; min-height: 1.2rem; font-size: .73rem; color: var(--muted); }
+/* IO band: input row (dot + "in") top-left, outputs top-right */
+.node-io { position: relative; display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; padding: .5rem .7rem; border-top: 1px solid var(--line); }
+.ports-out { display: grid; gap: .3rem; }
+.port { position: relative; display: flex; align-items: center; min-height: 1.1rem; font-size: .74rem; color: var(--muted); }
 .port-in { justify-content: flex-start; }
 .port-out { justify-content: flex-end; }
 .port-name { pointer-events: none; }
-.ports-out { display: grid; gap: .26rem; }
-.ports-hint { color: var(--muted); font-size: .68rem; text-align: right; }
 .port .react-flow__handle {
   position: absolute; top: 50%; transform: translateY(-50%);
   width: 11px; height: 11px; border: 2px solid var(--node); border-radius: 50%; background: var(--flow);
