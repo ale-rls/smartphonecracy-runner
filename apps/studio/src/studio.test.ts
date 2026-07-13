@@ -22,7 +22,9 @@ describe("Studio shell", () => {
     const artifacts = exportArtifacts(draft);
     expect(artifacts["scenario.json"]).toEqual(scenario);
     expect(artifacts["media-manifest.json"]).toEqual(manifest);
-    expect(draft.document.nodes).toHaveLength(scenario.phases.length);
+    expect(draft.document.nodes).toHaveLength(scenario.phases.filter((phase) => phase.kind !== "idle").length + 2);
+    expect(draft.document.canvasFormatVersion).toBe(1);
+    expect(draft.document.edges.every((edge) => edge.sourceHandle)).toBe(true);
     expect(JSON.stringify(artifacts["scenario.json"])).not.toContain("viewport");
   });
 
