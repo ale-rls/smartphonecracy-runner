@@ -716,3 +716,14 @@ Claude's plan amendments folded into the steps: (1) server engine/vote logic doe
 - verify: `pnpm --filter studio test` → PASS (20 tests incl. reproducibility, all-branch smoke, unacknowledged-warning block, runtime-invalid block); `pnpm --filter studio typecheck` → PASS; `pnpm --filter studio build` → PASS; `git diff --check` → PASS (2026-07-13)
 - reviewer: none
 - notes: Completed by codex 2026-07-13. Added the explicit “Export for deployment” flow: diagnostics/acknowledgement gate, canonical compile+runtime validation, distinct-hash media total and 2 GiB diagnostics gate, shared-resolution smoke coverage for fixed and all q1/q2/q3/q4/tie/empty branches, and deterministic assembly when supplied the same timestamp/build metadata. The versioned package emits scenario.json, media-manifest.json, .studio.json, validation-report.json, and README.txt with the required audit metadata and known warnings. User waived the unreliable Fable review on 2026-07-13 and directed GPT-5.6 high to finish the work. Codex performed a fresh high-effort review and re-ran Studio tests/typecheck/build, the server vote-engine parity oracle, and git diff checks; all passed. No resolution divergence or export-gate uncertainty was found.
+
+### STEP-046: Make Studio node inputs visually explicit
+- status: done
+- owner: codex
+- tier: simple
+- depends-on: STEP-039, STEP-043
+- files: apps/studio/src/App.tsx, apps/studio/src/canvas/nodes.tsx, apps/studio/src/canvas/graph.ts, apps/studio/src/canvas/graph.test.ts, apps/studio/src/style.css
+- acceptance: runtime phase nodes visibly expose a labeled input port; Entry remains output-only; End remains input-only; invalid/unknown input targets are rejected; dragging an already-connected output rewires it instead of raising a duplicate-edge error; existing typed outputs remain unchanged
+- verify: `pnpm --filter studio test` → PASS (22/22); `pnpm --filter studio typecheck` → PASS; `pnpm --filter studio build` → PASS; `git diff --check` → PASS (2026-07-13)
+- reviewer: none
+- notes: User identified that nodes appeared to have no inputs. The underlying target handle existed but was unlabeled and visually too subtle. Added a first-class “in” port with larger high-contrast handles, explicit input-capability validation, and regression coverage. Live testing then exposed “A show has exactly one entry edge” when dragging Entry to a replacement target; output drags now atomically replace that output's prior edge, with an Entry-rewire regression. Verified in the live Studio after Vite hot reload.

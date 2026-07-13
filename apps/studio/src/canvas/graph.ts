@@ -8,6 +8,15 @@ export const OUTCOME_HANDLES = ["q1", "q2", "q3", "q4", "tie", "empty"] as const
 
 export type OutcomeHandle = (typeof OUTCOME_HANDLES)[number];
 
+export function acceptsInput(project: StudioProject, target: string): boolean {
+  return target === END_NODE_ID || project.scenario.phases.some((phase) => phase.id === target);
+}
+
+export function withoutOutputEdge(edges: Edge[], source: string | null, sourceHandle: string | null): Edge[] {
+  const handle = sourceHandle ?? FIXED_HANDLE;
+  return edges.filter((edge) => edge.source !== source || (edge.sourceHandle ?? FIXED_HANDLE) !== handle);
+}
+
 export function outputHandles(project: StudioProject, source: string): readonly string[] {
   if (source === ENTRY_NODE_ID) return [FIXED_HANDLE];
   if (source === END_NODE_ID) return [];
@@ -49,7 +58,7 @@ export function graphEdges(project: StudioProject): Edge[] {
 
 export function validateConnection(project: StudioProject, edges: Edge[], connection: Connection): string | undefined {
   if (!connection.source || !connection.target) return "Both ends of the connection are required.";
-  if (connection.target === ENTRY_NODE_ID || connection.source === END_NODE_ID) return "Entry only has outputs and End only has inputs.";
+  if (!acceptsInput(project, connection.target) || connection.source === END_NODE_ID) return "Entry only has outputs and End only has inputs.";
   const handle = connection.sourceHandle ?? FIXED_HANDLE;
   if (!outputHandles(project, connection.source).includes(handle)) return "That output does not exist for this node type.";
   if (edges.some((edge) => edge.source === connection.source && (edge.sourceHandle ?? FIXED_HANDLE) === handle)) {

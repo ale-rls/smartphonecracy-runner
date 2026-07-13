@@ -26,7 +26,12 @@ header input { flex: 1; padding: .45rem; }
 .studio-node { min-width: 180px; padding: .75rem; border: 2px solid #52657d; border-radius: .65rem; background: white; display: grid; gap: .3rem; box-shadow: 0 2px 8px #23344b22; }
 .studio-node > small { color: #647084; }
 .studio-node.marker { min-width: 110px; border-style: dashed; background: #edf6ff; }
-.node-output { position: relative; display: flex; justify-content: flex-end; color: #52657d; }
+.node-input, .node-output { position: relative; display: flex; align-items: center; color: #52657d; font-weight: 650; }
+.node-input { justify-content: flex-start; margin: -.3rem 0 .15rem; }
+.node-output { justify-content: flex-end; }
+.node-input .react-flow__handle, .node-output .react-flow__handle { width: 12px; height: 12px; border: 2px solid white; background: #245fa3; }
+.node-input .react-flow__handle { left: -1.05rem; }
+.node-output .react-flow__handle { right: -1.05rem; }
 .quadrant-outputs { display: grid; grid-template-columns: 1fr 1fr; gap: .45rem; margin-top: .5rem; }
 .quadrant-outputs .output-tie, .quadrant-outputs .output-empty { grid-column: span 1; }
 .status { text-transform: capitalize; }.status.error { color: #ff9c9c; }.status.saving { color: #ffd37a; }
