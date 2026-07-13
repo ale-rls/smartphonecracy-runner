@@ -39,6 +39,15 @@ const nodesForDraft = (draft: Draft, current: Node[] = []): Node[] => {
   ];
 };
 
+const edgesForDraft = (draft: Draft): Edge[] => {
+  const nodeIds = new Set([ENTRY_NODE_ID, ...graphPhases(draft.project).map((phase) => phase.id), END_NODE_ID]);
+  const documentEdges = draft.document.edges;
+  const usesCurrentCanvasFormat = draft.document.canvasFormatVersion === 1 && documentEdges.every((edge) =>
+    edge.sourceHandle != null && nodeIds.has(edge.source) && nodeIds.has(edge.target),
+  );
+  return usesCurrentCanvasFormat ? documentEdges : graphEdges(draft.project);
+};
+
 export function App() {
   const db = useMemo(() => new IndexedDbDraftDatabase(), []);
   const autosave = useMemo(() => new Autosave(db), [db]);
@@ -60,7 +69,7 @@ export function App() {
   useEffect(() => {
     if (!draft) return;
     setNodes(nodesForDraft(draft));
-    setEdges(graphEdges(draft.project));
+    setEdges(edgesForDraft(draft));
   }, [draft?.id, setEdges, setNodes]);
 
   const save = (next: Draft) => {
@@ -70,10 +79,27 @@ export function App() {
       if (value === "saved") void db.list().then(setRecent);
     });
   };
+  const canvasDraft = (next: Draft, nextNodes = nodes, nextEdges = edges): Draft => {
+    let project = next.project;
+    try { project = applyEdges(project, nextEdges); } catch { /* Preserve incomplete Studio wiring until it is repaired. */ }
+    return {
+      ...next,
+      project,
+      document: {
+        ...next.document,
+        canvasFormatVersion: 1,
+        nodes: nextNodes.map((node) => ({ id: node.id, x: node.position.x, y: node.position.y })),
+        edges: nextEdges,
+      },
+      updatedAt: Date.now(),
+    };
+  };
+  const saveCanvas = (next: Draft, nextNodes = nodes, nextEdges = edges) => save(canvasDraft(next, nextNodes, nextEdges));
   const applyHistory = (state: HistoryState) => {
-    setNodes((current) => nodesForDraft(state.draft, current));
+    const nextNodes = nodesForDraft(state.draft, nodes);
+    setNodes(nextNodes);
     setEdges(state.edges);
-    save(state.draft);
+    saveCanvas(state.draft, nextNodes, state.edges);
   };
   const record = (nextDraft: Draft, nextEdges = edges) => {
     if (!history.current || history.current.value.draft.id !== nextDraft.id) history.current = new SessionHistory({ draft: draft ?? nextDraft, edges });
@@ -108,11 +134,15 @@ export function App() {
     if (draft?.id === source.id) setDraft(undefined);
     setRecent(await db.list());
   };
+  const closeShow = () => {
+    setDraft(undefined);
+    setNodes([]);
+    setEdges([]);
+    setSelectedId(undefined);
+  };
   const persistGraph = (nextEdges: Edge[]) => {
     if (!draft) return;
-    let project = draft.project;
-    try { project = applyEdges(project, nextEdges); } catch { /* Incomplete wiring remains visible until repaired. */ }
-    save({ ...draft, project, document: { ...draft.document, edges: nextEdges }, updatedAt: Date.now() });
+    saveCanvas(draft, nodes, nextEdges);
   };
   const connect = (connection: Connection) => {
     if (!draft) return;
@@ -134,12 +164,12 @@ export function App() {
       ? { kind, id, src: "media/new-video.mp4", expectedDurationMs: 1000, next: "idle" }
       : { kind, id, text: "New position question", field: { type: "four-quadrant" as const, xAxis: { minLabel: "Left", maxLabel: "Right" }, yAxis: { minLabel: "Top", maxLabel: "Bottom" } }, durationMs: 60000, freezeMs: 5000, connectionStaleAfterMs: 10000, showLiveCounts: true, next: { type: "quadrant-plurality" as const, map: { q1: "idle", q2: "idle", q3: "idle", q4: "idle" }, tie: "idle", empty: "idle", countedStatuses: ["valid", "stale", "disconnected"] as const } };
     const phases = [...draft.project.scenario.phases, phase] as Draft["project"]["scenario"]["phases"];
-    save({ ...draft, project: { ...draft.project, scenario: { ...draft.project.scenario, phases } }, updatedAt: Date.now() });
-    setNodes((current) => [...current, { id, type: "phase", position: { x: 400, y: 200 }, data: nodeDataForPhase(phase as Phase) }]);
-    if (kind !== "idle") {
-      const handles = kind === "position-question" ? ["q1", "q2", "q3", "q4", "tie", "empty"] : ["next"];
-      setEdges((current) => [...current, ...handles.map((handle) => ({ id: `${id}:${handle}`, source: id, sourceHandle: handle, target: END_NODE_ID }))]);
-    }
+    const nextNodes = [...nodes, { id, type: "phase", position: { x: 400, y: 200 }, data: nodeDataForPhase(phase as Phase) }];
+    const handles = kind === "position-question" ? ["q1", "q2", "q3", "q4", "tie", "empty"] : kind === "video" ? ["next"] : [];
+    const nextEdges = [...edges, ...handles.map((handle) => ({ id: `${id}:${handle}`, source: id, sourceHandle: handle, target: END_NODE_ID }))];
+    setNodes(nextNodes);
+    setEdges(nextEdges);
+    saveCanvas({ ...draft, project: { ...draft.project, scenario: { ...draft.project.scenario, phases } } }, nextNodes, nextEdges);
   };
   const updatePhase = (nextPhase: Phase) => {
     if (!draft) return;
@@ -244,7 +274,14 @@ export function App() {
       }
     } catch (error) { alert(error instanceof Error ? error.message : "Deployment export failed"); }
   };
-  const saveLayout = () => save({ ...draft, document: { ...draft.document, nodes: nodes.map((node) => ({ id: node.id, x: node.position.x, y: node.position.y })) }, updatedAt: Date.now() });
+  const saveLayout = (positionedNodes = nodes) => saveCanvas(draft, positionedNodes, edges);
+  const saveMovedNodes = (movedNodes: Node[]) => {
+    const movedPositions = new Map(movedNodes.map((node) => [node.id, node.position]));
+    saveLayout(nodes.map((node) => {
+      const position = movedPositions.get(node.id);
+      return position ? { ...node, position } : node;
+    }));
+  };
   if (previewing) return <PreviewPanel project={draft.project} onClose={() => setPreviewing(false)} />;
   return <main className={`editor${showInspector ? "" : " no-inspector"}${showDiagnostics ? "" : " no-diagnostics"}`}>
     <header className="menubar">
@@ -257,7 +294,7 @@ export function App() {
         { label: "Export for deployment", onSelect: exportDeployment, disabled: blocked },
         { label: "Save backup", onSelect: () => download(`${draft.name}.studio-backup.json`, exportBackup(draft)) },
         { separator: true },
-        { label: "Close show", onSelect: () => setDraft(undefined) },
+        { label: "Close show", onSelect: closeShow },
       ]} />
       <Menu label="Edit" items={[
         { label: "Undo", onSelect: () => { if (history.current) applyHistory(history.current.undo()); }, disabled: !history.current?.canUndo },
@@ -273,13 +310,13 @@ export function App() {
         { separator: true },
         { label: "Save layout", onSelect: saveLayout },
       ]} />
-      <input aria-label="Show name" className="show-name" value={draft.name} onChange={(event) => save({ ...draft, name: event.target.value, updatedAt: Date.now() })} />
+      <input aria-label="Show name" className="show-name" value={draft.name} onChange={(event) => saveCanvas({ ...draft, name: event.target.value })} />
       <span className={`status ${status}`}>{status}</span>
       <button className="ghost" onClick={() => setPreviewing(true)}>Preview</button>
       <button className="ghost export" aria-label="Export for deployment" disabled={blocked} title={blocked ? "Resolve errors and acknowledge warnings first" : undefined} onClick={exportDeployment}>Export</button>
       <input ref={importInputRef} hidden multiple type="file" accept="application/json" onChange={(event) => void importFiles(event.target.files)} />
     </header>
-    <section className="canvas"><ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} onNodeClick={(_, node) => { setSelectedId(node.id); setShowInspector(true); }} onConnect={connect} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onEdgesDelete={(deleted) => { const ids = new Set(deleted.map((edge) => edge.id)); const next = edges.filter((edge) => !ids.has(edge.id)); setEdges(next); persistGraph(next); }} onNodesDelete={(deleted) => { const removed = new Set(deleted.map((node) => node.id)); const nodeIds = new Set(nodes.filter((node) => !removed.has(node.id)).map((node) => node.id)); const nextEdges = pruneEdges(edges, nodeIds); setEdges(nextEdges); const phases = draft.project.scenario.phases.filter((phase) => !removed.has(phase.id)) as Draft["project"]["scenario"]["phases"]; save({ ...draft, project: { ...draft.project, scenario: { ...draft.project.scenario, phases } }, document: { ...draft.document, edges: nextEdges }, updatedAt: Date.now() }); }} fitView onMoveEnd={(_, viewport) => save({ ...draft, document: { ...draft.document, viewport }, updatedAt: Date.now() })}><Background /></ReactFlow></section>
+    <section className="canvas"><ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} onNodeClick={(_, node) => { setSelectedId(node.id); setShowInspector(true); }} onNodeDragStop={(_, node, movedNodes) => saveMovedNodes([...movedNodes, node])} onSelectionDragStop={(_, movedNodes) => saveMovedNodes(movedNodes)} onConnect={connect} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onEdgesDelete={(deleted) => { const ids = new Set(deleted.map((edge) => edge.id)); const next = edges.filter((edge) => !ids.has(edge.id)); setEdges(next); persistGraph(next); }} onNodesDelete={(deleted) => { const removed = new Set(deleted.map((node) => node.id)); const nextNodes = nodes.filter((node) => !removed.has(node.id)); const nodeIds = new Set(nextNodes.map((node) => node.id)); const nextEdges = pruneEdges(edges, nodeIds); setEdges(nextEdges); const phases = draft.project.scenario.phases.filter((phase) => !removed.has(phase.id)) as Draft["project"]["scenario"]["phases"]; saveCanvas({ ...draft, project: { ...draft.project, scenario: { ...draft.project.scenario, phases } } }, nextNodes, nextEdges); }} defaultViewport={draft.document.viewport} onMoveEnd={(event, viewport) => { if (event) saveCanvas({ ...draft, document: { ...draft.document, viewport } }); }}><Background /></ReactFlow></section>
     <Inspector project={draft.project} selectedId={selectedId} onRename={renameSelected} onChange={updatePhase} onKindChange={changeSelectedKind} onTransitionChange={changeTransition} onQuestionLayoutChange={changeQuestionLayout} />
     <DiagnosticsPanel project={draft.project} acknowledged={acknowledged} onAcknowledge={(key) => setAcknowledged((current) => { const next = new Set(current); next.has(key) ? next.delete(key) : next.add(key); return next; })} onFocus={(id) => { setSelectedId(id); setShowInspector(true); }} />
   </main>;
