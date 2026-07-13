@@ -11,12 +11,21 @@ describe("Studio canvas graph", () => {
     const value = project();
     const edges = graphEdges(value);
     expect(outputHandles(value, "question-quadrant")).toEqual(["q1", "q2", "q3", "q4", "tie", "empty"]);
+    expect(outputHandles(value, "question-two-quadrant")).toEqual(["min", "max", "tie", "empty"]);
     expect(acceptsInput(value, "question-quadrant")).toBe(true);
     expect(acceptsInput(value, END_NODE_ID)).toBe(true);
     expect(acceptsInput(value, ENTRY_NODE_ID)).toBe(false);
     expect(edges.find((edge) => edge.source === ENTRY_NODE_ID)).toBeTruthy();
     expect(edges.some((edge) => edge.target === END_NODE_ID)).toBe(true);
     expect(applyEdges(value, edges).scenario).toEqual(value.scenario);
+  });
+
+  it("keeps two-quadrant handles correlated with their min/max runtime map", () => {
+    const value = project();
+    const edges = graphEdges(value);
+    expect(edges.filter((edge) => edge.source === "question-two-quadrant").map((edge) => edge.sourceHandle)).toEqual(["min", "max", "tie", "empty"]);
+    expect(validateConnection(value, edges.filter((edge) => edge.source !== "question-two-quadrant"), { source: "question-two-quadrant", sourceHandle: "q1", target: END_NODE_ID, targetHandle: null })).toMatch(/does not exist/);
+    expect(applyEdges(value, edges).scenario.phases.find((phase) => phase.id === "question-two-quadrant")).toMatchObject({ field: { type: "two-quadrant", axis: "x" }, next: { map: { min: "idle", max: "idle" } } });
   });
 
   it("enforces one edge per typed output while allowing shared targets", () => {

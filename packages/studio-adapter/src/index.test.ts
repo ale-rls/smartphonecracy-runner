@@ -29,13 +29,28 @@ describe("Studio runtime adapter", () => {
     const manifest = fixture("content/media-manifest.json") as Record<string, any>;
     scenario.futureTop = { enabled: true };
     scenario.phases[1].futureVideo = "kept";
-    scenario.phases[2].xAxis.futureAxis = 42;
+    scenario.phases[2].field.xAxis.futureAxis = 42;
     scenario.phases[3].next.futureResolver = ["kept"];
     manifest.futureManifest = true;
     manifest.files[0].futureFile = "kept";
 
     const compiled = compileStudioGraph(parseRuntimeScenario(scenario, manifest));
     expect(compiled).toEqual({ scenario, manifest });
+  });
+
+  it("canonicalizes legacy top-level axes without leaking them through the extension sidecar", () => {
+    const scenario = fixture("content/scenarios/dev.json") as Record<string, any>;
+    const manifest = fixture("content/media-manifest.json");
+    const question = scenario.phases.find((phase: any) => phase.id === "question-fixed");
+    const { field, ...legacyQuestion } = question;
+    Object.assign(legacyQuestion, { xAxis: field.xAxis, yAxis: field.yAxis });
+    scenario.phases[scenario.phases.indexOf(question)] = legacyQuestion;
+
+    const compiled = compileStudioGraph(parseRuntimeScenario(scenario, manifest)) as Record<string, any>;
+    const normalized = compiled.scenario.phases.find((phase: any) => phase.id === "question-fixed");
+    expect(normalized.field).toEqual(field);
+    expect(normalized).not.toHaveProperty("xAxis");
+    expect(normalized).not.toHaveProperty("yAxis");
   });
 
   it("uses edited known fields while retaining unknown sidecar fields", () => {

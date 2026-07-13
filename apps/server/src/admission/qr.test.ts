@@ -49,7 +49,7 @@ describe("QR grant push loop", () => {
     const { loop, sent, setLifecycle } = setup(policy);
     setLifecycle("active");
     loop.push();
-    expect(sent).toEqual([{ t: "qr_hidden", v: 1 }]);
+    expect(sent).toEqual([{ t: "qr_hidden", v: 2 }]);
   });
 
   it("rotates every configured interval only while a display is connected", () => {

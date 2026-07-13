@@ -51,7 +51,7 @@ function join(
   controller.handleConnection(s, request(ip, forwarded));
   s.emit("message", Buffer.from(JSON.stringify({
     t: "join",
-    v: 1,
+    v: 2,
     clientVersion: "test",
     installationId: "inst-1",
     roomId: "room-1",
@@ -131,7 +131,7 @@ describe("participant admission", () => {
     admission.handleConnection(matchingDisplay, request("198.51.100.4"));
     matchingDisplay.emit("message", Buffer.from(JSON.stringify({
       t: "display_join",
-      v: 1,
+      v: 2,
       clientVersion: "test",
       installationId: "inst-1",
       roomId: "room-1",
@@ -143,14 +143,14 @@ describe("participant admission", () => {
     admission.handleConnection(stalePhone, request("198.51.100.2"));
     stalePhone.emit("message", Buffer.from(JSON.stringify({
       t: "join",
-      v: 1,
+      v: 2,
       clientVersion: "old-build",
       installationId: "inst-1",
       roomId: "room-1",
       joinGrant: grant,
     })));
     expect((stalePhone as unknown as MockSocket).sent).toEqual(expect.arrayContaining([
-      { t: "reload", v: 1, minVersion: "test", reason: "assets" },
+      { t: "reload", v: 2, minVersion: "test", reason: "assets" },
       expect.objectContaining({ t: "identity" }),
     ]));
 
@@ -158,14 +158,14 @@ describe("participant admission", () => {
     admission.handleConnection(staleDisplay, request("198.51.100.3"));
     staleDisplay.emit("message", Buffer.from(JSON.stringify({
       t: "display_join",
-      v: 1,
+      v: 2,
       clientVersion: "old-build",
       installationId: "inst-1",
       roomId: "room-1",
       displayToken: "token",
     })));
     expect(lastMessage(staleDisplay)).toEqual({
-      t: "reload", v: 1, minVersion: "test", reason: "assets",
+      t: "reload", v: 2, minVersion: "test", reason: "assets",
     });
     expect(messages).toContain("display_join");
   });
@@ -182,7 +182,7 @@ describe("participant admission", () => {
       joinGrant: admission.issueJoinGrant(1_000).token,
     })));
     expect((oldClient as unknown as MockSocket).sent).toContainEqual({
-      t: "reload", v: 1, minVersion: "server-build", reason: "assets",
+      t: "reload", v: 2, minVersion: "server-build", reason: "assets",
     });
     expect((oldClient as unknown as MockSocket).closeCalls[0]).toMatchObject({ code: 1008 });
 
@@ -196,7 +196,7 @@ describe("participant admission", () => {
       displayToken: "token",
     })));
     expect((oldDisplay as unknown as MockSocket).sent).toContainEqual({
-      t: "reload", v: 1, minVersion: "server-build", reason: "assets",
+      t: "reload", v: 2, minVersion: "server-build", reason: "assets",
     });
     expect((oldDisplay as unknown as MockSocket).closeCalls[0]).toMatchObject({ code: 1008 });
   });

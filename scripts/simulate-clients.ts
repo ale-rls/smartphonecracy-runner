@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import { PROTOCOL_VERSION } from "../packages/protocol/src/index.js";
+
 type Options = {
   url: string;
   count: number;
@@ -115,7 +117,7 @@ async function openDisplay(options: Options, metrics: LoadMetrics): Promise<{ so
     return new URL(message.url).searchParams.get("g") ?? undefined;
   });
   socket.send(encode({
-    t: "display_join", v: 1, clientVersion: "load-test", installationId: options.installationId,
+    t: "display_join", v: PROTOCOL_VERSION, clientVersion: "load-test", installationId: options.installationId,
     roomId: options.roomId, displayToken: options.displayToken,
   }));
   socket.addEventListener("message", (event) => {
@@ -123,7 +125,7 @@ async function openDisplay(options: Options, metrics: LoadMetrics): Promise<{ so
     if (message.t === "cursors") metrics.cursorTicks += 1;
     if ((message.t === "snapshot" || message.t === "phase") && message.phase?.kind === "video") {
       socket.send(encode({
-        t: "video_ended", v: 1, sessionId: message.sessionId, phaseId: message.phase.id,
+        t: "video_ended", v: PROTOCOL_VERSION, sessionId: message.sessionId, phaseId: message.phase.id,
         phaseEpoch: message.phaseEpoch, mediaId: message.phase.mediaId,
       }));
     }
@@ -146,7 +148,7 @@ async function openPhone(options: Options, grant: string, metrics: LoadMetrics, 
     return message.t === "identity" ? message : undefined;
   });
   socket.send(encode({
-    t: "join", v: 1, clientVersion: "load-test", installationId: options.installationId,
+    t: "join", v: PROTOCOL_VERSION, clientVersion: "load-test", installationId: options.installationId,
     roomId: options.roomId, joinGrant: grant, ...(state.lease ? { participantLease: state.lease } : {}),
   }));
   const identity = await identityPromise;
@@ -175,7 +177,7 @@ export async function runSimulation(options: Options): Promise<Record<string, nu
       if (phone.socket.readyState !== WebSocket.OPEN) return;
       const angle = (phone.seq + index * 7) / 15;
       phone.socket.send(encode({
-        t: "input", v: 1, sessionId: phone.sessionId, phaseEpoch: phone.phaseEpoch,
+        t: "input", v: PROTOCOL_VERSION, sessionId: phone.sessionId, phaseEpoch: phone.phaseEpoch,
         seq: phone.seq++, x: 0.5 + Math.cos(angle) * 0.48, y: 0.5 + Math.sin(angle) * 0.48,
       }));
       metrics.inputsSent += 1;
@@ -184,7 +186,7 @@ export async function runSimulation(options: Options): Promise<Record<string, nu
   const pings = setInterval(() => {
     const clientTime = Date.now();
     for (const phone of phones) {
-      if (phone.socket.readyState === WebSocket.OPEN) phone.socket.send(encode({ t: "ping", v: 1, clientTime }));
+      if (phone.socket.readyState === WebSocket.OPEN) phone.socket.send(encode({ t: "ping", v: PROTOCOL_VERSION, clientTime }));
     }
   }, 1_000);
 

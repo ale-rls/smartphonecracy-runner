@@ -1,11 +1,19 @@
-import { classifyPositionVotes, resolveFixedTransition, resolveQuadrantPlurality, type PositionStatus, type PositionedVote, type Quadrant } from "../../../../packages/shared/src/index.js";
+import {
+  classifyPositionVotesForField,
+  resolvePositionFixedTransition,
+  resolvePositionPlurality,
+  type PositionField,
+  type PositionQuadrant,
+  type PositionStatus,
+  type PositionedVote,
+} from "../../../../packages/shared/src/index.js";
 import type { StudioProject } from "@smartphonecracy/studio-adapter";
 import { diagnostics, type Diagnostic } from "../diagnostics/diagnostics.js";
 
 type Phase = StudioProject["scenario"]["phases"][number];
-export type ForcedOutcome = Quadrant | "tie" | "empty" | "abandoned-solo";
+export type ForcedOutcome = PositionQuadrant | "tie" | "empty" | "abandoned-solo";
 export type PreviewVote = PositionedVote<PositionStatus> & { participantId: string };
-export type PreviewResolution = { votes: PreviewVote[]; includedTotal: number; excludedTotal: number; includedByStatus: Partial<Record<PositionStatus, number>>; excludedByStatus: Partial<Record<PositionStatus, number>>; quadrantCounts: Record<Quadrant, number>; winner: Quadrant | "tie" | "empty" | "fixed"; resolvedTarget: string; freezeMs: number };
+export type PreviewResolution = { field: PositionField; votes: PreviewVote[]; includedTotal: number; excludedTotal: number; includedByStatus: Partial<Record<PositionStatus, number>>; excludedByStatus: Partial<Record<PositionStatus, number>>; quadrantCounts: Partial<Record<PositionQuadrant, number>>; winner: PositionQuadrant | "tie" | "empty" | "fixed"; resolvedTarget: string; freezeMs: number };
 export type PreviewSession = { project: StudioProject; phaseId: string; elapsedMs: number; validation: Diagnostic[]; resolution?: PreviewResolution };
 
 export function startPreview(project: StudioProject): PreviewSession {
@@ -35,27 +43,41 @@ export function advanceTimer(session: PreviewSession, milliseconds: number): Pre
   if (!Number.isFinite(milliseconds) || milliseconds < 0) throw new Error("Timer advance must be non-negative.");
   return { ...session, elapsedMs: session.elapsedMs + milliseconds };
 }
-const point: Record<Quadrant, [number, number]> = { q1: [0.75, 0.25], q2: [0.25, 0.25], q3: [0.25, 0.75], q4: [0.75, 0.75] };
-export function outcomeVotes(outcome: ForcedOutcome, includeStale: boolean, includeDisconnected: boolean): PreviewVote[] {
+const fourPoint = { q1: [0.75, 0.25], q2: [0.25, 0.25], q3: [0.25, 0.75], q4: [0.75, 0.75] } as const;
+const pointFor = (field: PositionField, quadrant: PositionQuadrant): readonly [number, number] => {
+  if (field.type === "four-quadrant") return fourPoint[quadrant as keyof typeof fourPoint];
+  if (field.axis === "x") return quadrant === "min" ? [0.25, 0.5] : [0.75, 0.5];
+  return quadrant === "min" ? [0.5, 0.25] : [0.5, 0.75];
+};
+export function forcedOutcomes(field: PositionField): ForcedOutcome[] {
+  return field.type === "two-quadrant"
+    ? ["min", "max", "tie", "empty", "abandoned-solo"]
+    : ["q1", "q2", "q3", "q4", "tie", "empty", "abandoned-solo"];
+}
+export function outcomeVotes(field: PositionField, outcome: ForcedOutcome, includeStale: boolean, includeDisconnected: boolean): PreviewVote[] {
   if (outcome === "empty") return [{ participantId: "never-moved", x: null, y: null, status: "never-moved" }];
-  if (outcome === "abandoned-solo") return [{ participantId: "solo", x: 0.75, y: 0.75, status: "disconnected" }];
-  const winners: Quadrant[] = outcome === "tie" ? ["q1", "q2"] : [outcome];
-  const votes: PreviewVote[] = winners.map((quadrant, index) => ({ participantId: `valid-${index + 1}`, x: point[quadrant][0], y: point[quadrant][1], status: "valid" }));
-  const staleQuadrant = outcome === "tie" ? "q1" : outcome;
-  const disconnectedQuadrant = outcome === "tie" ? "q2" : outcome;
-  if (includeStale) votes.push({ participantId: "stale", x: point[staleQuadrant][0], y: point[staleQuadrant][1], status: "stale" });
-  if (includeDisconnected) votes.push({ participantId: "disconnected", x: point[disconnectedQuadrant][0], y: point[disconnectedQuadrant][1], status: "disconnected" });
+  const pair: PositionQuadrant[] = field.type === "two-quadrant" ? ["min", "max"] : ["q1", "q2"];
+  if (outcome === "abandoned-solo") {
+    const [x, y] = pointFor(field, field.type === "two-quadrant" ? "max" : "q4");
+    return [{ participantId: "solo", x, y, status: "disconnected" }];
+  }
+  const winners: PositionQuadrant[] = outcome === "tie" ? pair : [outcome];
+  const votes: PreviewVote[] = winners.map((quadrant, index) => { const [x, y] = pointFor(field, quadrant); return { participantId: `valid-${index + 1}`, x, y, status: "valid" }; });
+  const staleQuadrant = outcome === "tie" ? pair[0]! : outcome;
+  const disconnectedQuadrant = outcome === "tie" ? pair[1]! : outcome;
+  if (includeStale) { const [x, y] = pointFor(field, staleQuadrant); votes.push({ participantId: "stale", x, y, status: "stale" }); }
+  if (includeDisconnected) { const [x, y] = pointFor(field, disconnectedQuadrant); votes.push({ participantId: "disconnected", x, y, status: "disconnected" }); }
   return votes;
 }
 export function resolvePreview(session: PreviewSession, outcome: ForcedOutcome, includeStale = true, includeDisconnected = true): PreviewSession {
   const phase = currentPhase(session);
   if (phase.kind !== "position-question") throw new Error("Only position questions have outcomes.");
-  const votes: PreviewVote[] = outcomeVotes(outcome, includeStale, includeDisconnected);
+  const votes: PreviewVote[] = outcomeVotes(phase.field, outcome, includeStale, includeDisconnected);
   const counted = new Set<PositionStatus>(phase.next.type === "quadrant-plurality" ? phase.next.countedStatuses : ["valid", "stale", "disconnected"]);
-  const classification = classifyPositionVotes(votes, counted);
-  const resolved = phase.next.type === "fixed" ? resolveFixedTransition(votes, phase.next.target) : (() => {
-    const result = resolveQuadrantPlurality(votes, counted);
-    const resolvedTarget = result.winner === "tie" ? phase.next.tie : result.winner === "empty" ? phase.next.empty : phase.next.map[result.winner];
+  const classification = classifyPositionVotesForField(phase.field, votes, counted);
+  const resolved = phase.next.type === "fixed" ? resolvePositionFixedTransition(phase.field, votes, phase.next.target) : (() => {
+    const result = resolvePositionPlurality(phase.field, votes, counted);
+    const resolvedTarget = result.winner === "tie" ? phase.next.tie : result.winner === "empty" ? phase.next.empty : (phase.next.map as Record<string, string>)[result.winner]!;
     return { ...result, resolvedTarget };
   })();
   return { ...session, resolution: { votes, ...classification, quadrantCounts: resolved.quadrantCounts, winner: resolved.winner, resolvedTarget: resolved.resolvedTarget, freezeMs: phase.freezeMs } };

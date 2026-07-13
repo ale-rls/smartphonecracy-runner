@@ -1,4 +1,5 @@
-import type { Scenario } from "@smartphonecracy/scenario";
+import type { PositionVoteStatus, Scenario } from "@smartphonecracy/scenario";
+import { classifyPositionVotesForField, type PositionField } from "@smartphonecracy/shared";
 import { resolveSnapshot, type FinalVoteSnapshot } from "../votes/index.js";
 import type { PhaseCheckpoint } from "../engine/phase-engine.js";
 import { PersistenceWriteQueue, type PersistenceShutdownResult, type SqlStatement } from "./write-queue.js";
@@ -17,6 +18,24 @@ export type PersistenceOptions = {
 
 const iso = (ms: number | null) => ms === null ? null : new Date(ms).toISOString();
 const phaseRowId = (snapshot: FinalVoteSnapshot) => `${snapshot.sessionId}:${snapshot.phaseEpoch}`;
+
+function persistedAxes(field: PositionField): { xAxis: unknown; yAxis: unknown } {
+  if (field.type === "four-quadrant") {
+    return { xAxis: field.xAxis, yAxis: field.yAxis };
+  }
+  return field.axis === "x"
+    ? { xAxis: field.labels, yAxis: null }
+    : { xAxis: null, yAxis: field.labels };
+}
+
+function boundaryConvention(field: PositionField): string {
+  if (field.type === "four-quadrant") {
+    return "x=0.5 belongs to right; y=0.5 belongs to bottom; center belongs to q4";
+  }
+  return field.axis === "x"
+    ? "x=0.5 belongs to the max/right quadrant"
+    : "y=0.5 belongs to the max/bottom quadrant";
+}
 
 export class InstallationPersistence implements AdminDataSource {
   private lastActiveSessionId: string | null = null;
@@ -62,30 +81,33 @@ export class InstallationPersistence implements AdminDataSource {
     const phase = this.options.scenario.phases.find((candidate) => candidate.id === snapshot.questionId);
     if (!phase || phase.kind !== "position-question") throw new Error(`unknown persisted question ${snapshot.questionId}`);
     const resolution = resolveSnapshot(phase, snapshot);
-    const includedByStatus: Record<string, number> = {};
-    const excludedByStatus: Record<string, number> = {};
-    const counted = new Set(phase.next.type === "quadrant-plurality" ? phase.next.countedStatuses : ["valid", "stale", "disconnected"]);
-    for (const vote of snapshot.votes) {
-      const target = counted.has(vote.status) && vote.status !== "never-moved" ? includedByStatus : excludedByStatus;
-      target[vote.status] = (target[vote.status] ?? 0) + 1;
-    }
+    const counted = new Set<PositionVoteStatus>(
+      phase.next.type === "quadrant-plurality"
+        ? phase.next.countedStatuses
+        : ["valid", "stale", "disconnected"],
+    );
+    const classification = classifyPositionVotesForField(phase.field, snapshot.votes, counted);
     const outcome = {
+      field: phase.field,
+      layout: phase.field.type,
+      activeAxis: phase.field.type === "two-quadrant" ? phase.field.axis : "both",
       quadrantCounts: resolution.quadrantCounts,
-      includedByStatus,
-      excludedByStatus,
-      includedTotal: Object.values(includedByStatus).reduce((a, b) => a + b, 0),
-      excludedTotal: Object.values(excludedByStatus).reduce((a, b) => a + b, 0),
+      includedByStatus: classification.includedByStatus,
+      excludedByStatus: classification.excludedByStatus,
+      includedTotal: classification.includedTotal,
+      excludedTotal: classification.excludedTotal,
       winner: resolution.winner,
       resolvedTarget: resolution.resolvedTarget,
       countedStatuses: [...counted],
-      boundaryConvention: "x=0.5 right; y=0.5 bottom; center q4",
+      boundaryConvention: boundaryConvention(phase.field),
     };
+    const axes = persistedAxes(phase.field);
     const rowId = phaseRowId(snapshot);
     const statements: SqlStatement[] = [{
       text: `insert into session_phases (id,session_id,phase_id,phase_index,started_at,ended_at,question_text,x_axis_json,y_axis_json,outcome_json)
         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
         on conflict (id) do update set ended_at=excluded.ended_at,question_text=excluded.question_text,x_axis_json=excluded.x_axis_json,y_axis_json=excluded.y_axis_json,outcome_json=excluded.outcome_json`,
-      values: [rowId, snapshot.sessionId, phase.id, snapshot.phaseEpoch, iso(snapshot.votes[0]?.currentPhaseStartedAt ?? snapshot.recordedAt), iso(snapshot.recordedAt), phase.text, JSON.stringify(phase.xAxis), JSON.stringify(phase.yAxis), JSON.stringify(outcome)],
+      values: [rowId, snapshot.sessionId, phase.id, snapshot.phaseEpoch, iso(snapshot.votes[0]?.currentPhaseStartedAt ?? snapshot.recordedAt), iso(snapshot.recordedAt), phase.text, JSON.stringify(axes.xAxis), JSON.stringify(axes.yAxis), JSON.stringify(outcome)],
     }];
     for (const vote of snapshot.votes) statements.push({
       text: `insert into votes (session_phase_id,participant_id,x,y,status,last_input_at,recorded_at,metadata_json,retained_until)

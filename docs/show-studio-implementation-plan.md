@@ -238,8 +238,8 @@ Properties:
 
 - Runtime ID
 - Question text
-- X-axis minimum and maximum labels
-- Y-axis minimum and maximum labels
+- Quadrant layout: four quadrants (X + Y axes), two left/right quadrants (X axis), or two top/bottom quadrants (Y axis)
+- Endpoint labels for every active axis
 - Voting duration
 - Freeze duration
 - Connection-stale threshold
@@ -253,10 +253,18 @@ For a fixed transition, show one output handle:
 next
 ```
 
-For quadrant plurality, show six output handles:
+For four-quadrant plurality, show six output handles:
 
 ```text
 q1  q2  q3  q4  tie  empty
+```
+
+For two-quadrant plurality, show four output handles. The Studio presents them
+as spatial quadrants with their authored endpoint labels; `min` and `max` are
+stable runtime IDs:
+
+```text
+min  max  tie  empty
 ```
 
 Quadrant naming must be visible in the node and preview:
@@ -266,7 +274,10 @@ q2 top-left       q1 top-right
 q3 bottom-left    q4 bottom-right
 ```
 
-The Studio must display the runtime’s exact axis-boundary convention and must not silently invent a different one.
+For a two-quadrant X field, min is left and max is right. For a two-quadrant Y
+field, min is top and max is bottom. Exactly 0.5 belongs to max. The Studio must
+display the runtime’s exact axis-boundary convention and must not silently invent
+a different one.
 
 ### End
 
@@ -279,7 +290,8 @@ The editor prevents structurally invalid connections where possible:
 - Entry connects to exactly one phase
 - Video `next` connects to one valid target
 - Fixed question `next` connects to one valid target
-- Quadrant question requires q1, q2, q3, q4, tie, and empty targets
+- Four-quadrant question requires q1, q2, q3, q4, tie, and empty targets
+- Two-quadrant question requires min, max, tie, and empty targets
 - Edges may not point to deleted nodes
 - Self-loops and cycles use the existing runtime policy
 - Multiple handles may connect to the same target
@@ -296,7 +308,7 @@ Requirements:
 - Changes apply immediately to the draft graph
 - Runtime IDs are validated and unique
 - Destructive type changes require confirmation
-- Switching a question from quadrant to fixed preserves old connections temporarily in undo history but excludes them from compilation
+- Switching a question from quadrant to fixed, or between two and four quadrants, preserves old connections in undo history but excludes incompatible outcomes from compilation
 - Form fields show inline validation errors
 - Advanced properties are collapsed by default
 - Director-facing labels use plain language; runtime field names may appear as secondary help text

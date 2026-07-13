@@ -1,5 +1,6 @@
 import {
   mediaManifestSchema,
+  normalizeScenarioInput,
   scenarioSchema,
   validateScenario,
   type MediaManifest,
@@ -142,7 +143,11 @@ function applyExtensions(known: unknown, extensions: unknown): unknown {
 }
 
 export function parseRuntimeScenario(scenario: unknown, manifest: unknown): StudioProject {
-  const parsedScenario = scenarioSchema.safeParse(scenario);
+  // Consume legacy top-level xAxis/yAxis question fields before capturing
+  // unknown-field extensions, so migrated known fields never leak back into
+  // canonical Studio exports through the raw-carry sidecar.
+  const normalizedScenario = normalizeScenarioInput(scenario);
+  const parsedScenario = scenarioSchema.safeParse(normalizedScenario);
   if (!parsedScenario.success) {
     throw new RuntimeImportError("scenario", issueMessages(parsedScenario.error.issues));
   }
@@ -155,7 +160,7 @@ export function parseRuntimeScenario(scenario: unknown, manifest: unknown): Stud
     scenario: parsedScenario.data,
     manifest: parsedManifest.data,
     runtimeExtensions: {
-      scenario: (extensionsOf(scenario, parsedScenario.data) ?? {}) as UnknownRecord,
+      scenario: (extensionsOf(normalizedScenario, parsedScenario.data) ?? {}) as UnknownRecord,
       manifest: (extensionsOf(manifest, parsedManifest.data) ?? {}) as UnknownRecord,
     },
   };

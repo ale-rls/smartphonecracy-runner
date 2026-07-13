@@ -11,8 +11,11 @@ const question = (id: string, next: Scenario["phases"][number]) => ({
   kind: "position-question" as const,
   id,
   text: "Where do you stand?",
-  xAxis: { minLabel: "left", maxLabel: "right" },
-  yAxis: { minLabel: "up", maxLabel: "down" },
+  field: {
+    type: "four-quadrant" as const,
+    xAxis: { minLabel: "left", maxLabel: "right" },
+    yAxis: { minLabel: "up", maxLabel: "down" },
+  },
   durationMs: 60_000,
   freezeMs: 3_000,
   connectionStaleAfterMs: 30_000,
@@ -39,8 +42,11 @@ const baseScenario = {
       kind: "position-question" as const,
       id: "q1",
       text: "Choose",
-      xAxis: { minLabel: "a", maxLabel: "b" },
-      yAxis: { minLabel: "c", maxLabel: "d" },
+      field: {
+        type: "four-quadrant" as const,
+        xAxis: { minLabel: "a", maxLabel: "b" },
+        yAxis: { minLabel: "c", maxLabel: "d" },
+      },
       durationMs: 60_000,
       freezeMs: 3_000,
       connectionStaleAfterMs: 30_000,
@@ -64,6 +70,52 @@ describe("scenarioSchema structural rejection", () => {
     expect(scenarioSchema.safeParse(baseScenario).success).toBe(true);
   });
 
+  it("canonicalizes legacy xAxis/yAxis questions to four quadrants", () => {
+    const legacy = structuredClone(baseScenario) as unknown as Record<string, unknown>;
+    const phases = legacy.phases as Array<Record<string, unknown>>;
+    const phase = phases[2]!;
+    const field = phase.field as { xAxis: unknown; yAxis: unknown };
+    delete phase.field;
+    phase.xAxis = field.xAxis;
+    phase.yAxis = field.yAxis;
+
+    const parsed = scenarioSchema.parse(legacy);
+    const question = parsed.phases[2];
+    expect(question?.kind).toBe("position-question");
+    if (question?.kind === "position-question") {
+      expect(question.field).toEqual({
+        type: "four-quadrant",
+        xAxis: { minLabel: "a", maxLabel: "b" },
+        yAxis: { minLabel: "c", maxLabel: "d" },
+      });
+      expect(question).not.toHaveProperty("xAxis");
+      expect(question).not.toHaveProperty("yAxis");
+    }
+  });
+
+  it("accepts correlated two-quadrant questions and rejects mismatched maps", () => {
+    const scenario = structuredClone(baseScenario) as unknown as Record<string, unknown>;
+    const question = (scenario.phases as Array<Record<string, unknown>>)[2]!;
+    question.field = {
+      type: "two-quadrant",
+      axis: "x",
+      labels: { minLabel: "disagree", maxLabel: "agree" },
+    };
+    question.next = {
+      type: "quadrant-plurality",
+      map: { min: "idle", max: "idle" },
+      tie: "idle",
+      empty: "idle",
+      countedStatuses: ["valid"],
+    };
+    expect(scenarioSchema.safeParse(scenario).success).toBe(true);
+
+    (question.next as { map: unknown }).map = {
+      q1: "idle", q2: "idle", q3: "idle", q4: "idle",
+    };
+    expect(scenarioSchema.safeParse(scenario).success).toBe(false);
+  });
+
   it("rejects a missing phase id", () => {
     expect(parse((s) => ({ ...s, phases: [idle, { ...s.phases[1], id: "" }] })).success).toBe(false);
   });
@@ -81,7 +133,10 @@ describe("scenarioSchema structural rejection", () => {
 
   it("rejects malformed axes", () => {
     expect(parse((s) => {
-      (s.phases[2] as { xAxis: object }).xAxis = { minLabel: "", maxLabel: "b" };
+      const q = s.phases[2] as Extract<Scenario["phases"][number], { kind: "position-question" }>;
+      if (q.field.type === "four-quadrant") {
+        q.field.xAxis = { minLabel: "", maxLabel: "b" };
+      }
       return s;
     }).success).toBe(false);
   });
@@ -142,7 +197,7 @@ describe("validateScenario graph checks", () => {
   it("rejects broken fixed, quadrant, tie, and empty targets", () => {
     const s = structuredClone(baseScenario);
     const q = s.phases[2] as Extract<Scenario["phases"][number], { kind: "position-question" }>;
-    if (q.next.type === "quadrant-plurality") {
+    if (q.next.type === "quadrant-plurality" && "q2" in q.next.map) {
       q.next.map.q2 = "ghost-a";
       q.next.tie = "ghost-b";
       q.next.empty = "ghost-c";
@@ -150,6 +205,29 @@ describe("validateScenario graph checks", () => {
     const result = validateScenario(s);
     const broken = result.errors.filter((e) => e.code === "broken-target");
     expect(broken).toHaveLength(3);
+  });
+
+  it("checks min/max targets for two-quadrant questions", () => {
+    const s = scenarioSchema.parse(structuredClone(baseScenario));
+    const q = s.phases[2];
+    if (q?.kind !== "position-question") throw new Error("expected question");
+    q.field = {
+      type: "two-quadrant",
+      axis: "y",
+      labels: { minLabel: "top", maxLabel: "bottom" },
+    };
+    q.next = {
+      type: "quadrant-plurality",
+      map: { min: "ghost-min", max: "ghost-max" },
+      tie: "idle",
+      empty: "idle",
+      countedStatuses: ["valid"],
+    };
+    const broken = validateScenario(s).errors.filter((e) => e.code === "broken-target");
+    expect(broken.map((e) => e.message)).toEqual([
+      'phase "q1" next.map.min points to unknown phase "ghost-min"',
+      'phase "q1" next.map.max points to unknown phase "ghost-max"',
+    ]);
   });
 
   it("rejects media referenced by videos but missing from the manifest", () => {
