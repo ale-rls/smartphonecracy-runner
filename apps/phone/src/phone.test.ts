@@ -114,13 +114,13 @@ const phase = (
 });
 
 describe("phoneReducer", () => {
-  it("opens input only during position questions", () => {
+  it("opens cursor input during videos and position questions", () => {
     let s = apply(initialPhoneState, phase("video", 1));
-    expect(s.inputOpen).toBe(false);
+    expect(s.inputOpen).toBe(true);
     s = apply(s, phase("position-question", 2));
     expect(s.inputOpen).toBe(true);
     s = apply(s, phase("video", 3));
-    expect(s.inputOpen).toBe(false);
+    expect(s.inputOpen).toBe(true);
   });
 
   it("guards against stale epochs within a session", () => {

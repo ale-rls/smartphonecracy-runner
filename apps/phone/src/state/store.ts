@@ -73,7 +73,7 @@ export function phoneReducer(state: PhoneState, action: PhoneAction): PhoneState
         sessionId: m.sessionId,
         phaseEpoch: m.phaseEpoch,
         currentPhaseId: m.phase.id,
-        inputOpen: m.phase.kind === "position-question",
+        inputOpen: m.phase.kind === "video" || m.phase.kind === "position-question",
       };
     }
     case "status":

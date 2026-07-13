@@ -8,7 +8,6 @@ import type { Cursor, CursorsMessage } from "@smartphonecracy/protocol";
  */
 
 export const RENDER_DELAY_MS = 100;
-export const JOIN_HALO_MS = 1200;
 
 type Sample = { x: number; y: number; at: number };
 
@@ -16,7 +15,6 @@ type TrackedCursor = {
   color: string;
   previous: Sample | null;
   latest: Sample;
-  joinedAt: number;
 };
 
 export type RenderedCursor = {
@@ -24,8 +22,6 @@ export type RenderedCursor = {
   x: number;
   y: number;
   color: string;
-  /** 0..1 halo progress for freshly joined cursors; null when done. */
-  halo: number | null;
 };
 
 export class CursorField {
@@ -62,7 +58,6 @@ export class CursorField {
         color: cursor.color,
         previous: null,
         latest: sample,
-        joinedAt: at,
       });
     }
   }
@@ -91,13 +86,11 @@ export class CursorField {
         x = previous.x + (latest.x - previous.x) * t;
         y = previous.y + (latest.y - previous.y) * t;
       }
-      const haloAge = now - tracked.joinedAt;
       out.push({
         clientId,
         x,
         y,
         color: tracked.color,
-        halo: haloAge < JOIN_HALO_MS ? haloAge / JOIN_HALO_MS : null,
       });
     }
     return out;
