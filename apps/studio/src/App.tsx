@@ -4,7 +4,7 @@ import "@xyflow/react/dist/style.css";
 import { Autosave, IndexedDbDraftDatabase, recoverDraft, type SaveStatus } from "./drafts.js";
 import { exportArtifacts, exportBackup, importBackup, importRuntime } from "./io.js";
 import type { Draft } from "./model.js";
-import { applyEdges, END_NODE_ID, ENTRY_NODE_ID, graphEdges, pruneEdges, validateConnection } from "./canvas/graph.js";
+import { applyEdges, END_NODE_ID, ENTRY_NODE_ID, graphEdges, pruneEdges, validateConnection, withoutOutputEdge } from "./canvas/graph.js";
 import { nodeTypes } from "./canvas/nodes.js";
 import { changePhaseKind, renamePhase, type Phase, type PhaseKind } from "./inspector/model.js";
 import { Inspector } from "./inspector/Inspector.js";
@@ -94,9 +94,13 @@ export function App() {
   };
   const connect = (connection: Connection) => {
     if (!draft) return;
-    const problem = validateConnection(draft.project, edges, connection);
+    const sourceHandle = connection.sourceHandle ?? "next";
+    // Dragging an already-connected output means rewire it. React Flow's
+    // connection event does not remove the previous edge for us.
+    const retained = withoutOutputEdge(edges, connection.source, sourceHandle);
+    const problem = validateConnection(draft.project, retained, connection);
     if (problem) return void alert(problem);
-    const next = addEdge({ ...connection, id: `${connection.source}:${connection.sourceHandle ?? "next"}` }, edges);
+    const next = addEdge({ ...connection, id: `${connection.source}:${sourceHandle}` }, retained);
     setEdges(next);
     persistGraph(next);
   };
