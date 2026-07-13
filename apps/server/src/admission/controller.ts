@@ -2,6 +2,7 @@ import type { IncomingMessage } from "node:http";
 import {
   encodeMessage,
   parseClientMessage,
+  PROTOCOL_VERSION,
   type ClientToServerMessage,
   type IdentityMessage,
   type JoinRejectedMessage,
@@ -127,7 +128,7 @@ export class AdmissionController {
     ) {
       this.send(socket, {
         t: "reload",
-        v: 1,
+        v: PROTOCOL_VERSION,
         minVersion: this.options.buildVersion,
         reason: "assets",
       });
@@ -141,7 +142,7 @@ export class AdmissionController {
     if (parsed.message.t === "ping") {
       this.send(socket, {
         t: "pong",
-        v: 1,
+        v: PROTOCOL_VERSION,
         echoClientTime: parsed.message.clientTime,
         serverTime: this.now(),
       });
@@ -161,7 +162,7 @@ export class AdmissionController {
     if (!rate.allowed) {
       this.send(socket, {
         t: "join_rejected",
-        v: 1,
+        v: PROTOCOL_VERSION,
         reason: "rate_limited",
         ...(rate.retryAfterMs === undefined ? {} : { retryAfterMs: rate.retryAfterMs }),
       });
@@ -176,7 +177,7 @@ export class AdmissionController {
       now,
     });
     if (!grant) {
-      this.send(socket, { t: "join_rejected", v: 1, reason: "expired_grant" });
+      this.send(socket, { t: "join_rejected", v: PROTOCOL_VERSION, reason: "expired_grant" });
       return;
     }
 
@@ -192,11 +193,11 @@ export class AdmissionController {
       ? this.registry.get(parsed.message.participantLease)
       : undefined;
     if (!knownLease && this.options.isNewParticipantAllowed?.() === false) {
-      this.send(socket, { t: "join_rejected", v: 1, reason: "show_in_progress" });
+      this.send(socket, { t: "join_rejected", v: PROTOCOL_VERSION, reason: "show_in_progress" });
       return;
     }
     if (!knownLease && !this.registry.canAdmitNew(now)) {
-      this.send(socket, { t: "join_rejected", v: 1, reason: "room_full" });
+      this.send(socket, { t: "join_rejected", v: PROTOCOL_VERSION, reason: "room_full" });
       return;
     }
 
@@ -218,14 +219,14 @@ export class AdmissionController {
       now,
     });
     if (!admitted.ok) {
-      this.send(socket, { t: "join_rejected", v: 1, reason: "room_full" });
+      this.send(socket, { t: "join_rejected", v: PROTOCOL_VERSION, reason: "room_full" });
       return;
     }
     if (admitted.replacedSocket) this.close(admitted.replacedSocket, 4001, "lease replaced");
     state.joined = true;
     this.send(socket, {
       t: "identity",
-      v: 1,
+      v: PROTOCOL_VERSION,
       clientId: admitted.participant.clientId,
       color: admitted.participant.color,
       sessionId: typeof this.options.sessionId === "function" ? this.options.sessionId() : this.options.sessionId ?? "idle",
@@ -236,7 +237,7 @@ export class AdmissionController {
     await Promise.resolve();
   }
 
-  private send(socket: WebSocket, message: IdentityMessage | JoinRejectedMessage | ReloadMessage | { t: "pong"; v: 1; echoClientTime: number; serverTime: number }): void {
+  private send(socket: WebSocket, message: IdentityMessage | JoinRejectedMessage | ReloadMessage | { t: "pong"; v: typeof PROTOCOL_VERSION; echoClientTime: number; serverTime: number }): void {
     if (socket.readyState === undefined || socket.readyState === 1) socket.send(encodeMessage(message));
   }
 

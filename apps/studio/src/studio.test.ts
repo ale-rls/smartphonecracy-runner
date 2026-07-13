@@ -30,7 +30,8 @@ describe("Studio shell", () => {
     ["content dev", scenario],
     ["installation e2e", e2eScenario],
   ])("round-trips every checked-in scenario fixture: %s", (_name, fixture) => {
-    expect(exportArtifacts(importRuntime(fixture, manifest))["scenario.json"]).toEqual(fixture);
+    const canonical = parseRuntimeScenario(fixture, manifest).scenario;
+    expect(exportArtifacts(importRuntime(fixture, manifest))["scenario.json"]).toEqual(canonical);
   });
 
   it("round-trips a versioned Studio backup", () => {

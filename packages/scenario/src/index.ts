@@ -2,31 +2,47 @@
  * Scenario types, validation, and graph utilities (plan §5).
  */
 
-export const SCENARIO_SCHEMA_VERSION = 1;
+export const SCENARIO_SCHEMA_VERSION = 2;
 
 export {
+  axisSchema,
   countablePositionVoteStatusSchema,
+  fourQuadrantFieldSchema,
+  fourQuadrantPluralityNextSchema,
   idlePhaseSchema,
   mediaManifestSchema,
   phaseSchema,
   positionQuestionNextSchema,
   positionQuestionPhaseSchema,
+  positionFieldSchema,
   positionVoteStatusSchema,
   quadrantSchema,
   scenarioSchema,
+  twoQuadrantFieldSchema,
+  twoQuadrantPluralityNextSchema,
+  twoQuadrantSchema,
   videoPhaseSchema,
+  normalizePositionQuestionInput,
+  normalizeScenarioInput,
 } from "./schema.js";
 export type {
+  Axis,
   CountablePositionVoteStatus,
+  FourQuadrantField,
+  FourQuadrantPluralityNext,
   IdlePhase,
   MediaManifest,
   Phase,
   PhaseSnapshot,
   PositionQuestionNext,
   PositionQuestionPhase,
+  PositionField,
   PositionVoteStatus,
   Quadrant,
   Scenario,
+  TwoQuadrant,
+  TwoQuadrantField,
+  TwoQuadrantPluralityNext,
   VideoPhase,
 } from "./schema.js";
 

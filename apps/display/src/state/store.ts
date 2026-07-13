@@ -1,8 +1,8 @@
 import type {
   PhaseSnapshotMessage,
   QrGrantMessage,
-  QuadrantCounts,
   QuestionResolvedMessage,
+  QuestionStatusMessage,
   ReloadMessage,
   ServerToClientMessage,
 } from "@smartphonecracy/protocol";
@@ -26,7 +26,9 @@ export type DisplayState = {
   notice: { code: string; level: string; message: string } | null;
   reloadRequired: ReloadMessage | null;
   /** Present only while the server sends showLiveCounts questions (plan §7). */
-  liveCounts: QuadrantCounts | null;
+  liveCounts: NonNullable<QuestionStatusMessage["quadrantCounts"]> | null;
+  /** Field discriminator paired with liveCounts by the protocol. */
+  liveField: QuestionStatusMessage["field"] | null;
   /** Set by question_resolved; cleared when the next phase arrives. */
   resolution: QuestionResolvedMessage | null;
 };
@@ -42,6 +44,7 @@ export const initialDisplayState: DisplayState = {
   notice: null,
   reloadRequired: null,
   liveCounts: null,
+  liveField: null,
   resolution: null,
 };
 
@@ -78,6 +81,7 @@ export function displayReducer(
         phase: m.phase,
         notice: null,
         liveCounts: null,
+        liveField: null,
         resolution: null,
       };
     }
@@ -87,7 +91,11 @@ export function displayReducer(
       if (m.sessionId !== state.sessionId || m.phaseEpoch !== state.phaseEpoch) {
         return state; // stale question frame
       }
-      return { ...state, liveCounts: m.quadrantCounts ?? null };
+      return {
+        ...state,
+        liveCounts: m.quadrantCounts ?? null,
+        liveField: m.quadrantCounts === undefined ? null : m.field,
+      };
     case "question_resolved":
       if (m.sessionId !== state.sessionId || m.phaseEpoch !== state.phaseEpoch) {
         return state;

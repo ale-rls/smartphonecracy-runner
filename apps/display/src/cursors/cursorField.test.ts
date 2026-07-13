@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest";
-import type { CursorsMessage, ServerToClientMessage } from "@smartphonecracy/protocol";
+import {
+  PROTOCOL_VERSION,
+  type CursorsMessage,
+  type ServerToClientMessage,
+} from "@smartphonecracy/protocol";
 import { CursorField, JOIN_HALO_MS, RENDER_DELAY_MS } from "./cursorField.js";
 import { displayReducer, initialDisplayState, type DisplayState } from "../state/store.js";
 
 const batch = (tick: number, cursors: Array<[string, number, number]>): CursorsMessage => ({
   t: "cursors",
-  v: 1,
+  v: PROTOCOL_VERSION,
   tick,
   cursors: cursors.map(([clientId, x, y]) => ({ clientId, x, y, color: "#fff" })),
 });
@@ -60,10 +64,16 @@ describe("CursorField", () => {
 const apply = (state: DisplayState, message: ServerToClientMessage) =>
   displayReducer(state, { type: "server-message", message });
 
+const questionField = {
+  type: "four-quadrant",
+  xAxis: { minLabel: "a", maxLabel: "b" },
+  yAxis: { minLabel: "c", maxLabel: "d" },
+} as const;
+
 const questionState = (): DisplayState =>
   apply(initialDisplayState, {
     t: "snapshot",
-    v: 1,
+    v: PROTOCOL_VERSION,
     sessionId: "s1",
     phaseEpoch: 4,
     serverTime: 0,
@@ -71,8 +81,7 @@ const questionState = (): DisplayState =>
       kind: "position-question",
       id: "q1",
       text: "t",
-      xAxis: { minLabel: "a", maxLabel: "b" },
-      yAxis: { minLabel: "c", maxLabel: "d" },
+      field: questionField,
       durationMs: 60_000,
       freezeMs: 3_000,
       connectionStaleAfterMs: 30_000,
@@ -89,21 +98,24 @@ describe("question status/resolution state", () => {
     let s = questionState();
     s = apply(s, {
       t: "question_status",
-      v: 1,
+      v: PROTOCOL_VERSION,
       sessionId: "s1",
       phaseEpoch: 4,
       connectedCount: 3,
       positionedCount: 2,
+      field: questionField,
       quadrantCounts: { q1: 2, q2: 0, q3: 0, q4: 0 },
     });
     expect(s.liveCounts).toEqual({ q1: 2, q2: 0, q3: 0, q4: 0 });
+    expect(s.liveField).toEqual(questionField);
     const stale = apply(s, {
       t: "question_status",
-      v: 1,
+      v: PROTOCOL_VERSION,
       sessionId: "s1",
       phaseEpoch: 3,
       connectedCount: 9,
       positionedCount: 9,
+      field: questionField,
       quadrantCounts: { q1: 9, q2: 9, q3: 9, q4: 9 },
     });
     expect(stale.liveCounts).toEqual({ q1: 2, q2: 0, q3: 0, q4: 0 });
@@ -113,31 +125,35 @@ describe("question status/resolution state", () => {
     let s = questionState();
     s = apply(s, {
       t: "question_status",
-      v: 1,
+      v: PROTOCOL_VERSION,
       sessionId: "s1",
       phaseEpoch: 4,
       connectedCount: 3,
       positionedCount: 2,
+      field: questionField,
       quadrantCounts: { q1: 1, q2: 0, q3: 0, q4: 0 },
     });
     s = apply(s, {
       t: "question_status",
-      v: 1,
+      v: PROTOCOL_VERSION,
       sessionId: "s1",
       phaseEpoch: 4,
       connectedCount: 3,
       positionedCount: 3,
+      field: questionField,
     });
     expect(s.liveCounts).toBeNull();
+    expect(s.liveField).toBeNull();
   });
 
   it("stores resolution for the current epoch and clears it on the next phase", () => {
     let s = questionState();
     s = apply(s, {
       t: "question_resolved",
-      v: 1,
+      v: PROTOCOL_VERSION,
       sessionId: "s1",
       phaseEpoch: 4,
+      field: questionField,
       quadrantCounts: { q1: 3, q2: 1, q3: 0, q4: 0 },
       winner: "q1",
       resolvedTarget: "video-2",
@@ -146,7 +162,7 @@ describe("question status/resolution state", () => {
     expect(s.resolution?.winner).toBe("q1");
     s = apply(s, {
       t: "phase",
-      v: 1,
+      v: PROTOCOL_VERSION,
       sessionId: "s1",
       phaseEpoch: 5,
       serverTime: 0,

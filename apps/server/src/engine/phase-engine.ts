@@ -1,5 +1,6 @@
 import {
   encodeMessage,
+  PROTOCOL_VERSION,
   type ClientToServerMessage,
   type PhaseSnapshotMessage,
   type ServerToClientMessage,
@@ -10,7 +11,13 @@ import type { WebSocket } from "ws";
 import type { ParticipantRecord, ParticipantRegistry } from "../admission/index.js";
 import { QrGrantPushLoop, type QrGrantPushLoopOptions } from "../admission/qr.js";
 import { CursorPipeline } from "../cursors/index.js";
-import { VoteEngine, type FinalVoteSnapshot, type VoteParticipantSeed } from "../votes/index.js";
+import {
+  VoteEngine,
+  type FinalVoteSnapshot,
+  type LiveQuestionStatus,
+  type VoteParticipantSeed,
+  type VoteResolution,
+} from "../votes/index.js";
 import { VideoPhaseHandler } from "./video.js";
 
 export type EngineLifecycle = "idle" | "lobby" | "active";
@@ -70,6 +77,17 @@ export type TransitionResult = { ok: true } | { ok: false; reason: "stale" | "in
 
 function isOpen(socket: WebSocket): boolean {
   return socket.readyState === undefined || socket.readyState === 0 || socket.readyState === 1;
+}
+
+type FourVoteResolution = Extract<VoteResolution, { field: { type: "four-quadrant" } }>;
+type FourLiveQuestionStatus = Extract<LiveQuestionStatus, { field: { type: "four-quadrant" } }>;
+
+function isFourVoteResolution(resolution: VoteResolution): resolution is FourVoteResolution {
+  return resolution.field.type === "four-quadrant";
+}
+
+function isFourLiveQuestionStatus(status: LiveQuestionStatus): status is FourLiveQuestionStatus {
+  return status.field.type === "four-quadrant";
 }
 
 export class PhaseEngine {
@@ -214,7 +232,7 @@ export class PhaseEngine {
   getSnapshotMessage(now = this.now()): Extract<ServerToClientMessage, { t: "snapshot" }> {
     return {
       t: "snapshot",
-      v: 1,
+      v: PROTOCOL_VERSION,
       sessionId: this.sessionId,
       phaseEpoch: this.phaseEpoch,
       phase: this.getSnapshot(now),
@@ -477,7 +495,7 @@ export class PhaseEngine {
     if (this.displaySocket !== undefined && this.displaySocket !== socket) {
       this.send(this.displaySocket, {
         t: "display_notice",
-        v: 1,
+        v: PROTOCOL_VERSION,
         code: "display_replaced",
         level: "warning",
         message: "This display connection was replaced.",
@@ -489,7 +507,7 @@ export class PhaseEngine {
     this.clients.add(socket);
     this.displayDisconnectedAt = null;
     this.send(socket, this.getSnapshotMessage());
-    this.send(socket, { t: "presence", v: 1, count: this.registry.connectedCount });
+    this.send(socket, { t: "presence", v: PROTOCOL_VERSION, count: this.registry.connectedCount });
     if (this.lifecycle === "idle" && this.registry.connectedCount >= 1) {
       this.startLobby(this.now());
     } else {
@@ -583,7 +601,7 @@ export class PhaseEngine {
     this.emitCheckpoint("transition", reason);
     this.broadcast({
       t: "phase",
-      v: 1,
+      v: PROTOCOL_VERSION,
       sessionId: this.sessionId,
       phaseEpoch: this.phaseEpoch,
       phase: this.getSnapshot(),
@@ -628,19 +646,39 @@ export class PhaseEngine {
   }
 
   private emitQuestionResolved(
-    resolution: { quadrantCounts: { q1: number; q2: number; q3: number; q4: number }; winner: "q1" | "q2" | "q3" | "q4" | "tie" | "empty" | "fixed"; resolvedTarget: string },
+    resolution: VoteResolution,
     phase: Extract<Phase, { kind: "position-question" }>,
     now: number,
   ): void {
-    this.sendToDisplay({
+    const base: {
+      t: "question_resolved";
+      v: typeof PROTOCOL_VERSION;
+      sessionId: string;
+      phaseEpoch: number;
+      resolvedTarget: string;
+      freezeUntil: number;
+    } = {
       t: "question_resolved",
-      v: 1,
+      v: PROTOCOL_VERSION,
       sessionId: this.sessionId,
       phaseEpoch: this.phaseEpoch,
-      quadrantCounts: resolution.quadrantCounts,
-      winner: resolution.winner,
       resolvedTarget: resolution.resolvedTarget,
       freezeUntil: now + phase.freezeMs,
+    };
+    if (isFourVoteResolution(resolution)) {
+      this.sendToDisplay({
+        ...base,
+        field: resolution.field,
+        quadrantCounts: resolution.quadrantCounts,
+        winner: resolution.winner,
+      });
+      return;
+    }
+    this.sendToDisplay({
+      ...base,
+      field: resolution.field,
+      quadrantCounts: resolution.quadrantCounts,
+      winner: resolution.winner,
     });
   }
 
@@ -660,15 +698,34 @@ export class PhaseEngine {
     ) return;
     const status = this.votes.liveStatus(now);
     if (!status) return;
-    this.sendToDisplay({
+    const base: {
+      t: "question_status";
+      v: typeof PROTOCOL_VERSION;
+      sessionId: string;
+      phaseEpoch: number;
+      connectedCount: number;
+      positionedCount: number;
+    } = {
       t: "question_status",
-      v: 1,
+      v: PROTOCOL_VERSION,
       sessionId: this.sessionId,
       phaseEpoch: this.phaseEpoch,
       connectedCount: status.connectedCount,
       positionedCount: status.positionedCount,
-      ...(phase.showLiveCounts ? { quadrantCounts: status.quadrantCounts } : {}),
-    });
+    };
+    if (isFourLiveQuestionStatus(status)) {
+      this.sendToDisplay({
+        ...base,
+        field: status.field,
+        ...(phase.showLiveCounts ? { quadrantCounts: status.quadrantCounts } : {}),
+      });
+    } else {
+      this.sendToDisplay({
+        ...base,
+        field: status.field,
+        ...(phase.showLiveCounts ? { quadrantCounts: status.quadrantCounts } : {}),
+      });
+    }
     this.questionStatusDirty = false;
     this.lastQuestionStatusAt = now;
   }

@@ -9,6 +9,7 @@ type Props = {
   onChange: (phase: Phase) => void;
   onKindChange: (kind: PhaseKind) => void;
   onTransitionChange: (kind: "fixed" | "quadrant-plurality") => void;
+  onQuestionLayoutChange: (layout: "four-quadrant" | "two-quadrant-x" | "two-quadrant-y") => void;
 };
 
 const numberValue = (value: string, fallback: number) => {
@@ -16,7 +17,7 @@ const numberValue = (value: string, fallback: number) => {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
 };
 
-export function Inspector({ project, selectedId, onRename, onChange, onKindChange, onTransitionChange }: Props) {
+export function Inspector({ project, selectedId, onRename, onChange, onKindChange, onTransitionChange, onQuestionLayoutChange }: Props) {
   const phase = project.scenario.phases.find((item) => item.id === selectedId);
   const [idInput, setIdInput] = useState(phase?.id ?? "");
   useEffect(() => setIdInput(phase?.id ?? ""), [phase?.id]);
@@ -37,10 +38,22 @@ export function Inspector({ project, selectedId, onRename, onChange, onKindChang
     </>}
     {phase.kind === "position-question" && <>
       {text("Question", "text", phase.text, (value) => onChange({ ...phase, text: value }))}
-      {text("X axis minimum", "xAxis.minLabel", phase.xAxis.minLabel, (minLabel) => onChange({ ...phase, xAxis: { ...phase.xAxis, minLabel } }))}
-      {text("X axis maximum", "xAxis.maxLabel", phase.xAxis.maxLabel, (maxLabel) => onChange({ ...phase, xAxis: { ...phase.xAxis, maxLabel } }))}
-      {text("Y axis minimum", "yAxis.minLabel", phase.yAxis.minLabel, (minLabel) => onChange({ ...phase, yAxis: { ...phase.yAxis, minLabel } }))}
-      {text("Y axis maximum", "yAxis.maxLabel", phase.yAxis.maxLabel, (maxLabel) => onChange({ ...phase, yAxis: { ...phase.yAxis, maxLabel } }))}
+      <label>{label("Quadrant layout", "field.type")}<select value={phase.field.type === "four-quadrant" ? "four-quadrant" : `two-quadrant-${phase.field.axis}`} onChange={(event) => onQuestionLayoutChange(event.target.value as "four-quadrant" | "two-quadrant-x" | "two-quadrant-y")}><option value="four-quadrant">Four quadrants · X + Y axes</option><option value="two-quadrant-x">Two quadrants · left / right</option><option value="two-quadrant-y">Two quadrants · top / bottom</option></select></label>
+      {phase.field.type === "four-quadrant" ? (() => {
+        const field = phase.field;
+        return <>
+          {text("X axis minimum", "field.xAxis.minLabel", field.xAxis.minLabel, (minLabel) => onChange({ ...phase, field: { ...field, xAxis: { ...field.xAxis, minLabel } } } as Phase))}
+          {text("X axis maximum", "field.xAxis.maxLabel", field.xAxis.maxLabel, (maxLabel) => onChange({ ...phase, field: { ...field, xAxis: { ...field.xAxis, maxLabel } } } as Phase))}
+          {text("Y axis minimum", "field.yAxis.minLabel", field.yAxis.minLabel, (minLabel) => onChange({ ...phase, field: { ...field, yAxis: { ...field.yAxis, minLabel } } } as Phase))}
+          {text("Y axis maximum", "field.yAxis.maxLabel", field.yAxis.maxLabel, (maxLabel) => onChange({ ...phase, field: { ...field, yAxis: { ...field.yAxis, maxLabel } } } as Phase))}
+        </>;
+      })() : (() => {
+        const field = phase.field;
+        return <>
+          {text(`${field.axis === "x" ? "Left" : "Top"} quadrant`, "field.labels.minLabel", field.labels.minLabel, (minLabel) => onChange({ ...phase, field: { ...field, labels: { ...field.labels, minLabel } } } as Phase))}
+          {text(`${field.axis === "x" ? "Right" : "Bottom"} quadrant`, "field.labels.maxLabel", field.labels.maxLabel, (maxLabel) => onChange({ ...phase, field: { ...field, labels: { ...field.labels, maxLabel } } } as Phase))}
+        </>;
+      })()}
       {number("Question duration (ms)", "durationMs", phase.durationMs, (durationMs) => onChange({ ...phase, durationMs }))}
       {number("Outcome freeze (ms)", "freezeMs", phase.freezeMs, (freezeMs) => onChange({ ...phase, freezeMs }))}
       {number("Connection stale after (ms)", "connectionStaleAfterMs", phase.connectionStaleAfterMs, (connectionStaleAfterMs) => onChange({ ...phase, connectionStaleAfterMs }))}
@@ -58,7 +71,11 @@ function CountedStatuses({ phase, onChange }: { phase: Extract<Phase, { kind: "p
   return <fieldset><legend>Count participant states <small>next.countedStatuses</small></legend>{(["valid", "stale", "disconnected"] as const).map((status) => <label className="check" key={status}><input type="checkbox" checked={next.countedStatuses.includes(status)} onChange={(event) => {
     const values = event.target.checked ? [...next.countedStatuses, status] : next.countedStatuses.filter((item) => item !== status);
     if (values.length === 0) return;
-    onChange({ ...phase, next: { ...next, countedStatuses: values as typeof next.countedStatuses } });
+    if (phase.field.type === "four-quadrant") {
+      onChange({ ...phase, next: { ...next, countedStatuses: values as typeof next.countedStatuses } } as Phase);
+    } else {
+      onChange({ ...phase, next: { ...next, countedStatuses: values as typeof next.countedStatuses } } as Phase);
+    }
   }} />{status}</label>)}</fieldset>;
 }
 

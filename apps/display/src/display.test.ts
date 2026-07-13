@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import type { PhaseSnapshotMessage, ServerToClientMessage } from "@smartphonecracy/protocol";
+import {
+  PROTOCOL_VERSION,
+  type PhaseSnapshotMessage,
+  type ServerToClientMessage,
+} from "@smartphonecracy/protocol";
 import { Backoff } from "./lib/backoff.js";
 import { ServerClock } from "./lib/serverClock.js";
 import {
@@ -68,7 +72,7 @@ const snapshot = (
   };
   return {
     t: "snapshot",
-    v: 1,
+    v: PROTOCOL_VERSION,
     sessionId: overrides.sessionId ?? "s1",
     phaseEpoch: overrides.phaseEpoch ?? 1,
     phase,
@@ -102,24 +106,24 @@ describe("displayReducer", () => {
   });
 
   it("tracks presence, notices, and reload", () => {
-    let s = apply(initialDisplayState, { t: "presence", v: 1, count: 12 });
+    let s = apply(initialDisplayState, { t: "presence", v: PROTOCOL_VERSION, count: 12 });
     expect(s.presenceCount).toBe(12);
     s = apply(s, {
       t: "display_notice",
-      v: 1,
+      v: PROTOCOL_VERSION,
       code: "display_replaced",
       level: "warning",
       message: "replaced",
     });
     expect(s.notice?.code).toBe("display_replaced");
-    s = apply(s, { t: "reload", v: 1, minVersion: "1.1.0", reason: "assets" });
+    s = apply(s, { t: "reload", v: PROTOCOL_VERSION, minVersion: "1.1.0", reason: "assets" });
     expect(s.reloadRequired?.reason).toBe("assets");
   });
 
   it("drops the QR grant while reconnecting (server resends after join)", () => {
     let s = apply(initialDisplayState, {
       t: "qr_grant",
-      v: 1,
+      v: PROTOCOL_VERSION,
       url: "https://x.example/j?g=1",
       expiresAt: 99,
       placement: "large",
@@ -132,12 +136,12 @@ describe("displayReducer", () => {
   it("qr_hidden clears and suppresses the QR", () => {
     let s = apply(initialDisplayState, {
       t: "qr_grant",
-      v: 1,
+      v: PROTOCOL_VERSION,
       url: "https://x.example/j?g=1",
       expiresAt: 99,
       placement: "corner",
     });
-    s = apply(s, { t: "qr_hidden", v: 1 });
+    s = apply(s, { t: "qr_hidden", v: PROTOCOL_VERSION });
     expect(s.qrGrant).toBeNull();
     expect(s.qrHidden).toBe(true);
   });

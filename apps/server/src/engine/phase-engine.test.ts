@@ -108,6 +108,29 @@ const liveCountsScenario = scenarioSchema.parse({
     : phase),
 });
 
+const twoQuadrantScenario = scenarioSchema.parse({
+  ...scenario,
+  version: "engine-test-two-quadrant",
+  phases: scenario.phases.map((phase) => phase.kind === "position-question"
+    ? {
+        ...phase,
+        field: {
+          type: "two-quadrant",
+          axis: "x",
+          labels: { minLabel: "Disagree", maxLabel: "Agree" },
+        },
+        showLiveCounts: true,
+        next: {
+          type: "quadrant-plurality",
+          map: { min: "idle", max: "idle" },
+          tie: "idle",
+          empty: "idle",
+          countedStatuses: ["valid", "stale", "disconnected"],
+        },
+      }
+    : phase),
+});
+
 function addParticipant(registry: ParticipantRegistry, socket: WebSocket, now: number, id: string): void {
   const result = registry.admit({
     participantLease: `lease-${id}`,
@@ -122,7 +145,7 @@ function addParticipant(registry: ParticipantRegistry, socket: WebSocket, now: n
 function connectDisplay(engine: PhaseEngine, socket: WebSocket): void {
   engine.handleClientMessage({
     t: "display_join",
-    v: 1,
+    v: 2,
     clientVersion: "test",
     installationId: "inst-1",
     roomId: "room-1",
@@ -137,11 +160,11 @@ describe("PhaseEngine lifecycle", () => {
     connectDisplay(engine, display as unknown as WebSocket);
     expect(display.sent.filter((message) => message.t === "qr_grant")).toHaveLength(1);
 
-    engine.handleClientMessage({ t: "qr_grant_request", v: 1 }, display as unknown as WebSocket);
+    engine.handleClientMessage({ t: "qr_grant_request", v: 2 }, display as unknown as WebSocket);
     expect(display.sent.filter((message) => message.t === "qr_grant")).toHaveLength(2);
 
     const stranger = new MockSocket();
-    engine.handleClientMessage({ t: "qr_grant_request", v: 1 }, stranger as unknown as WebSocket);
+    engine.handleClientMessage({ t: "qr_grant_request", v: 2 }, stranger as unknown as WebSocket);
     expect(stranger.sent).toEqual([]);
   });
 
@@ -193,7 +216,7 @@ describe("PhaseEngine lifecycle", () => {
     engine.tick(now);
     const event = {
       t: "video_ended" as const,
-      v: 1 as const,
+      v: 2 as const,
       sessionId: "session-1",
       phaseId: "intro",
       phaseEpoch: engine.currentPhaseEpoch,
@@ -358,7 +381,7 @@ describe("PhaseEngine lifecycle", () => {
     const invalid = new MockSocket();
     engine.handleClientMessage({
       t: "display_join",
-      v: 1,
+      v: 2,
       clientVersion: "test",
       installationId: "inst-1",
       roomId: "room-1",
@@ -480,7 +503,7 @@ describe("PhaseEngine lifecycle", () => {
     expect(status).toBeDefined();
     expect(status).not.toHaveProperty("quadrantCounts");
     engine.handleClientMessage({
-      t: "input", v: 1, sessionId: "session-1", phaseEpoch: questionEpoch, seq: 1, x: 0.5, y: 0.5,
+      t: "input", v: 2, sessionId: "session-1", phaseEpoch: questionEpoch, seq: 1, x: 0.5, y: 0.5,
     }, phone as unknown as WebSocket);
     now = 1_300;
     engine.tick(now);
@@ -499,7 +522,7 @@ describe("PhaseEngine lifecycle", () => {
 
     now = 1_310;
     engine.handleClientMessage({
-      t: "input", v: 1, sessionId: "session-1", phaseEpoch: questionEpoch, seq: 2, x: 0, y: 0,
+      t: "input", v: 2, sessionId: "session-1", phaseEpoch: questionEpoch, seq: 2, x: 0, y: 0,
     }, phone as unknown as WebSocket);
     expect(snapshot?.votes[0]?.x).toBe(0.5);
     engine.tick(1_319);
@@ -527,6 +550,59 @@ describe("PhaseEngine lifecycle", () => {
     expect(status).toMatchObject({ quadrantCounts: { q1: 0, q2: 0, q3: 0, q4: 0 } });
   });
 
+  it("emits correlated two-quadrant status and resolution messages", () => {
+    let now = 1_000;
+    const { engine, registry } = setup({
+      now: () => now,
+      interactiveIdleTimeoutMs: 1_000,
+      testScenario: twoQuadrantScenario,
+    });
+    const phone = new MockSocket();
+    const display = new MockSocket();
+    addParticipant(registry, phone as unknown as WebSocket, now, "p1");
+    engine.participantJoined(phone as unknown as WebSocket, registry.get("lease-p1"));
+    connectDisplay(engine, display as unknown as WebSocket);
+    now = 1_100;
+    engine.tick(now);
+    engine.completeVideo("session-1", "intro", engine.currentPhaseEpoch, now);
+    const questionEpoch = engine.currentPhaseEpoch;
+
+    engine.handleClientMessage({
+      t: "input",
+      v: 2,
+      sessionId: "session-1",
+      phaseEpoch: questionEpoch,
+      seq: 1,
+      x: 0.5,
+      y: 0.2,
+    }, phone as unknown as WebSocket);
+    now = 1_350;
+    engine.tick(now);
+
+    expect(display.sent.filter((message) => message.t === "question_status").at(-1)).toMatchObject({
+      t: "question_status",
+      v: 2,
+      field: {
+        type: "two-quadrant",
+        axis: "x",
+        labels: { minLabel: "Disagree", maxLabel: "Agree" },
+      },
+      quadrantCounts: { min: 0, max: 1 },
+    });
+    expect(display.sent.find((message) => message.t === "question_resolved")).toMatchObject({
+      t: "question_resolved",
+      v: 2,
+      field: {
+        type: "two-quadrant",
+        axis: "x",
+        labels: { minLabel: "Disagree", maxLabel: "Agree" },
+      },
+      quadrantCounts: { min: 0, max: 1 },
+      winner: "max",
+      resolvedTarget: "idle",
+    });
+  });
+
   it("throttles question status broadcasts to four per second", () => {
     let now = 1_000;
     const { engine, registry } = setup({
@@ -548,7 +624,7 @@ describe("PhaseEngine lifecycle", () => {
     for (let seq = 1; seq <= 10; seq += 1) {
       now += 10;
       engine.handleClientMessage({
-        t: "input", v: 1, sessionId: "session-1", phaseEpoch: questionEpoch, seq, x: 0.5, y: 0.5,
+        t: "input", v: 2, sessionId: "session-1", phaseEpoch: questionEpoch, seq, x: 0.5, y: 0.5,
       }, phone as unknown as WebSocket);
     }
     expect(display.sent.filter((message) => message.t === "question_status")).toHaveLength(initialCount);

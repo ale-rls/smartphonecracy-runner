@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { StudioProject } from "@smartphonecracy/studio-adapter";
-import { advancePreview, advanceTimer, continueAfterResolution, currentPhase, resolvePreview, startPreview, type ForcedOutcome, type PreviewSession } from "./preview.js";
+import { advancePreview, advanceTimer, continueAfterResolution, currentPhase, forcedOutcomes, resolvePreview, startPreview, type ForcedOutcome, type PreviewSession } from "./preview.js";
 
 export function PreviewPanel({ project, onClose }: { project: StudioProject; onClose: () => void }) {
   const [session, setSession] = useState<PreviewSession>(() => startPreview(project));
@@ -8,7 +8,11 @@ export function PreviewPanel({ project, onClose }: { project: StudioProject; onC
   const [includeDisconnected, setIncludeDisconnected] = useState(true);
   const phase = currentPhase(session);
   const force = (outcome: ForcedOutcome) => setSession((value) => resolvePreview(value, outcome, includeStale, includeDisconnected));
-  const outcomes: ForcedOutcome[] = phase.kind === "position-question" && phase.next.type === "fixed" ? ["q4"] : ["q1", "q2", "q3", "q4", "tie", "empty", "abandoned-solo"];
+  const outcomes: ForcedOutcome[] = phase.kind === "position-question"
+    ? phase.next.type === "fixed"
+      ? [phase.field.type === "two-quadrant" ? "max" : "q4"]
+      : forcedOutcomes(phase.field)
+    : [];
   return <section className="preview" aria-label="Show preview"><header><h2>Outcome preview</h2><button onClick={onClose}>Close preview</button></header>
     <p><strong>{phase.id}</strong> · {phase.kind} · manual time {session.elapsedMs} ms</p><p>{session.validation.length} validation diagnostic(s) checked before preview.</p>
     {phase.kind === "video" && <><p>Video placeholder: {phase.src}</p><button onClick={() => setSession((value) => advanceTimer(value, phase.expectedDurationMs))}>Advance expected timer</button><button onClick={() => setSession(advancePreview)}>Next phase</button></>}

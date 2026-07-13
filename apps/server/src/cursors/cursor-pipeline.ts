@@ -1,4 +1,4 @@
-import type { Cursor, CursorsMessage, PresenceMessage } from "@smartphonecracy/protocol";
+import { PROTOCOL_VERSION, type Cursor, type CursorsMessage, type PresenceMessage } from "@smartphonecracy/protocol";
 
 export const CURSOR_TICK_INTERVAL_MS = 40;
 
@@ -50,7 +50,7 @@ export class CursorPipeline {
   tick(): void {
     this.options.sendCursors({
       t: "cursors",
-      v: 1,
+      v: PROTOCOL_VERSION,
       tick: this.tickNumber,
       cursors: [...this.cursors.values()].map(({ lastSeq: _lastSeq, ...cursor }) => cursor),
     });
@@ -68,6 +68,6 @@ export class CursorPipeline {
   }
 
   private emitPresence(): void {
-    this.options.sendPresence({ t: "presence", v: 1, count: this.cursors.size });
+    this.options.sendPresence({ t: "presence", v: PROTOCOL_VERSION, count: this.cursors.size });
   }
 }
