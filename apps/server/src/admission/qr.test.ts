@@ -10,7 +10,10 @@ function setup(overrides: Partial<ConstructorParameters<typeof QrGrantPushLoop>[
   const sent: QrPushMessage[] = [];
   const loop = new QrGrantPushLoop({
     phoneJoinBaseUrl: "https://phone.example/join?installation=one",
-    issueGrant: (issuedAt) => ({ token: `grant-${issuedAt}`, claims: { expiresAt: issuedAt + 120_000 } }),
+    issueGrant: (issuedAt) => ({
+      token: `grant-${issuedAt}`,
+      claims: { installationId: "inst-1", roomId: "room-1", expiresAt: issuedAt + 120_000 },
+    }),
     send: (message) => sent.push(message),
     lifecycle: () => lifecycle,
     hasDisplay: () => true,
@@ -38,7 +41,8 @@ describe("QR grant push loop", () => {
       "large", "large", "corner",
     ]);
     const url = new URL((sent[0] as Extract<QrPushMessage, { t: "qr_grant" }>).url);
-    expect(url.searchParams.get("installation")).toBe("one");
+    expect(url.searchParams.get("installation")).toBe("inst-1");
+    expect(url.searchParams.get("room")).toBe("room-1");
     expect(url.searchParams.get("g")).toBe("grant-1000");
   });
 

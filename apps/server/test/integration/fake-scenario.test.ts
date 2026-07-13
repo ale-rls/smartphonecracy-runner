@@ -33,6 +33,8 @@ class TestSocket extends EventEmitter {
 
 const scenarioPath = fileURLToPath(new URL("../../../../content/scenarios/dev.json", import.meta.url));
 const scenario = scenarioSchema.parse(JSON.parse(readFileSync(scenarioPath, "utf8")));
+const showtest1Path = fileURLToPath(new URL("../../../../content/scenarios/showtest1.json", import.meta.url));
+const showtest1 = scenarioSchema.parse(JSON.parse(readFileSync(showtest1Path, "utf8")));
 
 function request(ip: string): IncomingMessage {
   return { headers: {}, socket: { remoteAddress: ip } } as unknown as IncomingMessage;
@@ -42,7 +44,10 @@ function last(socket: TestSocket, type: string): any {
   return socket.sent.filter((message) => message.t === type).at(-1);
 }
 
-function createHarness(policy: { noParticipantGraceMs?: number } = {}) {
+function createHarness(
+  policy: { noParticipantGraceMs?: number } = {},
+  testScenario: typeof scenario = scenario,
+) {
   let now = 1_000;
   let sessionCounter = 0;
   const checkpoints: PhaseCheckpoint[] = [];
@@ -61,7 +66,7 @@ function createHarness(policy: { noParticipantGraceMs?: number } = {}) {
     onSocketClosed: (socket) => engine.socketClosed(socket),
   });
   engine = new PhaseEngine({
-    scenario,
+    scenario: testScenario,
     registry: admission.registry,
     installationId: "inst-1",
     roomId: "room-1",
@@ -116,6 +121,38 @@ function createHarness(policy: { noParticipantGraceMs?: number } = {}) {
 }
 
 describe("fake scenario server integration", () => {
+  it.each([
+    { label: "Crazy", x: 0.2, winner: "min", target: "video-3f7f2c", media: "video-3.mp4" },
+    { label: "Weird", x: 0.8, winner: "max", target: "video-242f2a", media: "video-2.mp4" },
+  ])("runs showtest1's $label branch to its result video and back to idle", async ({ x, winner, target, media }) => {
+    const h = createHarness({}, showtest1);
+    const display = h.display();
+    const phone = await h.phone(1);
+
+    h.advance(100);
+    expect(h.engine.currentPhaseId).toBe("video-5c6497");
+    display.message({
+      t: "video_ended", v: 2, sessionId: h.engine.currentSessionId, phaseId: "video-5c6497",
+      phaseEpoch: h.engine.currentPhaseEpoch, mediaId: "video-1.mp4",
+    });
+    expect(h.engine.currentPhaseId).toBe("position-question-068b73");
+
+    h.advance(50_000);
+    h.input(phone, 1, x, 0.5);
+    await Promise.resolve();
+    h.advance(10_000);
+    expect(last(display, "question_resolved")).toMatchObject({ winner, resolvedTarget: target });
+
+    h.advance(5_000);
+    expect(h.engine.currentPhaseId).toBe(target);
+    display.message({
+      t: "video_ended", v: 2, sessionId: h.engine.currentSessionId, phaseId: target,
+      phaseEpoch: h.engine.currentPhaseEpoch, mediaId: media,
+    });
+    expect(h.engine.lifecycleState).toBe("idle");
+    expect(h.engine.currentPhaseId).toBe("idle");
+  });
+
   it("drives join through lobby, video, all question resolutions, and back to idle", async () => {
     const h = createHarness();
     const display = h.display();

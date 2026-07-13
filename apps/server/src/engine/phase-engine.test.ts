@@ -85,7 +85,7 @@ function setup(options: {
             phoneJoinBaseUrl: "https://phone.example/join",
             issueGrant: (issuedAt: number) => ({
               token: `grant-${issuedAt}`,
-              claims: { expiresAt: issuedAt + 120_000 },
+              claims: { installationId: "inst-1", roomId: "room-1", expiresAt: issuedAt + 120_000 },
             }),
           },
         }
@@ -159,6 +159,9 @@ describe("PhaseEngine lifecycle", () => {
     const display = new MockSocket();
     connectDisplay(engine, display as unknown as WebSocket);
     expect(display.sent.filter((message) => message.t === "qr_grant")).toHaveLength(1);
+    const joinUrl = new URL(display.sent.find((message) => message.t === "qr_grant").url);
+    expect(joinUrl.searchParams.get("installation")).toBe("inst-1");
+    expect(joinUrl.searchParams.get("room")).toBe("room-1");
 
     engine.handleClientMessage({ t: "qr_grant_request", v: 2 }, display as unknown as WebSocket);
     expect(display.sent.filter((message) => message.t === "qr_grant")).toHaveLength(2);
