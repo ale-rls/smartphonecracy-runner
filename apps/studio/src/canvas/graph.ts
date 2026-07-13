@@ -7,6 +7,11 @@ export const FIXED_HANDLE = "next";
 export const OUTCOME_HANDLES = ["q1", "q2", "q3", "q4", "tie", "empty"] as const;
 
 export type OutcomeHandle = (typeof OUTCOME_HANDLES)[number];
+export type GraphPhase = Exclude<StudioProject["scenario"]["phases"][number], { kind: "idle" }>;
+
+export function graphPhases(project: StudioProject): GraphPhase[] {
+  return project.scenario.phases.filter((phase): phase is GraphPhase => phase.kind !== "idle");
+}
 
 export function acceptsInput(project: StudioProject, target: string): boolean {
   return target === END_NODE_ID || project.scenario.phases.some((phase) => phase.id === target);

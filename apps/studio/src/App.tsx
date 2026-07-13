@@ -4,7 +4,7 @@ import "@xyflow/react/dist/style.css";
 import { Autosave, IndexedDbDraftDatabase, recoverDraft, type SaveStatus } from "./drafts.js";
 import { exportArtifacts, exportBackup, importBackup, importRuntime } from "./io.js";
 import type { Draft } from "./model.js";
-import { applyEdges, END_NODE_ID, ENTRY_NODE_ID, graphEdges, OUTCOME_HANDLES, pruneEdges, validateConnection, withoutOutputEdge } from "./canvas/graph.js";
+import { applyEdges, END_NODE_ID, ENTRY_NODE_ID, graphEdges, graphPhases, OUTCOME_HANDLES, pruneEdges, validateConnection, withoutOutputEdge } from "./canvas/graph.js";
 import { nodeTypes } from "./canvas/nodes.js";
 import { changePhaseKind, renamePhase, type Phase, type PhaseKind } from "./inspector/model.js";
 import { Inspector } from "./inspector/Inspector.js";
@@ -44,7 +44,7 @@ export function App() {
   useEffect(() => {
     if (!draft) return;
     const layout = new Map(draft.document.nodes.map((node) => [node.id, node]));
-    const phaseNodes: Node[] = draft.project.scenario.phases.map((phase, index) => ({ id: phase.id, type: "phase", deletable: phase.kind !== "idle", position: layout.get(phase.id) ?? { x: 360 + (index % 3) * 300, y: 80 + Math.floor(index / 3) * 220 }, data: { label: phase.kind === "position-question" ? phase.text : phase.id, kind: phase.kind, outcome: phase.kind === "position-question" && phase.next.type === "quadrant-plurality" } }));
+    const phaseNodes: Node[] = graphPhases(draft.project).map((phase, index) => ({ id: phase.id, type: "phase", position: layout.get(phase.id) ?? { x: 360 + (index % 3) * 300, y: 80 + Math.floor(index / 3) * 220 }, data: { label: phase.kind === "position-question" ? phase.text : phase.id, kind: phase.kind, outcome: phase.kind === "position-question" && phase.next.type === "quadrant-plurality" } }));
     setNodes([{ id: ENTRY_NODE_ID, type: "entry", deletable: false, position: layout.get(ENTRY_NODE_ID) ?? { x: 30, y: 80 }, data: {} }, ...phaseNodes, { id: END_NODE_ID, type: "end", deletable: false, position: layout.get(END_NODE_ID) ?? { x: 1250, y: 500 }, data: {} }]);
     setEdges(graphEdges(draft.project));
   }, [draft?.id, setEdges, setNodes]);

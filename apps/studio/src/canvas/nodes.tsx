@@ -37,7 +37,7 @@ export function EntryNode() {
   return <div className="studio-node marker kind-entry"><div className="node-head">Entry</div><div className="node-io"><div className="ports-out"><OutPort id="next" label="start" /></div></div></div>;
 }
 export function EndNode() {
-  return <div className="studio-node marker kind-end"><div className="node-head">End</div><div className="node-body"><div className="node-title muted">returns to attract</div></div><div className="node-io"><InPort /></div></div>;
+  return <div className="studio-node marker kind-end"><div className="node-head">End</div><div className="node-body"><div className="node-title muted">returns to idle / attract</div></div><div className="node-io"><InPort /></div></div>;
 }
 
 export const nodeTypes = { phase: PhaseNode, entry: EntryNode, end: EndNode };

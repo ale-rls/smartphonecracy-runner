@@ -6,7 +6,7 @@ Show Studio is a local authoring tool. It cannot publish to, or change, a runnin
 
 Open the Studio with `pnpm --filter studio dev`. Choose **New show** for a minimal idle-only project, or import `scenario.json` and `media-manifest.json` together. A Studio backup can be imported by itself. Drafts autosave in this browser; the status in the toolbar reports saving, saved, or error.
 
-Use the node palette to add phases, connect their typed handles, and select a node to edit its properties. Quadrant outputs are q2 top-left, q1 top-right, q3 bottom-left, and q4 bottom-right; the exact center belongs to q4. Runtime IDs must be unique. Undo is available for inspector changes, including destructive phase-type and transition changes.
+Use the node palette to add phases, connect their typed handles, and select a node to edit its properties. The End node means “return to idle/attract”; the required runtime `idle` phase stays in the exported scenario without appearing as a duplicate canvas node. Quadrant outputs are q2 top-left, q1 top-right, q3 bottom-left, and q4 bottom-right; the exact center belongs to q4. Runtime IDs must be unique. Undo is available for inspector changes, including destructive phase-type and transition changes.
 
 ## Validate and preview
 
