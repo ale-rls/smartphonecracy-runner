@@ -33,7 +33,7 @@ export function Inspector({ project, selectedId, onRename, onChange, onKindChang
     {idProblem && <p className="field-error" role="alert">{idProblem}</p>}
     {phase.kind !== "idle" && <label>{label("Phase type", "kind")}<select value={phase.kind} onChange={(event) => onKindChange(event.target.value as AuthorablePhaseKind)}><option value="video">Video</option><option value="position-question">Position question</option></select></label>}
     {phase.kind === "video" && <>
-      {text("Media source", "src", phase.src, (src) => onChange({ ...phase, src }))}
+      <label>{label("Media source", "src")}<input list="studio-media-sources" value={phase.src} onChange={(event) => onChange({ ...phase, src: event.target.value })} /><datalist id="studio-media-sources">{project.manifest.files.map((file) => <option key={file.src} value={file.src} />)}</datalist></label>
       {number("Expected duration (ms)", "expectedDurationMs", phase.expectedDurationMs, (expectedDurationMs) => onChange({ ...phase, expectedDurationMs }))}
     </>}
     {phase.kind === "position-question" && <>

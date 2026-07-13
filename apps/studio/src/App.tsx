@@ -14,6 +14,7 @@ import { diagnostics, exportBlocked } from "./diagnostics/diagnostics.js";
 import { PreviewPanel } from "./preview/PreviewPanel.js";
 import { assembleDeploymentPackage } from "./export/deployment.js";
 import { Menu } from "./chrome/Menu.js";
+import { loadLocalMediaManifest, refreshDraftLocalMedia, type MediaManifest } from "./media/local.js";
 import "./style.css";
 
 const download = (name: string, value: unknown) => {
@@ -61,11 +62,21 @@ export function App() {
   const [previewing, setPreviewing] = useState(false);
   const [showInspector, setShowInspector] = useState(false);
   const [showDiagnostics, setShowDiagnostics] = useState(true);
+  const [localManifest, setLocalManifest] = useState<MediaManifest>();
   const importInputRef = useRef<HTMLInputElement>(null);
   type HistoryState = { draft: Draft; edges: Edge[] };
   const history = useRef<SessionHistory<HistoryState>>();
 
   useEffect(() => void db.list().then(setRecent), [db]);
+  useEffect(() => {
+    void loadLocalMediaManifest().then((manifest) => {
+      if (manifest) setLocalManifest(manifest);
+    });
+  }, []);
+  useEffect(() => {
+    if (!draft || !localManifest) return;
+    save(refreshDraftLocalMedia(draft, localManifest));
+  }, [localManifest, draft?.id]);
   useEffect(() => {
     if (!draft) return;
     setNodes(nodesForDraft(draft));
@@ -124,7 +135,8 @@ export function App() {
       entryPhaseId: "idle",
       cyclesAllowed: false,
       phases: [{ id: "idle", kind: "idle" }],
-    }, { files: [] }, "Untitled show");
+    }, localManifest ?? { files: [] }, "Untitled show");
+    if (localManifest) created.localMediaSources = localManifest.files.map((file) => file.src).sort();
     history.current = undefined;
     save(created);
   };
@@ -258,7 +270,8 @@ export function App() {
       <label className="button ghost">Import show or backup<input hidden multiple type="file" accept="application/json" onChange={(event) => void importFiles(event.target.files)} /></label>
     </div>
     <h2>Recent drafts</h2>{recent.length === 0 && <p className="lede">No local drafts yet. Import scenario.json and media-manifest.json together.</p>}
-    {recent.map((item) => <article key={item.id}><button className="draft-open" onClick={() => void recoverDraft(db, item.id).then(setDraft)}>{item.name}</button><small>{new Date(item.updatedAt).toLocaleString()}</small><button className="ghost" onClick={() => duplicate(item)}>Duplicate</button><button className="ghost" onClick={() => download(`${item.name}.studio-backup.json`, exportBackup(item))}>Export backup</button><button className="ghost danger" onClick={() => void remove(item)}>Delete</button></article>)}</main>;
+    {localManifest && <p className="lede">Local media: {localManifest.files.length} file{localManifest.files.length === 1 ? "" : "s"} found in content/media.</p>}
+    {recent.map((item) => <article key={item.id}><button className="draft-open" onClick={() => void recoverDraft(db, item.id).then((recovered) => setDraft(recovered && localManifest ? refreshDraftLocalMedia(recovered, localManifest) : recovered))}>{item.name}</button><small>{new Date(item.updatedAt).toLocaleString()}</small><button className="ghost" onClick={() => duplicate(item)}>Duplicate</button><button className="ghost" onClick={() => download(`${item.name}.studio-backup.json`, exportBackup(item))}>Export backup</button><button className="ghost danger" onClick={() => void remove(item)}>Delete</button></article>)}</main>;
 
   const currentDiagnostics = diagnostics(draft.project);
   const blocked = exportBlocked(currentDiagnostics, acknowledged);
