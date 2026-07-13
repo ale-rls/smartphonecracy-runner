@@ -44,8 +44,8 @@ export function App() {
   useEffect(() => {
     if (!draft) return;
     const layout = new Map(draft.document.nodes.map((node) => [node.id, node]));
-    const phaseNodes: Node[] = draft.project.scenario.phases.map((phase, index) => ({ id: phase.id, type: "phase", position: layout.get(phase.id) ?? { x: 360 + (index % 3) * 300, y: 80 + Math.floor(index / 3) * 220 }, data: { label: phase.kind === "position-question" ? phase.text : phase.id, kind: phase.kind, outcome: phase.kind === "position-question" && phase.next.type === "quadrant-plurality" } }));
-    setNodes([{ id: ENTRY_NODE_ID, type: "entry", position: layout.get(ENTRY_NODE_ID) ?? { x: 30, y: 80 }, data: {} }, ...phaseNodes, { id: END_NODE_ID, type: "end", position: layout.get(END_NODE_ID) ?? { x: 1250, y: 500 }, data: {} }]);
+    const phaseNodes: Node[] = draft.project.scenario.phases.map((phase, index) => ({ id: phase.id, type: "phase", deletable: phase.kind !== "idle", position: layout.get(phase.id) ?? { x: 360 + (index % 3) * 300, y: 80 + Math.floor(index / 3) * 220 }, data: { label: phase.kind === "position-question" ? phase.text : phase.id, kind: phase.kind, outcome: phase.kind === "position-question" && phase.next.type === "quadrant-plurality" } }));
+    setNodes([{ id: ENTRY_NODE_ID, type: "entry", deletable: false, position: layout.get(ENTRY_NODE_ID) ?? { x: 30, y: 80 }, data: {} }, ...phaseNodes, { id: END_NODE_ID, type: "end", deletable: false, position: layout.get(END_NODE_ID) ?? { x: 1250, y: 500 }, data: {} }]);
     setEdges(graphEdges(draft.project));
   }, [draft?.id, setEdges, setNodes]);
 
@@ -166,11 +166,13 @@ export function App() {
     setNodes((current) => current.map((node) => node.id === selectedId ? { ...node, data: { ...node.data, outcome: kind === "quadrant-plurality" } } : node));
   };
 
-  if (!draft) return <main className="home"><h1>Show Studio</h1><p>Create and safely round-trip Smartphonecracy shows.</p>
-    <button onClick={createShow}>New show</button>
-    <label className="button">Import show or backup<input hidden multiple type="file" accept="application/json" onChange={(event) => void importFiles(event.target.files)} /></label>
-    <h2>Recent drafts</h2>{recent.length === 0 && <p>No local drafts yet. Import scenario.json and media-manifest.json together.</p>}
-    {recent.map((item) => <article key={item.id}><button onClick={() => void recoverDraft(db, item.id).then(setDraft)}>{item.name}</button><small>{new Date(item.updatedAt).toLocaleString()}</small><button onClick={() => duplicate(item)}>Duplicate</button><button onClick={() => download(`${item.name}.studio-backup.json`, exportBackup(item))}>Export backup</button><button onClick={() => void remove(item)}>Delete</button></article>)}</main>;
+  if (!draft) return <main className="home"><h1>Show Studio</h1><p className="lede">Create and safely round-trip Smartphonecracy shows.</p>
+    <div className="home-actions">
+      <button onClick={createShow}>New show</button>
+      <label className="button ghost">Import show or backup<input hidden multiple type="file" accept="application/json" onChange={(event) => void importFiles(event.target.files)} /></label>
+    </div>
+    <h2>Recent drafts</h2>{recent.length === 0 && <p className="lede">No local drafts yet. Import scenario.json and media-manifest.json together.</p>}
+    {recent.map((item) => <article key={item.id}><button className="draft-open" onClick={() => void recoverDraft(db, item.id).then(setDraft)}>{item.name}</button><small>{new Date(item.updatedAt).toLocaleString()}</small><button className="ghost" onClick={() => duplicate(item)}>Duplicate</button><button className="ghost" onClick={() => download(`${item.name}.studio-backup.json`, exportBackup(item))}>Export backup</button><button className="ghost danger" onClick={() => void remove(item)}>Delete</button></article>)}</main>;
 
   const currentDiagnostics = diagnostics(draft.project);
   const blocked = exportBlocked(currentDiagnostics, acknowledged);
@@ -206,7 +208,6 @@ export function App() {
         { label: "Redo", onSelect: () => { if (history.current) applyHistory(history.current.redo()); }, disabled: !history.current?.canRedo },
       ]} />
       <Menu label="Add" items={[
-        { label: "Idle phase", onSelect: () => addPhase("idle") },
         { label: "Video phase", onSelect: () => addPhase("video") },
         { label: "Position question", onSelect: () => addPhase("position-question") },
       ]} />
