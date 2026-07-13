@@ -49,6 +49,43 @@ test.describe("full scenario flow", () => {
       .toBe("active");
     expect((await adminStatus(server.baseUrl)).phaseId).toBe("intro-video");
 
+    // The cursor stays interactive over video, and renders as a single
+    // crisp dot without a wake/trail.
+    await dragTrackpad(phone);
+    const cursorCanvas = display.locator(".cursor-canvas");
+    await expect.poll(async () => cursorCanvas.evaluate((canvas: HTMLCanvasElement) => {
+      const context = canvas.getContext("2d")!;
+      const { data, width, height } = context.getImageData(0, 0, canvas.width, canvas.height);
+      let minX = width;
+      let maxX = -1;
+      for (let y = 0; y < height; y += 1) {
+        for (let x = 0; x < width; x += 1) {
+          if (data[(y * width + x) * 4 + 3]! > 0) {
+            minX = Math.min(minX, x);
+            maxX = Math.max(maxX, x);
+          }
+        }
+      }
+      return maxX < 0 ? null : { centerX: (minX + maxX) / 2 / width, width: (maxX - minX + 1) / width };
+    })).toMatchObject({ centerX: expect.any(Number), width: expect.any(Number) });
+    const cursorShape = await cursorCanvas.evaluate((canvas: HTMLCanvasElement) => {
+      const context = canvas.getContext("2d")!;
+      const { data, width, height } = context.getImageData(0, 0, canvas.width, canvas.height);
+      let minX = width;
+      let maxX = -1;
+      for (let y = 0; y < height; y += 1) {
+        for (let x = 0; x < width; x += 1) {
+          if (data[(y * width + x) * 4 + 3]! > 0) {
+            minX = Math.min(minX, x);
+            maxX = Math.max(maxX, x);
+          }
+        }
+      }
+      return { centerX: (minX + maxX) / 2 / width, width: (maxX - minX + 1) / width };
+    });
+    expect(cursorShape.centerX).toBeGreaterThan(0.51);
+    expect(cursorShape.width).toBeLessThan(0.03);
+
     // Video advances via display video_ended or the server's
     // expectedDurationMs+5 s fallback (§16: a missing video_ended cannot
     // block the experience) — either path must land on question-fixed.
