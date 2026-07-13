@@ -2,6 +2,7 @@ import { compileStudioGraph, type StudioProject } from "@smartphonecracy/studio-
 
 export type Phase = StudioProject["scenario"]["phases"][number];
 export type PhaseKind = Phase["kind"];
+export type AuthorablePhaseKind = Exclude<PhaseKind, "idle">;
 
 export const QUESTION_DEFAULTS = {
   durationMs: 60_000,
