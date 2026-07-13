@@ -4,7 +4,9 @@ Show Studio is a local authoring tool. It cannot publish to, or change, a runnin
 
 ## Create or import
 
-Open the Studio with `pnpm --filter studio dev`. Choose **New show** for a minimal idle-only project, or import `scenario.json` and `media-manifest.json` together. A Studio backup can be imported by itself. Drafts autosave in this browser; the status in the toolbar reports saving, saved, or error.
+Open the Studio with `pnpm --filter studio dev`. On each page load, the local development server scans `content/media` and generates its in-memory media manifest from the files' relative paths, sizes, and SHA-256 hashes. **New show** uses that inventory immediately, opened drafts receive the refreshed local entries, and video phases suggest the discovered paths in the **Media source** field. Local files removed since the previous scan are pruned; imported-only entries remain available. A production/static Studio has no filesystem endpoint and continues to use explicit runtime or backup imports.
+
+Choose **New show** for a minimal idle-only project, or import `scenario.json` and `media-manifest.json` together. A Studio backup can be imported by itself. Drafts autosave in this browser; the status in the toolbar reports saving, saved, or error.
 
 Use the node palette to add phases, connect their typed handles, and select a node to edit its properties. The End node means “return to idle/attract”; the required runtime `idle` phase stays in the exported scenario without appearing as a duplicate canvas node. A position question can use four quadrants (both X and Y axes) or two quadrants (one active axis). Four-quadrant outputs are q2 top-left, q1 top-right, q3 bottom-left, and q4 bottom-right; the exact center belongs to q4. Two-quadrant X questions divide left/right and Y questions divide top/bottom; their stable outputs are `min` and `max`, and exactly 0.5 belongs to max (right or bottom). Studio labels these outputs with their spatial position and authored endpoint text. Runtime IDs must be unique. Undo is available for inspector changes, including destructive phase-type, transition, and quadrant-layout changes.
 
