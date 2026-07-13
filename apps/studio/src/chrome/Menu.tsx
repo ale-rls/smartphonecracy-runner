@@ -9,22 +9,60 @@ export type MenuItem =
 export function Menu({ label, items }: { label: string; items: MenuItem[] }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const initialFocus = useRef<"first" | "last">("first");
+  const enabledItems = () => itemRefs.current.filter((item): item is HTMLButtonElement => Boolean(item && !item.disabled));
+  const close = (restoreFocus = false) => {
+    setOpen(false);
+    if (restoreFocus) triggerRef.current?.focus();
+  };
+  const openAt = (position: "first" | "last") => {
+    initialFocus.current = position;
+    setOpen(true);
+  };
+  useEffect(() => {
+    if (!open) return;
+    const enabled = enabledItems();
+    (initialFocus.current === "last" ? enabled.at(-1) : enabled[0])?.focus();
+  }, [open]);
   useEffect(() => {
     if (!open) return;
     const onDown = (event: MouseEvent) => { if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false); };
-    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") setOpen(false); };
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") close(true); };
     document.addEventListener("mousedown", onDown);
     document.addEventListener("keydown", onKey);
     return () => { document.removeEventListener("mousedown", onDown); document.removeEventListener("keydown", onKey); };
   }, [open]);
   return (
     <div className="menu" ref={ref}>
-      <button className="menu-trigger" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((value) => !value)}>{label}</button>
+      <button ref={triggerRef} className="menu-trigger" aria-haspopup="menu" aria-expanded={open}
+        onClick={() => open ? close() : openAt("first")}
+        onKeyDown={(event) => {
+          if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+          event.preventDefault();
+          openAt(event.key === "ArrowUp" ? "last" : "first");
+        }}>{label}</button>
       {open && (
-        <div className="menu-list" role="menu">
+        <div className="menu-list" role="menu" onKeyDown={(event) => {
+          const enabled = enabledItems();
+          const current = enabled.indexOf(document.activeElement as HTMLButtonElement);
+          if (event.key === "Escape") {
+            event.preventDefault();
+            event.stopPropagation();
+            close(true);
+          } else if (event.key === "Home" || event.key === "End") {
+            event.preventDefault();
+            (event.key === "Home" ? enabled[0] : enabled.at(-1))?.focus();
+          } else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            event.preventDefault();
+            const offset = event.key === "ArrowDown" ? 1 : -1;
+            enabled[(current + offset + enabled.length) % enabled.length]?.focus();
+          }
+        }}>
           {items.map((item, index) => item.separator
             ? <div key={index} className="menu-sep" role="separator" />
-            : <button key={index} role="menuitem" className="menu-item" disabled={item.disabled} onClick={() => { setOpen(false); item.onSelect(); }}>{item.label}</button>)}
+            : <button key={index} ref={(element) => { itemRefs.current[index] = element; }} role="menuitem" tabIndex={-1} className="menu-item" disabled={item.disabled} onClick={() => { close(); item.onSelect(); }}>{item.label}</button>)}
         </div>
       )}
     </div>
