@@ -6,7 +6,7 @@ import { exportArtifacts, exportBackup, importBackup, importRuntime } from "./io
 import type { Draft } from "./model.js";
 import { applyEdges, END_NODE_ID, ENTRY_NODE_ID, graphEdges, graphPhases, phaseOutputHandles, pruneEdges, replacePluralityLayoutEdges, validateConnection, withoutOutputEdge } from "./canvas/graph.js";
 import { nodeDataForPhase, nodeTypes } from "./canvas/nodes.js";
-import { changePhaseKind, renamePhase, type Phase, type PhaseKind } from "./inspector/model.js";
+import { changePhaseKind, renamePhase, type AuthorablePhaseKind, type Phase } from "./inspector/model.js";
 import { Inspector } from "./inspector/Inspector.js";
 import { SessionHistory } from "./inspector/history.js";
 import { DiagnosticsPanel } from "./diagnostics/DiagnosticsPanel.js";
@@ -155,7 +155,7 @@ export function App() {
     setNodes((current) => current.map((node) => node.id === selectedId ? { ...node, id: nextId, data: { ...node.data, label: nextId } } : node));
     setSelectedId(nextId);
   };
-  const changeSelectedKind = (kind: PhaseKind) => {
+  const changeSelectedKind = (kind: AuthorablePhaseKind) => {
     if (!draft || !selectedId) return;
     const phase = draft.project.scenario.phases.find((item) => item.id === selectedId);
     if (!phase || phase.kind === kind) return;
