@@ -17,6 +17,8 @@ export type Draft = {
   id: string;
   name: string;
   updatedAt: number;
+  /** Paths last discovered in content/media, used to prune deleted local files. */
+  localMediaSources?: string[];
   project: StudioProject;
   document: StudioDocument;
 };

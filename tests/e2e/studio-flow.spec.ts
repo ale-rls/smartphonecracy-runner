@@ -10,6 +10,13 @@ test.describe("Show Studio v1", () => {
   test.beforeEach(async () => { studio = await startStudio(); });
   test.afterEach(async () => { if (studio) await studio.stop(); });
 
+  test("discovers content/media automatically for locally created shows", async ({ page }) => {
+    await page.goto(studio.baseUrl);
+    await expect(page.getByText(/Local media: \d+ files? found in content\/media\./)).toBeVisible();
+    await page.getByRole("button", { name: "New show" }).click();
+    await expect(page.getByRole("cell", { name: "intro.mp4" })).toBeVisible();
+  });
+
   test("imports, edits, validates, previews, and exports a gated package", async ({ page }) => {
     await page.goto(studio.baseUrl);
     await page.getByLabel("Import show or backup").setInputFiles([
