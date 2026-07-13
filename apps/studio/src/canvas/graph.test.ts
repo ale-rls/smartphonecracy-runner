@@ -2,11 +2,18 @@ import { describe, expect, it } from "vitest";
 import { parseRuntimeScenario } from "@smartphonecracy/studio-adapter";
 import scenario from "../../../../content/scenarios/dev.json";
 import manifest from "../../../../content/media-manifest.json";
-import { acceptsInput, applyEdges, END_NODE_ID, ENTRY_NODE_ID, graphEdges, outputHandles, phaseOutputHandles, pruneEdges, replacePluralityLayoutEdges, validateConnection, withoutOutputEdge } from "./graph.js";
+import { acceptsInput, applyEdges, END_NODE_ID, ENTRY_NODE_ID, graphEdges, graphPhases, outputHandles, phaseOutputHandles, pruneEdges, replacePluralityLayoutEdges, validateConnection, withoutOutputEdge } from "./graph.js";
 
 const project = () => parseRuntimeScenario(structuredClone(scenario), manifest);
 
 describe("Studio canvas graph", () => {
+  it("represents the runtime idle phase only through the editor End node", () => {
+    const value = project();
+    expect(value.scenario.phases.some((phase) => phase.kind === "idle")).toBe(true);
+    expect(graphPhases(value).map((phase) => phase.id)).not.toContain("idle");
+    expect(graphEdges(value).some((edge) => edge.target === END_NODE_ID)).toBe(true);
+  });
+
   it("renders the typed runtime outputs and compiles editor markers away", () => {
     const value = project();
     const edges = graphEdges(value);
