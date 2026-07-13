@@ -1,11 +1,15 @@
 import { PROTOCOL_VERSION, type QrGrantMessage, type QrHiddenMessage } from "@smartphonecracy/protocol";
+import type { JoinGrantClaims } from "./tokens.js";
 
 export type QrLifecycle = "idle" | "lobby" | "active";
 export type QrPushMessage = QrGrantMessage | QrHiddenMessage;
 
 export type QrGrantPushLoopOptions = {
   phoneJoinBaseUrl: string;
-  issueGrant: (now: number) => { token: string; claims: { expiresAt: number } };
+  issueGrant: (now: number) => {
+    token: string;
+    claims: Pick<JoinGrantClaims, "installationId" | "roomId" | "expiresAt">;
+  };
   send: (message: QrPushMessage) => void;
   lifecycle: () => QrLifecycle;
   hasDisplay: () => boolean;
@@ -50,6 +54,8 @@ export class QrGrantPushLoop {
     const now = this.now();
     const grant = this.options.issueGrant(now);
     const url = new URL(this.options.phoneJoinBaseUrl);
+    url.searchParams.set("installation", grant.claims.installationId);
+    url.searchParams.set("room", grant.claims.roomId);
     url.searchParams.set("g", grant.token);
     this.options.send({
       t: "qr_grant",

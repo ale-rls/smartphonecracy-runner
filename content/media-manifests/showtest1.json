@@ -1,0 +1,19 @@
+{
+  "files": [
+    {
+      "src": "video-1.mp4",
+      "bytes": 11602818,
+      "hash": "0124f003efb37d46a60821f87ca4c6d1d6065d88dde0a2465c351db148363eb0"
+    },
+    {
+      "src": "video-2.mp4",
+      "bytes": 14676280,
+      "hash": "d14e7faad56e4e1f8fb3d470737dd9b971277bcef4458a2eaf3018b348f30b7b"
+    },
+    {
+      "src": "video-3.mp4",
+      "bytes": 14800820,
+      "hash": "0f7f470cf7b34f4f0874cc725999b180a0625d65c45bc52a9cfb2024b559a016"
+    }
+  ]
+}
