@@ -10,6 +10,11 @@ export const OUTCOME_HANDLES = [...FOUR_OUTCOME_HANDLES, "min", "max"] as const;
 
 export type OutcomeHandle = (typeof OUTCOME_HANDLES)[number];
 type Phase = StudioProject["scenario"]["phases"][number];
+export type GraphPhase = Exclude<Phase, { kind: "idle" }>;
+
+export function graphPhases(project: StudioProject): GraphPhase[] {
+  return project.scenario.phases.filter((phase): phase is GraphPhase => phase.kind !== "idle");
+}
 
 export function acceptsInput(project: StudioProject, target: string): boolean {
   return target === END_NODE_ID || project.scenario.phases.some((phase) => phase.id === target);
