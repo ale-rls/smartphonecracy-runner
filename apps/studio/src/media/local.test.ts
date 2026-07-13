@@ -7,8 +7,12 @@ import { loadLocalMediaManifest, refreshDraftLocalMedia } from "./local.js";
 describe("local Studio media", () => {
   it("loads a valid generated manifest without browser caching", async () => {
     const fetcher = vi.fn(async () => new Response(JSON.stringify(manifest), { status: 200 }));
-    await expect(loadLocalMediaManifest(fetcher as typeof fetch)).resolves.toEqual(manifest);
+    const readDuration = vi.fn(async () => 12_345);
+    await expect(loadLocalMediaManifest(fetcher as typeof fetch, readDuration)).resolves.toEqual({
+      files: manifest.files.map((file) => ({ ...file, durationMs: 12_345 })),
+    });
     expect(fetcher).toHaveBeenCalledWith("/__studio/local-media-manifest", { cache: "no-store" });
+    expect(readDuration).toHaveBeenCalledTimes(manifest.files.length);
   });
 
   it("leaves manual import available when local discovery is unavailable or invalid", async () => {
@@ -21,12 +25,16 @@ describe("local Studio media", () => {
   it("overlays local files while preserving imported-only entries", () => {
     const draft = importRuntime(scenario, manifest);
     const generated = { files: [
-      { src: "intro.mp4", bytes: 100, hash: "fresh" },
+      { src: "intro.mp4", bytes: 100, hash: "fresh", durationMs: 4_321 },
       { src: "new.mp4", bytes: 42, hash: "abc" },
     ] };
     const refreshed = refreshDraftLocalMedia(draft, generated);
     expect(refreshed.localMediaSources).toEqual(["intro.mp4", "new.mp4"]);
-    expect(refreshed.project.manifest).toEqual(generated);
+    expect(refreshed.project.manifest).toEqual({ files: [
+      { src: "intro.mp4", bytes: 100, hash: "fresh" },
+      { src: "new.mp4", bytes: 42, hash: "abc" },
+    ] });
+    expect(refreshed.project.scenario.phases.find((phase) => phase.kind === "video")).toMatchObject({ expectedDurationMs: 4_321 });
     expect(draft.project.manifest).toEqual(manifest);
   });
 

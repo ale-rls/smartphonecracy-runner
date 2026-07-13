@@ -1,10 +1,11 @@
 import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { readdir, stat } from "node:fs/promises";
-import { join, relative, sep } from "node:path";
+import { extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import type { Plugin } from "vite";
 
 export const LOCAL_MEDIA_MANIFEST_ENDPOINT = "/__studio/local-media-manifest";
+export const LOCAL_MEDIA_FILE_ENDPOINT = "/__studio/local-media/";
 
 export type LocalMediaManifest = {
   files: Array<{ src: string; bytes: number; hash: string }>;
@@ -58,6 +59,56 @@ export function localMediaManifestPlugin(mediaDirectory: string): Plugin {
   return {
     name: "smartphonecracy-local-media-manifest",
     configureServer(server) {
+      server.middlewares.use(async (request, response, next) => {
+        const url = new URL(request.url ?? "/", "http://studio.local");
+        if (!url.pathname.startsWith(LOCAL_MEDIA_FILE_ENDPOINT)) return next();
+        if (request.method !== "GET" && request.method !== "HEAD") return next();
+        try {
+          const source = decodeURIComponent(url.pathname.slice(LOCAL_MEDIA_FILE_ENDPOINT.length));
+          const path = resolve(mediaDirectory, source);
+          const relativePath = relative(mediaDirectory, path);
+          if (!source || relativePath.startsWith("..") || isAbsolute(relativePath)) {
+            response.statusCode = 400;
+            return response.end("Invalid media path");
+          }
+          const metadata = await stat(path);
+          if (!metadata.isFile()) {
+            response.statusCode = 404;
+            return response.end("Media not found");
+          }
+
+          const contentTypes: Record<string, string> = {
+            ".mp4": "video/mp4",
+            ".mov": "video/quicktime",
+            ".webm": "video/webm",
+          };
+          response.setHeader("Content-Type", contentTypes[extname(path).toLowerCase()] ?? "application/octet-stream");
+          response.setHeader("Accept-Ranges", "bytes");
+          response.setHeader("Cache-Control", "no-store");
+
+          const range = request.headers.range?.match(/^bytes=(\d*)-(\d*)$/);
+          let start = 0;
+          let end = metadata.size - 1;
+          if (range) {
+            start = range[1] ? Number(range[1]) : start;
+            end = range[2] ? Number(range[2]) : end;
+            if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 0 || end < start || start >= metadata.size) {
+              response.statusCode = 416;
+              response.setHeader("Content-Range", `bytes */${metadata.size}`);
+              return response.end();
+            }
+            end = Math.min(end, metadata.size - 1);
+            response.statusCode = 206;
+            response.setHeader("Content-Range", `bytes ${start}-${end}/${metadata.size}`);
+          }
+          response.setHeader("Content-Length", String(end - start + 1));
+          if (request.method === "HEAD") return response.end();
+          createReadStream(path, { start, end }).pipe(response);
+        } catch {
+          response.statusCode = 404;
+          response.end("Media not found");
+        }
+      });
       server.middlewares.use(LOCAL_MEDIA_MANIFEST_ENDPOINT, async (request, response, next) => {
         if (request.method !== "GET") return next();
         try {
