@@ -4,7 +4,7 @@ import "@xyflow/react/dist/style.css";
 import { Autosave, IndexedDbDraftDatabase, recoverDraft, type SaveStatus } from "./drafts.js";
 import { exportArtifacts, exportBackup, importBackup, importRuntime } from "./io.js";
 import type { Draft } from "./model.js";
-import { applyEdges, END_NODE_ID, ENTRY_NODE_ID, graphEdges, pruneEdges, validateConnection, withoutOutputEdge } from "./canvas/graph.js";
+import { applyEdges, END_NODE_ID, ENTRY_NODE_ID, graphEdges, OUTCOME_HANDLES, pruneEdges, validateConnection, withoutOutputEdge } from "./canvas/graph.js";
 import { nodeTypes } from "./canvas/nodes.js";
 import { changePhaseKind, renamePhase, type Phase, type PhaseKind } from "./inspector/model.js";
 import { Inspector } from "./inspector/Inspector.js";
@@ -13,6 +13,7 @@ import { DiagnosticsPanel } from "./diagnostics/DiagnosticsPanel.js";
 import { diagnostics, exportBlocked } from "./diagnostics/diagnostics.js";
 import { PreviewPanel } from "./preview/PreviewPanel.js";
 import { assembleDeploymentPackage } from "./export/deployment.js";
+import { Menu } from "./chrome/Menu.js";
 import "./style.css";
 
 const download = (name: string, value: unknown) => {
@@ -33,6 +34,9 @@ export function App() {
   const [selectedId, setSelectedId] = useState<string>();
   const [acknowledged, setAcknowledged] = useState<Set<string>>(new Set());
   const [previewing, setPreviewing] = useState(false);
+  const [showInspector, setShowInspector] = useState(false);
+  const [showDiagnostics, setShowDiagnostics] = useState(true);
+  const importInputRef = useRef<HTMLInputElement>(null);
   type HistoryState = { draft: Draft; edges: Edge[] };
   const history = useRef<SessionHistory<HistoryState>>();
 
@@ -40,8 +44,8 @@ export function App() {
   useEffect(() => {
     if (!draft) return;
     const layout = new Map(draft.document.nodes.map((node) => [node.id, node]));
-    const phaseNodes: Node[] = draft.project.scenario.phases.map((phase, index) => ({ id: phase.id, type: "phase", position: layout.get(phase.id) ?? { x: 360 + (index % 3) * 300, y: 80 + Math.floor(index / 3) * 220 }, data: { label: phase.kind === "position-question" ? phase.text : phase.id, kind: phase.kind, outcome: phase.kind === "position-question" && phase.next.type === "quadrant-plurality" } }));
-    setNodes([{ id: ENTRY_NODE_ID, type: "entry", position: layout.get(ENTRY_NODE_ID) ?? { x: 30, y: 80 }, data: {} }, ...phaseNodes, { id: END_NODE_ID, type: "end", position: layout.get(END_NODE_ID) ?? { x: 1250, y: 500 }, data: {} }]);
+    const phaseNodes: Node[] = draft.project.scenario.phases.map((phase, index) => ({ id: phase.id, type: "phase", deletable: phase.kind !== "idle", position: layout.get(phase.id) ?? { x: 360 + (index % 3) * 300, y: 80 + Math.floor(index / 3) * 220 }, data: { label: phase.kind === "position-question" ? phase.text : phase.id, kind: phase.kind, outcome: phase.kind === "position-question" && phase.next.type === "quadrant-plurality" } }));
+    setNodes([{ id: ENTRY_NODE_ID, type: "entry", deletable: false, position: layout.get(ENTRY_NODE_ID) ?? { x: 30, y: 80 }, data: {} }, ...phaseNodes, { id: END_NODE_ID, type: "end", deletable: false, position: layout.get(END_NODE_ID) ?? { x: 1250, y: 500 }, data: {} }]);
     setEdges(graphEdges(draft.project));
   }, [draft?.id, setEdges, setNodes]);
 
@@ -113,8 +117,11 @@ export function App() {
       : { kind, id, text: "New position question", xAxis: { minLabel: "Left", maxLabel: "Right" }, yAxis: { minLabel: "Top", maxLabel: "Bottom" }, durationMs: 60000, freezeMs: 5000, connectionStaleAfterMs: 10000, showLiveCounts: true, next: { type: "quadrant-plurality" as const, map: { q1: "idle", q2: "idle", q3: "idle", q4: "idle" }, tie: "idle", empty: "idle", countedStatuses: ["valid", "stale", "disconnected"] as const } };
     const phases = [...draft.project.scenario.phases, phase] as Draft["project"]["scenario"]["phases"];
     save({ ...draft, project: { ...draft.project, scenario: { ...draft.project.scenario, phases } }, updatedAt: Date.now() });
-    setNodes((current) => [...current, { id, type: "phase", position: { x: 400, y: 200 }, data: { label: kind === "position-question" ? phase.text : id, kind } }]);
-    if (kind !== "idle") setEdges((current) => [...current, { id: `${id}:next`, source: id, sourceHandle: "next", target: END_NODE_ID }]);
+    setNodes((current) => [...current, { id, type: "phase", position: { x: 400, y: 200 }, data: { label: kind === "position-question" ? phase.text : id, kind, outcome: kind === "position-question" } }]);
+    if (kind !== "idle") {
+      const handles = kind === "position-question" ? OUTCOME_HANDLES : ["next"];
+      setEdges((current) => [...current, ...handles.map((handle) => ({ id: `${id}:${handle}`, source: id, sourceHandle: handle, target: END_NODE_ID }))]);
+    }
   };
   const updatePhase = (nextPhase: Phase) => {
     if (!draft) return;
@@ -159,11 +166,13 @@ export function App() {
     setNodes((current) => current.map((node) => node.id === selectedId ? { ...node, data: { ...node.data, outcome: kind === "quadrant-plurality" } } : node));
   };
 
-  if (!draft) return <main className="home"><h1>Show Studio</h1><p>Create and safely round-trip Smartphonecracy shows.</p>
-    <button onClick={createShow}>New show</button>
-    <label className="button">Import show or backup<input hidden multiple type="file" accept="application/json" onChange={(event) => void importFiles(event.target.files)} /></label>
-    <h2>Recent drafts</h2>{recent.length === 0 && <p>No local drafts yet. Import scenario.json and media-manifest.json together.</p>}
-    {recent.map((item) => <article key={item.id}><button onClick={() => void recoverDraft(db, item.id).then(setDraft)}>{item.name}</button><small>{new Date(item.updatedAt).toLocaleString()}</small><button onClick={() => duplicate(item)}>Duplicate</button><button onClick={() => download(`${item.name}.studio-backup.json`, exportBackup(item))}>Export backup</button><button onClick={() => void remove(item)}>Delete</button></article>)}</main>;
+  if (!draft) return <main className="home"><h1>Show Studio</h1><p className="lede">Create and safely round-trip Smartphonecracy shows.</p>
+    <div className="home-actions">
+      <button onClick={createShow}>New show</button>
+      <label className="button ghost">Import show or backup<input hidden multiple type="file" accept="application/json" onChange={(event) => void importFiles(event.target.files)} /></label>
+    </div>
+    <h2>Recent drafts</h2>{recent.length === 0 && <p className="lede">No local drafts yet. Import scenario.json and media-manifest.json together.</p>}
+    {recent.map((item) => <article key={item.id}><button className="draft-open" onClick={() => void recoverDraft(db, item.id).then(setDraft)}>{item.name}</button><small>{new Date(item.updatedAt).toLocaleString()}</small><button className="ghost" onClick={() => duplicate(item)}>Duplicate</button><button className="ghost" onClick={() => download(`${item.name}.studio-backup.json`, exportBackup(item))}>Export backup</button><button className="ghost danger" onClick={() => void remove(item)}>Delete</button></article>)}</main>;
 
   const currentDiagnostics = diagnostics(draft.project);
   const blocked = exportBlocked(currentDiagnostics, acknowledged);
@@ -179,14 +188,43 @@ export function App() {
       }
     } catch (error) { alert(error instanceof Error ? error.message : "Deployment export failed"); }
   };
+  const saveLayout = () => save({ ...draft, document: { ...draft.document, nodes: nodes.map((node) => ({ id: node.id, x: node.position.x, y: node.position.y })) }, updatedAt: Date.now() });
   if (previewing) return <PreviewPanel project={draft.project} onClose={() => setPreviewing(false)} />;
-  return <main className="editor"><header><button onClick={() => setDraft(undefined)}>Projects</button><input aria-label="Show name" value={draft.name} onChange={(event) => save({ ...draft, name: event.target.value, updatedAt: Date.now() })} /><span className={`status ${status}`}>{status}</span><button disabled={!history.current?.canUndo} onClick={() => { if (history.current) applyHistory(history.current.undo()); }}>Undo</button><button disabled={!history.current?.canRedo} onClick={() => { if (history.current) applyHistory(history.current.redo()); }}>Redo</button><button onClick={() => setPreviewing(true)}>Preview</button><button onClick={() => {
-    const current = { ...draft, document: { ...draft.document, nodes: nodes.map((node) => ({ id: node.id, x: node.position.x, y: node.position.y })) }, updatedAt: Date.now() };
-    save(current);
-  }}>Save layout</button><button disabled={blocked} title={blocked ? "Resolve errors and acknowledge warnings first" : undefined} onClick={() => Object.entries(exportArtifacts(draft)).forEach(([name, value]) => download(name, value))}>Export files</button><button disabled={blocked} title={blocked ? "Resolve errors and acknowledge warnings first" : undefined} onClick={exportDeployment}>Export for deployment</button><button onClick={() => download(`${draft.name}.studio-backup.json`, exportBackup(draft))}>Backup</button></header>
-    <aside className="palette" aria-label="Node palette"><strong>Add node</strong><button onClick={() => addPhase("idle")}>Idle</button><button onClick={() => addPhase("video")}>Video</button><button onClick={() => addPhase("position-question")}>Position question</button></aside>
-    <section className="canvas"><ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} onNodeClick={(_, node) => setSelectedId(node.id)} onConnect={connect} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onEdgesDelete={(deleted) => { const ids = new Set(deleted.map((edge) => edge.id)); const next = edges.filter((edge) => !ids.has(edge.id)); setEdges(next); persistGraph(next); }} onNodesDelete={(deleted) => { const removed = new Set(deleted.map((node) => node.id)); const nodeIds = new Set(nodes.filter((node) => !removed.has(node.id)).map((node) => node.id)); const nextEdges = pruneEdges(edges, nodeIds); setEdges(nextEdges); const phases = draft.project.scenario.phases.filter((phase) => !removed.has(phase.id)) as Draft["project"]["scenario"]["phases"]; save({ ...draft, project: { ...draft.project, scenario: { ...draft.project.scenario, phases } }, document: { ...draft.document, edges: nextEdges }, updatedAt: Date.now() }); }} fitView onMoveEnd={(_, viewport) => save({ ...draft, document: { ...draft.document, viewport }, updatedAt: Date.now() })}><Background /></ReactFlow></section>
+  return <main className={`editor${showInspector ? "" : " no-inspector"}${showDiagnostics ? "" : " no-diagnostics"}`}>
+    <header className="menubar">
+      <Menu label="File" items={[
+        { label: "New show", onSelect: createShow },
+        { label: "Import…", onSelect: () => importInputRef.current?.click() },
+        { label: "Duplicate", onSelect: () => duplicate(draft) },
+        { separator: true },
+        { label: "Export files", onSelect: () => Object.entries(exportArtifacts(draft)).forEach(([name, value]) => download(name, value)), disabled: blocked },
+        { label: "Export for deployment", onSelect: exportDeployment, disabled: blocked },
+        { label: "Save backup", onSelect: () => download(`${draft.name}.studio-backup.json`, exportBackup(draft)) },
+        { separator: true },
+        { label: "Close show", onSelect: () => setDraft(undefined) },
+      ]} />
+      <Menu label="Edit" items={[
+        { label: "Undo", onSelect: () => { if (history.current) applyHistory(history.current.undo()); }, disabled: !history.current?.canUndo },
+        { label: "Redo", onSelect: () => { if (history.current) applyHistory(history.current.redo()); }, disabled: !history.current?.canRedo },
+      ]} />
+      <Menu label="Add" items={[
+        { label: "Video phase", onSelect: () => addPhase("video") },
+        { label: "Position question", onSelect: () => addPhase("position-question") },
+      ]} />
+      <Menu label="View" items={[
+        { label: showInspector ? "Hide properties" : "Show properties", onSelect: () => setShowInspector((value) => !value) },
+        { label: showDiagnostics ? "Hide diagnostics" : "Show diagnostics", onSelect: () => setShowDiagnostics((value) => !value) },
+        { separator: true },
+        { label: "Save layout", onSelect: saveLayout },
+      ]} />
+      <input aria-label="Show name" className="show-name" value={draft.name} onChange={(event) => save({ ...draft, name: event.target.value, updatedAt: Date.now() })} />
+      <span className={`status ${status}`}>{status}</span>
+      <button className="ghost" onClick={() => setPreviewing(true)}>Preview</button>
+      <button className="ghost export" aria-label="Export for deployment" disabled={blocked} title={blocked ? "Resolve errors and acknowledge warnings first" : undefined} onClick={exportDeployment}>Export</button>
+      <input ref={importInputRef} hidden multiple type="file" accept="application/json" onChange={(event) => void importFiles(event.target.files)} />
+    </header>
+    <section className="canvas"><ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} onNodeClick={(_, node) => { setSelectedId(node.id); setShowInspector(true); }} onConnect={connect} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onEdgesDelete={(deleted) => { const ids = new Set(deleted.map((edge) => edge.id)); const next = edges.filter((edge) => !ids.has(edge.id)); setEdges(next); persistGraph(next); }} onNodesDelete={(deleted) => { const removed = new Set(deleted.map((node) => node.id)); const nodeIds = new Set(nodes.filter((node) => !removed.has(node.id)).map((node) => node.id)); const nextEdges = pruneEdges(edges, nodeIds); setEdges(nextEdges); const phases = draft.project.scenario.phases.filter((phase) => !removed.has(phase.id)) as Draft["project"]["scenario"]["phases"]; save({ ...draft, project: { ...draft.project, scenario: { ...draft.project.scenario, phases } }, document: { ...draft.document, edges: nextEdges }, updatedAt: Date.now() }); }} fitView onMoveEnd={(_, viewport) => save({ ...draft, document: { ...draft.document, viewport }, updatedAt: Date.now() })}><Background /></ReactFlow></section>
     <Inspector project={draft.project} selectedId={selectedId} onRename={renameSelected} onChange={updatePhase} onKindChange={changeSelectedKind} onTransitionChange={changeTransition} />
-    <DiagnosticsPanel project={draft.project} acknowledged={acknowledged} onAcknowledge={(key) => setAcknowledged((current) => { const next = new Set(current); next.has(key) ? next.delete(key) : next.add(key); return next; })} onFocus={(id) => setSelectedId(id)} />
+    <DiagnosticsPanel project={draft.project} acknowledged={acknowledged} onAcknowledge={(key) => setAcknowledged((current) => { const next = new Set(current); next.has(key) ? next.delete(key) : next.add(key); return next; })} onFocus={(id) => { setSelectedId(id); setShowInspector(true); }} />
   </main>;
 }
