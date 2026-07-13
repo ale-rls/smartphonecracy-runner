@@ -15,6 +15,13 @@ const request = <T>(value: IDBRequest<T>) =>
     value.onerror = () => reject(value.error);
   });
 
+const transactionComplete = (transaction: IDBTransaction) =>
+  new Promise<void>((resolve, reject) => {
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+    transaction.onabort = () => reject(transaction.error);
+  });
+
 export class IndexedDbDraftDatabase implements DraftDatabase {
   private db = new Promise<IDBDatabase>((resolve, reject) => {
     const open = indexedDB.open(DB_NAME, 1);
@@ -45,18 +52,28 @@ export class IndexedDbDraftDatabase implements DraftDatabase {
     const store = tx.objectStore("drafts");
     store.put({ key: `${draft.id}:latest`, draft });
     store.put({ key: `${draft.id}:revision:${draft.updatedAt}`, draft });
+    await transactionComplete(tx);
+
     const old = await this.revisions(draft.id);
-    old.slice(19).forEach((item) => store.delete(`${draft.id}:revision:${item.updatedAt}`));
-    await new Promise<void>((resolve, reject) => {
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
+    const expired = old.slice(20);
+    if (expired.length === 0) return;
+
+    const cleanup = db.transaction("drafts", "readwrite");
+    const cleanupStore = cleanup.objectStore("drafts");
+    expired.forEach((item) => cleanupStore.delete(`${draft.id}:revision:${item.updatedAt}`));
+    await transactionComplete(cleanup);
   }
   async delete(id: string) {
+    const keys = (await this.values())
+      .map(({ key }) => key)
+      .filter((key) => key.startsWith(`${id}:`));
+    if (keys.length === 0) return;
+
     const db = await this.db;
     const tx = db.transaction("drafts", "readwrite");
     const store = tx.objectStore("drafts");
-    for (const { key } of await this.values()) if (key.startsWith(`${id}:`)) store.delete(key);
+    keys.forEach((key) => store.delete(key));
+    await transactionComplete(tx);
   }
 }
 
