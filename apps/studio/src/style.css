@@ -143,6 +143,7 @@ input:focus, select:focus { outline: none; border-color: var(--flow); }
 .studio-node .node-title.muted { color: var(--muted); font-size: .8rem; }
 .studio-node.marker { min-width: 130px; background: #10151c; border-style: dashed; border-color: var(--flow); }
 .studio-node.marker .node-head { background: transparent; color: var(--flow); font-family: var(--font-display); }
+.studio-node.kind-entry .node-io { justify-content: flex-end; }
 
 /* IO band: input row (dot + "in") top-left, outputs top-right */
 .node-io { position: relative; display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; padding: .5rem .7rem; border-top: 1px solid var(--line); }
