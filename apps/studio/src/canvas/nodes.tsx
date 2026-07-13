@@ -2,17 +2,41 @@ import { Handle, Position, type NodeProps } from "@xyflow/react";
 
 type NodeData = { label: string; kind: string; outcome?: boolean };
 
-const Input = () => <span className="node-input"><Handle id="input" type="target" position={Position.Left} /><small>in</small></span>;
-const Output = ({ id, label, position }: { id: string; label: string; position?: Position }) => <span className={`node-output output-${id}`}><small>{label}</small><Handle id={id} type="source" position={position ?? Position.Right} /></span>;
+const KIND_TITLE: Record<string, string> = { idle: "Idle", video: "Video", "position-question": "Question" };
+
+const InPort = () => (
+  <div className="port port-in"><Handle id="input" type="target" position={Position.Left} /><span className="port-name">in</span></div>
+);
+const OutPort = ({ id, label, tone }: { id: string; label: string; tone?: "quad" | "special" }) => (
+  <div className={`port port-out ${tone ?? ""}`}><span className="port-name">{label}</span><Handle id={id} type="source" position={Position.Right} /></div>
+);
+
+const OUTCOMES: readonly [string, string, "quad" | "special"][] = [
+  ["q1", "q1 winner", "quad"], ["q2", "q2 winner", "quad"], ["q3", "q3 winner", "quad"], ["q4", "q4 winner", "quad"],
+  ["tie", "tie", "special"], ["empty", "no votes", "special"],
+];
 
 export function PhaseNode({ data }: NodeProps) {
   const value = data as NodeData;
-  return <div className={`studio-node ${value.kind}`}><Input /><strong>{value.label}</strong><small>{value.kind}</small>
-    {value.outcome ? <div className="quadrant-outputs"><Output id="q2" label="q2 · top left" position={Position.Top} /><Output id="q1" label="q1 · top right" position={Position.Top} /><Output id="q3" label="q3 · bottom left" position={Position.Bottom} /><Output id="q4" label="q4 · bottom right / center" position={Position.Bottom} /><Output id="tie" label="tie" /><Output id="empty" label="empty" /></div> : value.kind !== "idle" && <Output id="next" label="next" />}
-  </div>;
+  return (
+    <div className={`studio-node kind-${value.kind}`}>
+      <div className="node-head">{KIND_TITLE[value.kind] ?? value.kind}</div>
+      <div className="node-body">
+        <InPort />
+        <div className="node-title">{value.label}</div>
+        {value.outcome
+          ? <div className="ports-out"><span className="ports-hint">Route each result →</span>{OUTCOMES.map(([id, label, tone]) => <OutPort key={id} id={id} label={label} tone={tone} />)}</div>
+          : value.kind !== "idle" && <div className="ports-out"><OutPort id="next" label="next" /></div>}
+      </div>
+    </div>
+  );
 }
 
-export function EntryNode() { return <div className="studio-node marker"><strong>Entry</strong><Output id="next" label="start" /></div>; }
-export function EndNode() { return <div className="studio-node marker"><Input /><strong>End</strong><small>compiles to idle</small></div>; }
+export function EntryNode() {
+  return <div className="studio-node marker kind-entry"><div className="node-head">Entry</div><div className="node-body"><div className="ports-out"><OutPort id="next" label="start" /></div></div></div>;
+}
+export function EndNode() {
+  return <div className="studio-node marker kind-end"><div className="node-head">End</div><div className="node-body"><InPort /><div className="node-title">compiles to idle</div></div></div>;
+}
 
 export const nodeTypes = { phase: PhaseNode, entry: EntryNode, end: EndNode };
