@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import type { StudioProject } from "@smartphonecracy/studio-adapter";
-import { compiledJson, phaseIdError, type Phase, type PhaseKind } from "./model.js";
+import { compiledJson, phaseIdError, type AuthorablePhaseKind, type Phase } from "./model.js";
 
 type Props = {
   project: StudioProject;
   selectedId: string | undefined;
   onRename: (nextId: string) => void;
   onChange: (phase: Phase) => void;
-  onKindChange: (kind: PhaseKind) => void;
+  onKindChange: (kind: AuthorablePhaseKind) => void;
   onTransitionChange: (kind: "fixed" | "quadrant-plurality") => void;
   onQuestionLayoutChange: (layout: "four-quadrant" | "two-quadrant-x" | "two-quadrant-y") => void;
 };
@@ -31,7 +31,7 @@ export function Inspector({ project, selectedId, onRename, onChange, onKindChang
   return <aside className="inspector" aria-label="Properties inspector"><h2>Properties</h2>
     <label>{label("Runtime ID", "id")}<input aria-invalid={Boolean(idProblem)} value={idInput} onChange={(event) => setIdInput(event.target.value)} onBlur={() => { if (!idProblem && idInput !== phase.id) onRename(idInput); }} /></label>
     {idProblem && <p className="field-error" role="alert">{idProblem}</p>}
-    <label>{label("Phase type", "kind")}<select value={phase.kind} disabled={phase.kind === "idle"} onChange={(event) => onKindChange(event.target.value as PhaseKind)}><option value="idle">Idle</option><option value="video">Video</option><option value="position-question">Position question</option></select></label>
+    {phase.kind !== "idle" && <label>{label("Phase type", "kind")}<select value={phase.kind} onChange={(event) => onKindChange(event.target.value as AuthorablePhaseKind)}><option value="video">Video</option><option value="position-question">Position question</option></select></label>}
     {phase.kind === "video" && <>
       {text("Media source", "src", phase.src, (src) => onChange({ ...phase, src }))}
       {number("Expected duration (ms)", "expectedDurationMs", phase.expectedDurationMs, (expectedDurationMs) => onChange({ ...phase, expectedDurationMs }))}
