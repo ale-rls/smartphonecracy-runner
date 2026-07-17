@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useReducer, useRef } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
+import type { DisplayToServerMessage } from "@smartphonecracy/protocol";
 import { CursorField } from "./cursors/cursorField.js";
 import { CursorCanvas } from "./cursors/CursorCanvas.js";
 import { DisplayConnection } from "./lib/connection.js";
 import { applyKioskGuards, performReload } from "./lib/kiosk.js";
 import { IDLE_PLACEHOLDER, startHeartbeat } from "./lib/heartbeat.js";
 import { useMedia } from "./media/useMedia.js";
+import { useVideoPlaybackDiagnostics } from "./media/useVideoPlaybackDiagnostics.js";
 import { displayReducer, initialDisplayState } from "./state/store.js";
 import { Countdown } from "./components/Countdown.js";
 import { QrBadge } from "./components/QrBadge.js";
@@ -111,6 +113,18 @@ export function App() {
   const phase = state.phase;
   const isIdle = phase === null || phase.kind === "idle";
   const mediaReady = media.status.state === "ready";
+  const sendDisplayMessage = useCallback(
+    (message: DisplayToServerMessage) => connection.send(message),
+    [connection],
+  );
+  const videoDiagnostics = useVideoPlaybackDiagnostics({
+    sessionId: state.sessionId,
+    phaseId: phase?.kind === "video" ? phase.id : null,
+    phaseEpoch: state.phaseEpoch,
+    mediaId: phase?.kind === "video" ? phase.src : null,
+    videoUrl: phase?.kind === "video" ? media.videoUrl : null,
+    send: sendDisplayMessage,
+  });
 
   // Keep the Blob URL set aligned with the active phase (plan §9);
   // preloading plausible next videos needs the id→src map from STEP-026.
@@ -130,7 +144,15 @@ export function App() {
           />
         )}
         {phase?.kind === "video" && media.videoUrl !== null && (
-          <video key={phase.id} src={media.videoUrl} autoPlay />
+          <video
+            ref={videoDiagnostics.ref}
+            key={phase.id}
+            src={media.videoUrl}
+            autoPlay
+            onPlaying={videoDiagnostics.onPlaying}
+            onStalled={videoDiagnostics.onStalled}
+            onError={videoDiagnostics.onError}
+          />
         )}
       </section>
 
