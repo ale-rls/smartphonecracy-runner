@@ -14,6 +14,7 @@
     "generate-idle-marker-tracks": "python3 scripts/generate-idle-marker-tracks.py",
     "generate-crowd-sfx": "tsx scripts/generate-crowd-sfx.ts",
     "simulate-clients": "tsx scripts/simulate-clients.ts",
+    "hybrid": "node --env-file-if-exists=.env --import tsx apps/server/src/hybrid-display.ts",
     "pocketbase:download": "pocketbase/scripts/download.sh",
     "pocketbase:dev": "pocketbase/scripts/dev.sh",
     "publish-scenario": "tsx scripts/publish-scenario-to-pocketbase.ts"

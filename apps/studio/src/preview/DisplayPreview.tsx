@@ -87,6 +87,10 @@ export function DisplayPreview({ preview }: { preview: ProjectPreview }) {
   }, []);
 
   const move = (next: typeof session) => {
+    if (tailTimer.current !== null) {
+      clearTimeout(tailTimer.current);
+      tailTimer.current = null;
+    }
     setSession(next);
     setPhaseStartedAt(Date.now());
     setPhaseEpoch((value) => value + 1);
@@ -94,12 +98,15 @@ export function DisplayPreview({ preview }: { preview: ProjectPreview }) {
   const advance = () => move(advancePreview(session));
   const finishMedia = () => {
     if (phase.kind === "video") {
-      if (phase.audioSrc && (phase.tailDurationMs ?? 0) > 0) {
+      if ((phase.tailDurationMs ?? 0) > 0) {
         tailTimer.current = setTimeout(advance, phase.tailDurationMs);
       } else advance();
       return;
     }
-    if (phase.kind === "video-position-question" && phase.next.type === "fixed") advance();
+    if (phase.kind === "video-position-question" && phase.next.type === "fixed") {
+      if ((phase.tailDurationMs ?? 0) > 0) tailTimer.current = setTimeout(advance, phase.tailDurationMs);
+      else advance();
+    }
   };
   const enableSound = () => {
     setSoundEnabled(true);

@@ -32,7 +32,7 @@ export function Inspector({ project, selectedId, localMedia, onRename, onChange,
   const detectedDuration = phase?.kind === "video" || phase?.kind === "video-position-question"
     ? localMedia.find((file) => file.src === (phase.audioSrc ?? phase.src))?.durationMs
     : undefined;
-  const audioDurationMs = (phase?.kind === "video" || phase?.kind === "video-position-question") && phase.audioSrc !== undefined
+  const mediaDurationMs = phase?.kind === "video" || phase?.kind === "video-position-question"
     ? detectedDuration ?? Math.max(1, phase.expectedDurationMs - (phase.tailDurationMs ?? 0))
     : undefined;
   const fieldMedia: PolygonEditorMedia | undefined = phase?.kind === "video-position-question"
@@ -77,10 +77,10 @@ export function Inspector({ project, selectedId, localMedia, onRename, onChange,
       <p className="sc-tool-copy field-hint">{detectedDuration === undefined
         ? "Playback duration is detected automatically from the video or MP3."
         : phase.audioSrc === undefined
-          ? `Playback duration: ${(detectedDuration / 1000).toFixed(3)} seconds`
+          ? `Video duration: ${(detectedDuration / 1000).toFixed(3)} seconds · total with tail: ${((detectedDuration + (phase.tailDurationMs ?? 0)) / 1000).toFixed(3)} seconds`
           : `Audio duration: ${(detectedDuration / 1000).toFixed(3)} seconds · total with tail: ${((detectedDuration + (phase.tailDurationMs ?? 0)) / 1000).toFixed(3)} seconds`}</p>
-      {phase.audioSrc !== undefined && number("Tail after audio (ms)", "tailDurationMs", phase.tailDurationMs ?? 0, (tailDurationMs) => {
-        const nextExpectedDurationMs = (audioDurationMs ?? 1) + tailDurationMs;
+      {number(phase.audioSrc === undefined ? "Hold last frame (ms)" : "Tail after audio (ms)", "tailDurationMs", phase.tailDurationMs ?? 0, (tailDurationMs) => {
+        const nextExpectedDurationMs = (mediaDurationMs ?? 1) + tailDurationMs;
         if (phase.kind !== "video-position-question") {
           onChange({ ...phase, tailDurationMs, expectedDurationMs: nextExpectedDurationMs });
           return;
@@ -189,7 +189,7 @@ export function Inspector({ project, selectedId, localMedia, onRename, onChange,
         </fieldset>;
       })()}
       {phase.kind === "video-position-question" && (() => {
-        const timelineOriginMs = phase.audioSrc === undefined ? 0 : audioDurationMs ?? 0;
+        const timelineOriginMs = phase.audioSrc === undefined ? 0 : mediaDurationMs ?? 0;
         const timelineMinMs = -timelineOriginMs;
         const timelineMaxMs = phase.audioSrc === undefined ? phase.expectedDurationMs : phase.tailDurationMs ?? 0;
         const changeOffset = (field: "showAtMs" | "openAtMs" | "closeAtMs" | "hideAtMs", value: number) => onChange({ ...phase, [field]: timelineOriginMs + value });
@@ -204,12 +204,13 @@ export function Inspector({ project, selectedId, localMedia, onRename, onChange,
             { id: "close", label: "Close voting", runtime: "closeAtMs", value: closeOffset, min: openOffset + 1, max: hideOffset, tone: "close", onChange: (value) => changeOffset("closeAtMs", value) },
             { id: "hide", label: "Hide question", runtime: "hideAtMs", value: hideOffset, min: closeOffset, max: timelineMaxMs, tone: "end", onChange: (value) => changeOffset("hideAtMs", value) },
           ]} />
-          {phase.audioSrc !== undefined && <button className="sc-tool-button" data-sc-tool-variant="secondary" type="button" disabled={(phase.tailDurationMs ?? 0) < 1} onClick={() => {
+          {(phase.tailDurationMs ?? 0) > 0 && <button className="sc-tool-button" data-sc-tool-variant="secondary" type="button" onClick={() => {
             const tailDurationMs = phase.tailDurationMs ?? 0;
-            onChange({ ...phase, showAtMs: timelineOriginMs, openAtMs: timelineOriginMs, closeAtMs: timelineOriginMs + Math.max(1, Math.floor(tailDurationMs * .8)), hideAtMs: timelineOriginMs + tailDurationMs });
-          }}>Fit vote to audio tail</button>}
+            const playbackEndMs = mediaDurationMs ?? Math.max(1, phase.expectedDurationMs - tailDurationMs);
+            onChange({ ...phase, showAtMs: playbackEndMs, openAtMs: playbackEndMs, closeAtMs: playbackEndMs + Math.max(1, Math.floor(tailDurationMs * .8)), hideAtMs: playbackEndMs + tailDurationMs });
+          }}>Fit vote to media tail</button>}
           <p className="sc-tool-copy field-hint">{phase.audioSrc === undefined
-            ? `Required order: show ≤ open < close ≤ hide ≤ media duration (${phase.expectedDurationMs} ms).`
+            ? `Required order: show ≤ open < close ≤ hide ≤ phase duration (${phase.expectedDurationMs} ms).`
             : `0 ms is the end of the MP3. The tail runs from 0 to ${phase.tailDurationMs ?? 0} ms; negative values happen during the audio. Required order: show ≤ open < close ≤ hide.`}</p>
         </fieldset>;
       })()}

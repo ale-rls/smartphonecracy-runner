@@ -288,12 +288,29 @@ describe("Studio feedback and keyboard entry", () => {
     const sourceButton = document.querySelector<HTMLButtonElement>('.media-source-picker')!;
     expect(sourceButton.textContent).toContain("conclusion.webm");
     expect(sourceButton.getAttribute("aria-label")).toContain("Current media: conclusion.webm");
-    expect(document.body.textContent).toContain("Playback duration: 2.500 seconds");
+    expect(document.body.textContent).toContain("Video duration: 2.500 seconds · total with tail: 2.500 seconds");
     expect(document.body.textContent).toContain("Selected conclusion.webm for video-");
 
+    const holdInput = Array.from(document.querySelectorAll("label"))
+      .find((label) => label.textContent?.includes("Hold last frame (ms)"))
+      ?.querySelector<HTMLInputElement>("input")!;
+    expect(holdInput.value).toBe("0");
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(holdInput, "2000");
+      holdInput.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(document.body.textContent).toContain("total with tail: 4.500 seconds");
+
     await act(async () => { sourceButton.click(); });
-    expect(document.querySelector('[role="dialog"]')?.textContent).toContain("Choose media");
-    expect(document.querySelector('.media-row[data-selected="true"]')?.textContent).toContain("conclusion.webm");
+    const replacementDialog = document.querySelector<HTMLElement>('[role="dialog"]')!;
+    expect(replacementDialog.textContent).toContain("Choose media");
+    expect(replacementDialog.querySelector('.media-row[data-selected="true"]')?.textContent).toContain("conclusion.webm");
+    const openingRow = Array.from(replacementDialog.querySelectorAll<HTMLElement>(".media-row"))
+      .find((row) => row.textContent?.includes("opening.mp4"))!;
+    await act(async () => { openingRow.querySelector<HTMLButtonElement>("button")?.click(); });
+    await flush();
+    expect(holdInput.value).toBe("2000");
+    expect(document.body.textContent).toContain("Video duration: 1.000 seconds · total with tail: 3.000 seconds");
   });
 
   it("authors a still image + MP3 phase with type-filtered library pickers", async () => {
@@ -438,7 +455,7 @@ describe("Studio feedback and keyboard entry", () => {
       Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(tailInput, "30000");
       tailInput.dispatchEvent(new Event("input", { bubbles: true }));
     });
-    await act(async () => { button("Fit vote to audio tail").click(); });
+    await act(async () => { button("Fit vote to media tail").click(); });
     expect(inputFor("Close voting").value).toBe("24000");
     expect(inputFor("Hide question").value).toBe("30000");
 

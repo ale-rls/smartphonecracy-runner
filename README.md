@@ -179,6 +179,11 @@ Scenarios and manifests are validated at startup and before Studio deployment ex
 
 The supported architecture is a local installation computer serving the application and media on the venue network. Runtime operation does not depend on cloud hosting, a remote database, or a CDN.
 
+For the Internet-connected variant where phones and the authoritative show stay
+online while the installation display and media run locally, use `pnpm hybrid`. See the
+[hybrid local/public operation guide](docs/hybrid-operation.md) for the process
+split, tunnel requirement, environment defaults, and failure modes.
+
 - [Operations runbook](docs/operations.md)
 - [Venue installation guide](docs/venue-installation.md)
 

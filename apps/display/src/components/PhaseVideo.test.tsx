@@ -99,4 +99,31 @@ describe("PhaseVideo", () => {
     expect(video.muted).toBe(false);
     expect(video.playsInline).toBe(true);
   });
+
+  it("holds the final video frame for the configured tail before completing", async () => {
+    vi.useFakeTimers();
+    const send = vi.fn();
+    vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
+    document.body.innerHTML = '<div id="root"></div>';
+    root = createRoot(document.querySelector("#root")!);
+    await act(async () => {
+      root?.render(<PhaseVideo
+        sessionId="session-1"
+        phase={{ ...phase, tailDurationMs: 2_000, expectedDurationMs: 17_042 }}
+        phaseEpoch={7}
+        src="blob:cached-intro"
+        soundEnabled={false}
+        send={send}
+      />);
+    });
+    const video = document.querySelector("video")!;
+
+    video.dispatchEvent(new Event("ended"));
+    expect(document.querySelector("video")).toBe(video);
+    expect(send).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1_999);
+    expect(send).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+    expect(send).toHaveBeenCalledWith(expect.objectContaining({ t: "video_ended", phaseId: "intro" }));
+  });
 });

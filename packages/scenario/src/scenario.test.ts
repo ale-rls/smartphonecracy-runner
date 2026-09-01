@@ -95,10 +95,14 @@ describe("scenarioSchema structural rejection", () => {
     ] });
     expect(missingAudio.errors).toEqual(expect.arrayContaining([expect.objectContaining({ code: "missing-media", message: expect.stringContaining("introduction.mp3") })]));
 
-    expect(scenarioSchema.safeParse({
+    const videoTail = scenarioSchema.safeParse({
       ...baseScenario,
       phases: baseScenario.phases.map((phase) => phase.id === "intro" ? { ...phase, tailDurationMs: 1_000 } : phase),
-    }).success).toBe(false);
+    });
+    expect(videoTail.success).toBe(true);
+    if (videoTail.success) {
+      expect(videoTail.data.phases.find((phase) => phase.id === "intro")).toMatchObject({ tailDurationMs: 1_000 });
+    }
   });
 
   it("accepts optional targetAudienceSize and per-phase showCursors", () => {

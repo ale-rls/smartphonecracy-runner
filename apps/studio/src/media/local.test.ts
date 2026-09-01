@@ -55,4 +55,18 @@ describe("local Studio media", () => {
       expectedDurationMs: 24_222,
     });
   });
+
+  it("adds a last-frame tail to detected video duration", () => {
+    const draft = importRuntime(scenario, manifest);
+    const phase = draft.project.scenario.phases.find((item) => item.kind === "video")!;
+    if (phase.kind !== "video") throw new Error("expected video phase");
+    phase.tailDurationMs = 2_000;
+    const refreshed = refreshDraftLocalMedia(draft, { files: [
+      { src: phase.src, bytes: 100, hash: "video", durationMs: 4_321 },
+    ] });
+    expect(refreshed.project.scenario.phases.find((item) => item.id === phase.id)).toMatchObject({
+      tailDurationMs: 2_000,
+      expectedDurationMs: 6_321,
+    });
+  });
 });

@@ -33,9 +33,13 @@ import { VideoQuestionOverlay } from "./components/VideoQuestionOverlay.js";
 declare const __BUILD_VERSION__: string | undefined;
 declare const __REALTIME_WS_URL__: string | undefined;
 declare const __DISPLAY_TOKEN__: string | undefined;
+declare const __CONTROL_WS_URL__: string | undefined;
 
 const config = {
-  url: `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`,
+  url:
+    typeof __CONTROL_WS_URL__ === "string" && __CONTROL_WS_URL__ !== ""
+      ? __CONTROL_WS_URL__
+      : `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`,
   clientVersion:
     typeof __BUILD_VERSION__ === "string" ? __BUILD_VERSION__ : "0.0.0-dev",
   installationId:

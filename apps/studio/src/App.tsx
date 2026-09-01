@@ -485,7 +485,7 @@ export function App() {
         })()
       : mediaPicker.target === "audioSrc"
         ? { ...phase, audioSrc: row.src }
-        : { ...phase, src: row.src, ...(phase.audioSrc === undefined && row.durationMs !== undefined ? { expectedDurationMs: row.durationMs } : {}) };
+        : { ...phase, src: row.src, ...(phase.audioSrc === undefined && row.durationMs !== undefined ? { expectedDurationMs: row.durationMs + (phase.tailDurationMs ?? 0) } : {}) };
     updatePhase(nextPhase);
     setImportFeedback({ status: "success", message: `Selected ${row.src} for ${phase.id}.` });
     closeMediaPicker();
@@ -514,15 +514,18 @@ export function App() {
         const video = studioMediaKindForSource(mediaPhase.src) === "video"
           ? mediaPhase.src
           : draft.project.manifest.files.find((file) => studioMediaKindForSource(file.src) === "video")?.src ?? "media/new-video.mp4";
-        const expectedDurationMs = localManifest?.files.find((file) => file.src === video)?.durationMs ?? mediaPhase.expectedDurationMs;
+        const tailDurationMs = mediaPhase.tailDurationMs ?? 0;
+        const videoDurationMs = localManifest?.files.find((file) => file.src === video)?.durationMs
+          ?? Math.max(1, mediaPhase.expectedDurationMs - tailDurationMs);
+        const expectedDurationMs = videoDurationMs + tailDurationMs;
         if (mediaPhase.kind === "video") {
-          return { ...mediaPhase, src: video, audioSrc: undefined, tailDurationMs: undefined, expectedDurationMs };
+          return { ...mediaPhase, src: video, audioSrc: undefined, tailDurationMs, expectedDurationMs };
         }
         return {
           ...mediaPhase,
           src: video,
           audioSrc: undefined,
-          tailDurationMs: undefined,
+          tailDurationMs,
           expectedDurationMs,
           showAtMs: Math.floor(expectedDurationMs * .25),
           openAtMs: Math.floor(expectedDurationMs * .3),

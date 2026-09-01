@@ -179,7 +179,7 @@ export const videoPhaseSchema = z.object({
   src: z.string().min(1, "media src must be non-empty"),
   /** When present, src is a still image and this MP3 drives playback/timing. */
   audioSrc: z.string().min(1, "audioSrc must be non-empty").optional(),
-  /** Silent hold after an image + MP3 phase's audio ends. */
+  /** Silent hold after the video or image + MP3 playback ends. */
   tailDurationMs: z.number().int().nonnegative().optional(),
   expectedDurationMs: z.number().int().positive(),
   next: phaseIdSchema,
@@ -190,9 +190,6 @@ export const videoPhaseSchema = z.object({
 }).superRefine((phase, ctx) => {
   const problem = mediaCombinationError(phase.src, phase.audioSrc);
   if (problem) ctx.addIssue({ code: z.ZodIssueCode.custom, message: problem, path: [phase.audioSrc === undefined ? "src" : "audioSrc"] });
-  if (phase.audioSrc === undefined && phase.tailDurationMs !== undefined) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "tailDurationMs is only valid when audioSrc is present", path: ["tailDurationMs"] });
-  }
 });
 
 const positionQuestionBaseSchema = z.object({
@@ -246,7 +243,7 @@ const videoPositionQuestionBaseSchema = z.object({
   src: z.string().min(1, "media src must be non-empty"),
   /** When present, src is a still image and this MP3 drives playback/timing. */
   audioSrc: z.string().min(1, "audioSrc must be non-empty").optional(),
-  /** Silent hold after an image + MP3 phase's audio ends. */
+  /** Silent hold after the video or image + MP3 playback ends. */
   tailDurationMs: z.number().int().nonnegative().optional(),
   expectedDurationMs: z.number().int().positive(),
   text: z.string().min(1, "question text must be non-empty"),
@@ -293,9 +290,6 @@ export const videoPositionQuestionPhaseSchema = z.union([
 ]).superRefine((phase, ctx) => {
   const mediaProblem = mediaCombinationError(phase.src, phase.audioSrc);
   if (mediaProblem) ctx.addIssue({ code: z.ZodIssueCode.custom, message: mediaProblem, path: [phase.audioSrc === undefined ? "src" : "audioSrc"] });
-  if (phase.audioSrc === undefined && phase.tailDurationMs !== undefined) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "tailDurationMs is only valid when audioSrc is present", path: ["tailDurationMs"] });
-  }
   const ordered = phase.showAtMs <= phase.openAtMs
     && phase.openAtMs < phase.closeAtMs
     && phase.closeAtMs <= phase.hideAtMs

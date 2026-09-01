@@ -181,9 +181,18 @@ export function registerBundleRoutes(
   app.get("/", async (_request, reply) => reply.redirect("/phone/"));
 
   for (const role of ["display", "phone", "admin", "studio"] as const) {
-    app.get(`/${role}`, async (_request, reply) => reply.redirect(`/${role}/`));
-    app.get<{ Params: { "*": string } }>(`/${role}/*`, async (request, reply) => {
-      await sendBundleFile(reply, bundles[role], request.params["*"], request.headers.range);
-    });
+    registerBundleRoute(app, role, bundles[role]);
   }
+}
+
+/** Register one browser bundle without exposing the other application roles. */
+export function registerBundleRoute(
+  app: FastifyInstance,
+  role: "display" | "phone" | "admin" | "studio",
+  root: string,
+): void {
+  app.get(`/${role}`, async (_request, reply) => reply.redirect(`/${role}/`));
+  app.get<{ Params: { "*": string } }>(`/${role}/*`, async (request, reply) => {
+    await sendBundleFile(reply, root, request.params["*"], request.headers.range);
+  });
 }

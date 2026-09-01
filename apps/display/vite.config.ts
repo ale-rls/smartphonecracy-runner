@@ -13,6 +13,10 @@ export default defineConfig({
   define: {
     __BUILD_VERSION__: JSON.stringify(process.env.BUILD_VERSION ?? "0.0.0-dev"),
     __REALTIME_WS_URL__: JSON.stringify(process.env.REALTIME_WS_URL ?? "ws://localhost:9001"),
+    // Normally the authoritative show socket shares the display's origin.
+    // The hybrid display-only launcher overrides this with the hosted core's
+    // public WSS endpoint while media and the display shell remain local.
+    __CONTROL_WS_URL__: JSON.stringify(process.env.CONTROL_WS_URL ?? ""),
     // Baked in so the venue's one kiosk can load bare /display/ with no
     // query params at all -- ?token= in the URL still overrides this
     // when present (e.g. testing against a different token). Unlike
