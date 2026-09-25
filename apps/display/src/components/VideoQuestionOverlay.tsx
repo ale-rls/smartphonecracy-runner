@@ -87,15 +87,15 @@ export function VideoQuestionOverlay({
         if (fadingOut && event.animationName === "question-out") setRendered(false);
       }}
     >
-      <div className="question-copy">
+      {!phase.textBurnedIn && <div className="question-copy">
         <p className="question-text">{phase.text}</p>
-      </div>
+      </div>}
       <QuadrantOverlay
         field={phase.field}
         liveField={liveField}
         liveCounts={liveCounts}
         resolution={resolution}
-        showCounts={false}
+        showCounts={phase.timeline !== undefined && phase.showLiveCounts}
         highlightRegionIds={highlightRegionIds}
       />
       {votingOpen && <VoteCloseCountdown clock={clock} deadlineAt={closeAt} soundEnabled={soundEnabled} durationSeconds={phase.closeCountdownSeconds ?? 5} center={questionFieldCenter(phase.field)} />}

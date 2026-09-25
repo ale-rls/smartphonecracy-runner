@@ -1,7 +1,7 @@
 import { pathToFileURL } from "node:url";
 import { loadConfig, type ServerConfig } from "./config.js";
 import { buildServer, type ServerRuntime } from "./server.js";
-import { loadPublishedScenarioFromPocketbase, type ScenarioReadiness } from "./readiness.js";
+import { loadScenarioReadiness, loadPublishedScenarioFromPocketbase, type ScenarioReadiness } from "./readiness.js";
 import { PocketBaseAdminDataSource } from "./persistence/admin-data.js";
 import { PocketBaseClient } from "./persistence/pocketbase-client.js";
 import { readServerConfigOverride } from "./persistence/installation-config.js";
@@ -54,6 +54,19 @@ async function boot(
   pocketbase: PocketBaseClient,
   onSessionEnded?: () => void,
 ): Promise<ServerRuntime> {
+  // A local venue delivery is explicitly pinned to disk, independent of Studio publishes.
+  if (config.runMode === "venue") {
+    const readiness = await loadScenarioReadiness(config);
+    const runtime = await buildServer({
+      config, readiness, pocketbase,
+      adminData: new PocketBaseAdminDataSource(pocketbase, {
+        installationId: config.installationId, roomId: config.roomId,
+      }),
+      ...(onSessionEnded === undefined ? {} : { onSessionEnded }),
+    });
+    await listenWithCleanup(runtime.app, { host: config.host, port: config.port });
+    return runtime;
+  }
   const override = await readServerConfigOverride(pocketbase)
     .catch((error: unknown) => {
       console.error("pocketbase: failed to load server config override", error);
@@ -292,9 +305,11 @@ export async function startServer(): Promise<void> {
   );
   requestRestart = restartGate.request;
   flushDeferredRestart = restartGate.flush;
-  subscribeWithRetry(pocketbase, "scenarios", () => restartGate.request("scenarios"), isStopped);
-  subscribeWithRetry(pocketbase, "installation_config", () => restartGate.request("installation_config"), isStopped);
-  subscribeWithRetry(pocketbase, "media", () => restartGate.request("media"), isStopped);
+  if (config.runMode !== "venue") {
+    subscribeWithRetry(pocketbase, "scenarios", () => restartGate.request("scenarios"), isStopped);
+    subscribeWithRetry(pocketbase, "installation_config", () => restartGate.request("installation_config"), isStopped);
+    subscribeWithRetry(pocketbase, "media", () => restartGate.request("media"), isStopped);
+  }
 
   const shutdown = async (signal: NodeJS.Signals) => {
     if (shuttingDown) return;

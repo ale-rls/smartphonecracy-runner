@@ -20,13 +20,16 @@ export type StatSize = (src: string) => Promise<number>;
 
 export async function validateMediaManifest(
   manifest: MediaManifest,
-  statSize: StatSize,
+  statSize: StatSize | undefined,
 ): Promise<{ ok: boolean; errors: MediaIssue[]; totalBytes: number }> {
   const errors: MediaIssue[] = [];
   let totalBytes = 0;
 
   for (const file of manifest.files) {
     totalBytes += file.bytes;
+    // A hosted venue coordinator validates metadata only. The local playback
+    // gateway verifies the SSD before allowing its display to join.
+    if (statSize === undefined) continue;
     let actual: number;
     try {
       actual = await statSize(file.src);

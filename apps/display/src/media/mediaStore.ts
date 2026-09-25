@@ -92,6 +92,7 @@ export class MediaStore {
   private readonly chunkBytes: number;
 
   private manifest: MediaManifest | null = null;
+  private localStreaming = false;
   private readonly blobUrls = new Map<string, string>(); // src -> object URL
   private stopped = false;
 
@@ -121,8 +122,9 @@ export class MediaStore {
    * cache holds every manifest file (or stop() is called). Resolves true
    * once ready; false only when stopped.
    */
-  async sync(manifest: MediaManifest): Promise<boolean> {
+  async sync(manifest: MediaManifest, localStreaming = false): Promise<boolean> {
     this.manifest = manifest;
+    this.localStreaming = localStreaming;
     for (let attempt = 0; !this.stopped; attempt += 1) {
       try {
         await this.syncOnce(manifest);
@@ -141,6 +143,18 @@ export class MediaStore {
 
   private async syncOnce(manifest: MediaManifest): Promise<void> {
     this.onStatus({ state: "checking", total: manifest.files.length });
+    if (this.localStreaming) {
+      // The venue computer already holds the delivery on disk. Verify each
+      // file is available, then let the browser stream ranges from localhost;
+      // never assemble a gigabyte-long film in JavaScript memory.
+      for (const file of manifest.files) {
+        const response = await this.fetchFn(`/media/${encodeURIComponent(file.src)}?v=${file.hash}`, { method: "HEAD", cache: "no-store" });
+        if (!response.ok || Number(response.headers.get("content-length")) !== file.bytes) {
+          throw new Error(`local media unavailable or size mismatch: ${file.src}`);
+        }
+      }
+      return;
+    }
     const cache = await this.cachesObj.open(this.cacheName);
 
     // Drop cache entries no longer referenced by the manifest.
@@ -242,6 +256,7 @@ export class MediaStore {
     if (existing) return existing;
     const file = this.manifest?.files.find((f) => f.src === src);
     if (!file) return null;
+    if (this.localStreaming) return `/media/${encodeURIComponent(file.src)}?v=${file.hash}`;
     const cache = await this.cachesObj.open(this.cacheName);
     const cached = await cache.match(cacheKeyFor(file.hash));
     if (!cached) return null;

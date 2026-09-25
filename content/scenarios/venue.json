@@ -1,0 +1,848 @@
+{
+  "version": "smartphonocracy-venue-2026.09.24",
+  "entryPhaseId": "2-0-Athene",
+  "cyclesAllowed": false,
+  "targetAudienceSize": 0,
+  "phases": [
+    {
+      "id": "idle",
+      "kind": "idle",
+      "src": "SMARTPHONOCRACY_1.0_Lobby-Loop_1920x1080.mp4"
+    },
+    {
+      "id": "2-0-Athene",
+      "kind": "video",
+      "src": "SMARTPHONOCRACY_MAIN-SHOW_1920x1080.mp4",
+      "timeline": {
+        "id": "main-show",
+        "startMs": 0.0
+      },
+      "fit": "contain",
+      "expectedDurationMs": 138000.0,
+      "next": "2-1-chaseme"
+    },
+    {
+      "id": "2-1-chaseme",
+      "kind": "video",
+      "src": "SMARTPHONOCRACY_MAIN-SHOW_1920x1080.mp4",
+      "timeline": {
+        "id": "main-show",
+        "startMs": 138000.0
+      },
+      "fit": "contain",
+      "expectedDurationMs": 38666.66666666666,
+      "next": "2-2-chapme"
+    },
+    {
+      "id": "2-2-chapme",
+      "kind": "video",
+      "src": "SMARTPHONOCRACY_MAIN-SHOW_1920x1080.mp4",
+      "timeline": {
+        "id": "main-show",
+        "startMs": 176666.66666666666
+      },
+      "fit": "contain",
+      "expectedDurationMs": 47000.0,
+      "next": "2-3-ostrakismos"
+    },
+    {
+      "id": "2-3-ostrakismos",
+      "kind": "video-position-question",
+      "src": "SMARTPHONOCRACY_MAIN-SHOW_1920x1080.mp4",
+      "timeline": {
+        "id": "main-show",
+        "startMs": 223666.66666666666
+      },
+      "fit": "contain",
+      "expectedDurationMs": 113250.00000000003,
+      "next": {
+        "type": "fixed",
+        "target": "2-4-prometheus"
+      },
+      "showAtMs": 20792,
+      "openAtMs": 21392,
+      "closeAtMs": 39793,
+      "hideAtMs": 44793,
+      "connectionStaleAfterMs": 10000,
+      "showLiveCounts": true,
+      "field": {
+        "axis": "x",
+        "labels": {
+          "maxLabel": "Lüge",
+          "minLabel": "Fakt"
+        },
+        "splitX": 0.493,
+        "type": "two-quadrant",
+        "variant": "split"
+      },
+      "soundEnabled": false,
+      "text": "OSTRAKISMÓS"
+    },
+    {
+      "id": "2-4-prometheus",
+      "kind": "video-position-question",
+      "src": "SMARTPHONOCRACY_MAIN-SHOW_1920x1080.mp4",
+      "timeline": {
+        "id": "main-show",
+        "startMs": 336916.6666666667
+      },
+      "fit": "contain",
+      "expectedDurationMs": 95625.0,
+      "next": {
+        "type": "fixed",
+        "target": "2-5-kleroterion"
+      },
+      "showAtMs": 24100,
+      "openAtMs": 24100,
+      "closeAtMs": 43001,
+      "hideAtMs": 48301,
+      "connectionStaleAfterMs": 10000,
+      "showLiveCounts": true,
+      "field": {
+        "axis": "x",
+        "labels": {
+          "maxLabel": "Fakt",
+          "minLabel": "Lüge"
+        },
+        "splitX": 0.493,
+        "type": "two-quadrant",
+        "variant": "split"
+      },
+      "soundEnabled": false,
+      "text": "PROMETHEUS-ABGABE"
+    },
+    {
+      "id": "2-5-kleroterion",
+      "kind": "video-position-question",
+      "src": "SMARTPHONOCRACY_MAIN-SHOW_1920x1080.mp4",
+      "timeline": {
+        "id": "main-show",
+        "startMs": 432541.6666666667
+      },
+      "fit": "contain",
+      "expectedDurationMs": 98374.99999999994,
+      "next": {
+        "type": "fixed",
+        "target": "2-6-01-wo-befindest-du-dich"
+      },
+      "showAtMs": 19000,
+      "openAtMs": 19000,
+      "closeAtMs": 38100,
+      "hideAtMs": 43201,
+      "connectionStaleAfterMs": 10000,
+      "showLiveCounts": true,
+      "field": {
+        "axis": "x",
+        "labels": {
+          "maxLabel": "Lüge",
+          "minLabel": "Fakt"
+        },
+        "splitX": 0.493,
+        "type": "two-quadrant",
+        "variant": "split"
+      },
+      "soundEnabled": false,
+      "text": "KLĒROTERION"
+    },
+    {
+      "id": "2-6-01-wo-befindest-du-dich",
+      "kind": "video-position-question",
+      "src": "SMARTPHONOCRACY_MAIN-SHOW_1920x1080.mp4",
+      "timeline": {
+        "id": "main-show",
+        "startMs": 530916.6666666666
+      },
+      "fit": "contain",
+      "expectedDurationMs": 30000.0,
+      "next": {
+        "type": "fixed",
+        "target": "2-6-02-wo-waerst-du-gerne"
+      },
+      "showAtMs": 0,
+      "openAtMs": 15000,
+      "closeAtMs": 20000,
+      "hideAtMs": 25000,
+      "closeCountdownSeconds": 5,
+      "connectionStaleAfterMs": 10000,
+      "showLiveCounts": true,
+      "field": {
+        "arena": {
+          "centerX": 0.503,
+          "centerY": 0.7158,
+          "radiusX": 0.4155,
+          "radiusY": 0.2177,
+          "splitY": 0.6324,
+          "type": "ellipse"
+        },
+        "axis": "x",
+        "labels": {
+          "maxLabel": "Tod",
+          "minLabel": "Geburt"
+        },
+        "type": "two-quadrant",
+        "variant": "spectrum"
+      },
+      "soundEnabled": false,
+      "textBurnedIn": true,
+      "text": "Wo befindest du dich?"
+    },
+    {
+      "id": "2-6-02-wo-waerst-du-gerne",
+      "kind": "video-position-question",
+      "src": "SMARTPHONOCRACY_MAIN-SHOW_1920x1080.mp4",
+      "timeline": {
+        "id": "main-show",
+        "startMs": 560916.6666666666
+      },
+      "fit": "contain",
+      "expectedDurationMs": 30000.0,
+      "next": {
+        "type": "fixed",
+        "target": "2-6-03-westliche-demokratie"
+      },
+      "showAtMs": 0,
+      "openAtMs": 15000,
+      "closeAtMs": 20000,
+      "hideAtMs": 25000,
+      "closeCountdownSeconds": 5,
+      "connectionStaleAfterMs": 10000,
+      "showLiveCounts": true,
+      "field": {
+        "arena": {
+          "centerX": 0.503,
+          "centerY": 0.7158,
+          "radiusX": 0.4155,
+          "radiusY": 0.2177,
+          "splitY": 0.6324,
+          "type": "ellipse"
+        },
+        "axis": "x",
+        "labels": {
+          "maxLabel": "Tod",
+          "minLabel": "Geburt"
+        },
+        "type": "two-quadrant",
+        "variant": "spectrum"
+      },
+      "soundEnabled": false,
+      "textBurnedIn": true,
+      "text": "Wo wärst du gerne?"
+    },
+    {
+      "id": "2-6-03-westliche-demokratie",
+      "kind": "video-position-question",
+      "src": "SMARTPHONOCRACY_MAIN-SHOW_1920x1080.mp4",
+      "timeline": {
+        "id": "main-show",
+        "startMs": 590916.6666666666
+      },
+      "fit": "contain",
+      "expectedDurationMs": 30000.0,
+      "next": {
+        "type": "fixed",
+        "target": "2-6-04-demokratie-in-50-jahren"
+      },
+      "showAtMs": 0,
+      "openAtMs": 15000,
+      "closeAtMs": 20000,
+      "hideAtMs": 25000,
+      "closeCountdownSeconds": 5,
+      "connectionStaleAfterMs": 10000,
+      "showLiveCounts": true,
+      "field": {
+        "arena": {
+          "centerX": 0.503,
+          "centerY": 0.7158,
+          "radiusX": 0.4155,
+          "radiusY": 0.2177,
+          "splitY": 0.6324,
+          "type": "ellipse"
+        },
+        "axis": "x",
+        "labels": {
+          "maxLabel": "Tod",
+          "minLabel": "Geburt"
+        },
+        "type": "two-quadrant",
+        "variant": "spectrum"
+      },
+      "soundEnabled": false,
+      "textBurnedIn": true,
+      "text": "Wo befindet sich die westliche Demokratie?"
+    },
+    {
+      "id": "2-6-04-demokratie-in-50-jahren",
+      "kind": "video-position-question",
+      "src": "SMARTPHONOCRACY_MAIN-SHOW_1920x1080.mp4",
+      "timeline": {
+        "id": "main-show",
+        "startMs": 620916.6666666666
+      },
+      "fit": "contain",
+      "expectedDurationMs": 30000.0,
+      "next": {
+        "type": "fixed",
+        "target": "2-6-05-politische-aktivitaet"
+      },
+      "showAtMs": 0,
+      "openAtMs": 15000,
+      "closeAtMs": 20000,
+      "hideAtMs": 25000,
+      "closeCountdownSeconds": 5,
+      "connectionStaleAfterMs": 10000,
+      "showLiveCounts": true,
+      "field": {
+        "arena": {
+          "centerX": 0.503,
+          "centerY": 0.7158,
+          "radiusX": 0.4155,
+          "radiusY": 0.2177,
+          "splitY": 0.6324,
+          "type": "ellipse"
+        },
+        "type": "four-quadrant",
+        "xAxis": {
+          "maxLabel": "Tod",
+          "minLabel": "Geburt"
+        },
+        "yAxis": {
+          "maxLabel": "Verwesung",
+          "minLabel": "Auferstehung"
+        }
+      },
+      "soundEnabled": false,
+      "textBurnedIn": true,
+      "text": "Wo befindet sich die westliche Demokratie in 50 Jahren?"
+    },
+    {
+      "id": "2-6-05-politische-aktivitaet",
+      "kind": "video-position-question",
+      "src": "SMARTPHONOCRACY_MAIN-SHOW_1920x1080.mp4",
+      "timeline": {
+        "id": "main-show",
+        "startMs": 650916.6666666666
+      },
+      "fit": "contain",
+      "expectedDurationMs": 30000.0,
+      "next": {
+        "type": "fixed",
+        "target": "2-6-06-politisch-aktiv-waerst-du-gerne"
+      },
+      "showAtMs": 0,
+      "openAtMs": 15000,
+      "closeAtMs": 20000,
+      "hideAtMs": 25000,
+      "closeCountdownSeconds": 5,
+      "connectionStaleAfterMs": 10000,
+      "showLiveCounts": true,
+      "field": {
+        "arena": {
+          "centerX": 0.503,
+          "centerY": 0.7158,
+          "radiusX": 0.4155,
+          "radiusY": 0.2177,
+          "splitY": 0.6324,
+          "type": "ellipse"
+        },
+        "type": "four-quadrant",
+        "xAxis": {
+          "maxLabel": "aktiv",
+          "minLabel": "passiv"
+        },
+        "yAxis": {
+          "maxLabel": "zufrieden",
+          "minLabel": "wütend"
+        }
+      },
+      "soundEnabled": false,
+      "textBurnedIn": true,
+      "text": "Wo positionierst du deine politische Aktivität?"
+    },
+    {
+      "id": "2-6-06-politisch-aktiv-waerst-du-gerne",
+      "kind": "video-position-question",
+      "src": "SMARTPHONOCRACY_MAIN-SHOW_1920x1080.mp4",
+      "timeline": {
+        "id": "main-show",
+        "startMs": 680916.6666666666
+      },
+      "fit": "contain",
+      "expectedDurationMs": 30000.0,
+      "next": {
+        "type": "fixed",
+        "target": "2-6-07-politisches-system"
+      },
+      "showAtMs": 0,
+      "openAtMs": 15000,
+      "closeAtMs": 20000,
+      "hideAtMs": 25000,
+      "closeCountdownSeconds": 5,
+      "connectionStaleAfterMs": 10000,
+      "showLiveCounts": true,
+      "field": {
+        "arena": {
+          "centerX": 0.503,
+          "centerY": 0.7158,
+          "radiusX": 0.4155,
+          "radiusY": 0.2177,
+          "splitY": 0.6324,
+          "type": "ellipse"
+        },
+        "type": "four-quadrant",
+        "xAxis": {
+          "maxLabel": "aktiv",
+          "minLabel": "passiv"
+        },
+        "yAxis": {
+          "maxLabel": "zufrieden",
+          "minLabel": "wütend"
+        }
+      },
+      "soundEnabled": false,
+      "textBurnedIn": true,
+      "text": "Wie politisch aktiv wärst du gerne?"
+    },
+    {
+      "id": "2-6-07-politisches-system",
+      "kind": "video-position-question",
+      "src": "SMARTPHONOCRACY_MAIN-SHOW_1920x1080.mp4",
+      "timeline": {
+        "id": "main-show",
+        "startMs": 710916.6666666666
+      },
+      "fit": "contain",
+      "expectedDurationMs": 30000.0,
+      "next": {
+        "type": "fixed",
+        "target": "2-6-08-politisches-klima"
+      },
+      "showAtMs": 0,
+      "openAtMs": 15000,
+      "closeAtMs": 20000,
+      "hideAtMs": 25000,
+      "closeCountdownSeconds": 5,
+      "connectionStaleAfterMs": 10000,
+      "showLiveCounts": true,
+      "field": {
+        "arena": {
+          "centerX": 0.503,
+          "centerY": 0.7158,
+          "radiusX": 0.4155,
+          "radiusY": 0.2177,
+          "splitY": 0.6324,
+          "type": "ellipse"
+        },
+        "type": "four-quadrant",
+        "xAxis": {
+          "maxLabel": "privilegiert",
+          "minLabel": "diskriminiert"
+        },
+        "yAxis": {
+          "maxLabel": "diplomatisch",
+          "minLabel": "radikal"
+        }
+      },
+      "soundEnabled": false,
+      "textBurnedIn": true,
+      "text": "Wo positionierst du dich im bestehenden politischen System?"
+    },
+    {
+      "id": "2-6-08-politisches-klima",
+      "kind": "video-position-question",
+      "src": "SMARTPHONOCRACY_MAIN-SHOW_1920x1080.mp4",
+      "timeline": {
+        "id": "main-show",
+        "startMs": 740916.6666666666
+      },
+      "fit": "contain",
+      "expectedDurationMs": 30000.0,
+      "next": {
+        "type": "fixed",
+        "target": "2-6-09-oekonomisch"
+      },
+      "showAtMs": 0,
+      "openAtMs": 15000,
+      "closeAtMs": 20000,
+      "hideAtMs": 25000,
+      "closeCountdownSeconds": 5,
+      "connectionStaleAfterMs": 10000,
+      "showLiveCounts": true,
+      "field": {
+        "arena": {
+          "centerX": 0.503,
+          "centerY": 0.7158,
+          "radiusX": 0.4155,
+          "radiusY": 0.2177,
+          "splitY": 0.6324,
+          "type": "ellipse"
+        },
+        "type": "four-quadrant",
+        "xAxis": {
+          "maxLabel": "umstürzlerisch",
+          "minLabel": "stabilisierend"
+        },
+        "yAxis": {
+          "maxLabel": "reaktionär",
+          "minLabel": "progressiv"
+        }
+      },
+      "soundEnabled": false,
+      "textBurnedIn": true,
+      "text": "Wie empfindest du das aktuelle politische Klima?"
+    },
+    {
+      "id": "2-6-09-oekonomisch",
+      "kind": "video-position-question",
+      "src": "SMARTPHONOCRACY_MAIN-SHOW_1920x1080.mp4",
+      "timeline": {
+        "id": "main-show",
+        "startMs": 770916.6666666666
+      },
+      "fit": "contain",
+      "expectedDurationMs": 30000.0,
+      "next": {
+        "type": "fixed",
+        "target": "2-6-10-ki-fiziert"
+      },
+      "showAtMs": 0,
+      "openAtMs": 15000,
+      "closeAtMs": 20000,
+      "hideAtMs": 25000,
+      "closeCountdownSeconds": 5,
+      "connectionStaleAfterMs": 10000,
+      "showLiveCounts": true,
+      "field": {
+        "arena": {
+          "centerX": 0.503,
+          "centerY": 0.7158,
+          "radiusX": 0.4155,
+          "radiusY": 0.2177,
+          "splitY": 0.6324,
+          "type": "ellipse"
+        },
+        "type": "four-quadrant",
+        "xAxis": {
+          "maxLabel": "abgesichert",
+          "minLabel": "prekär"
+        },
+        "yAxis": {
+          "maxLabel": "frustriert",
+          "minLabel": "motiviert"
+        }
+      },
+      "soundEnabled": false,
+      "textBurnedIn": true,
+      "text": "Wo verortest du dich ökonomisch?"
+    },
+    {
+      "id": "2-6-10-ki-fiziert",
+      "kind": "video-position-question",
+      "src": "SMARTPHONOCRACY_MAIN-SHOW_1920x1080.mp4",
+      "timeline": {
+        "id": "main-show",
+        "startMs": 800916.6666666666
+      },
+      "fit": "contain",
+      "expectedDurationMs": 30000.0,
+      "next": {
+        "type": "fixed",
+        "target": "3-0-wahlkampf-auftakt-video"
+      },
+      "showAtMs": 0,
+      "openAtMs": 15000,
+      "closeAtMs": 20000,
+      "hideAtMs": 25000,
+      "closeCountdownSeconds": 5,
+      "connectionStaleAfterMs": 10000,
+      "showLiveCounts": true,
+      "field": {
+        "arena": {
+          "centerX": 0.503,
+          "centerY": 0.7158,
+          "radiusX": 0.4155,
+          "radiusY": 0.2177,
+          "splitY": 0.6324,
+          "type": "ellipse"
+        },
+        "axis": "x",
+        "labels": {
+          "maxLabel": "Ich bin eine KI",
+          "minLabel": "Das Teufelszeug rühr ich nicht an!"
+        },
+        "type": "two-quadrant",
+        "variant": "spectrum"
+      },
+      "soundEnabled": false,
+      "textBurnedIn": true,
+      "text": "Wie KI-fiziert bist du persönlich?"
+    },
+    {
+      "id": "3-0-wahlkampf-auftakt-video",
+      "kind": "video",
+      "src": "SMARTPHONOCRACY_MAIN-SHOW_1920x1080.mp4",
+      "timeline": {
+        "id": "main-show",
+        "startMs": 830916.6666666666
+      },
+      "fit": "contain",
+      "expectedDurationMs": 23958.333333333372,
+      "next": "title-apollo"
+    },
+    {
+      "id": "title-apollo",
+      "kind": "video",
+      "src": "SMARTPHONOCRACY_MAIN-SHOW_1920x1080.mp4",
+      "timeline": {
+        "id": "main-show",
+        "startMs": 854875.0
+      },
+      "fit": "contain",
+      "expectedDurationMs": 15000.0,
+      "next": "3-1-openapollo-rede"
+    },
+    {
+      "id": "3-1-openapollo-rede",
+      "kind": "video",
+      "src": "SMARTPHONOCRACY_MAIN-SHOW_1920x1080.mp4",
+      "timeline": {
+        "id": "main-show",
+        "startMs": 869875.0
+      },
+      "fit": "contain",
+      "expectedDurationMs": 101000.0,
+      "next": "title-dionysos",
+      "rating": {
+        "candidateLabel": "OpenApollo",
+        "windows": [
+          {
+            "startAtMs": 46000,
+            "endAtMs": 66000
+          },
+          {
+            "startAtMs": 97000,
+            "endAtMs": 101000
+          }
+        ]
+      }
+    },
+    {
+      "id": "title-dionysos",
+      "kind": "video",
+      "src": "SMARTPHONOCRACY_MAIN-SHOW_1920x1080.mp4",
+      "timeline": {
+        "id": "main-show",
+        "startMs": 970875.0
+      },
+      "fit": "contain",
+      "expectedDurationMs": 15000.0,
+      "next": "3-2-dionysos-rede"
+    },
+    {
+      "id": "3-2-dionysos-rede",
+      "kind": "video",
+      "src": "SMARTPHONOCRACY_MAIN-SHOW_1920x1080.mp4",
+      "timeline": {
+        "id": "main-show",
+        "startMs": 985875.0
+      },
+      "fit": "contain",
+      "expectedDurationMs": 94000.0,
+      "next": "title-kassandra",
+      "rating": {
+        "candidateLabel": "Dionysos69",
+        "windows": [
+          {
+            "startAtMs": 22000,
+            "endAtMs": 36000
+          },
+          {
+            "startAtMs": 73000,
+            "endAtMs": 84000
+          },
+          {
+            "startAtMs": 91000,
+            "endAtMs": 94000
+          }
+        ]
+      }
+    },
+    {
+      "id": "title-kassandra",
+      "kind": "video",
+      "src": "SMARTPHONOCRACY_MAIN-SHOW_1920x1080.mp4",
+      "timeline": {
+        "id": "main-show",
+        "startMs": 1079875.0
+      },
+      "fit": "contain",
+      "expectedDurationMs": 15000.0,
+      "next": "3-3-kassandra-rede"
+    },
+    {
+      "id": "3-3-kassandra-rede",
+      "kind": "video",
+      "src": "SMARTPHONOCRACY_MAIN-SHOW_1920x1080.mp4",
+      "timeline": {
+        "id": "main-show",
+        "startMs": 1094875.0
+      },
+      "fit": "contain",
+      "expectedDurationMs": 94000.0,
+      "next": "4-0-wahl",
+      "rating": {
+        "candidateLabel": "Kassandra",
+        "windows": [
+          {
+            "startAtMs": 40800,
+            "endAtMs": 50900
+          },
+          {
+            "startAtMs": 90000,
+            "endAtMs": 94000
+          }
+        ]
+      }
+    },
+    {
+      "id": "4-0-wahl",
+      "kind": "video-position-question",
+      "src": "SMARTPHONOCRACY_MAIN-SHOW_1920x1080.mp4",
+      "timeline": {
+        "id": "main-show",
+        "startMs": 1188875.0
+      },
+      "fit": "contain",
+      "expectedDurationMs": 42600,
+      "next": {
+        "countedStatuses": [
+          "valid",
+          "stale",
+          "disconnected"
+        ],
+        "empty": "idle",
+        "map": {
+          "candidate-1": "kassandra-wins",
+          "candidate-2": "apollo-wins",
+          "candidate-3": "dionysos-wins"
+        },
+        "tie": "idle",
+        "tieBreak": {
+          "type": "kleroterion"
+        },
+        "type": "quadrant-plurality"
+      },
+      "showAtMs": 27700,
+      "openAtMs": 27700,
+      "closeAtMs": 37901,
+      "hideAtMs": 42600,
+      "closeCountdownSeconds": 10,
+      "connectionStaleAfterMs": 10000,
+      "showLiveCounts": true,
+      "field": {
+        "type": "polygon-zones",
+        "zones": [
+          {
+            "id": "candidate-1",
+            "label": "Kassandra",
+            "points": [
+              {
+                "x": 0.692,
+                "y": 0.1996
+              },
+              {
+                "x": 1,
+                "y": 0.1985
+              },
+              {
+                "x": 0.9867,
+                "y": 1
+              },
+              {
+                "x": 0.7091,
+                "y": 1
+              }
+            ]
+          },
+          {
+            "id": "candidate-2",
+            "label": "Apollo",
+            "points": [
+              {
+                "x": 0.0152,
+                "y": 0.1811
+              },
+              {
+                "x": 0.3213,
+                "y": 0.1543
+              },
+              {
+                "x": 0.3061,
+                "y": 1
+              },
+              {
+                "x": 0,
+                "y": 1
+              }
+            ]
+          },
+          {
+            "id": "candidate-3",
+            "label": "Dionysos",
+            "points": [
+              {
+                "x": 0.3726,
+                "y": 0.1741
+              },
+              {
+                "x": 0.6502,
+                "y": 0.1658
+              },
+              {
+                "x": 0.6787,
+                "y": 1
+              },
+              {
+                "x": 0.346,
+                "y": 0.9936
+              }
+            ]
+          }
+        ]
+      },
+      "text": "Triff deine Wahl"
+    },
+    {
+      "id": "apollo-wins",
+      "kind": "video",
+      "src": "SMARTPHONOCRACY_4.1_OpenApollo_1920x1080.mp4",
+      "fit": "contain",
+      "expectedDurationMs": 70750.0,
+      "next": "credits"
+    },
+    {
+      "id": "dionysos-wins",
+      "kind": "video",
+      "src": "SMARTPHONOCRACY_4.2_Dionysos69_1920x1080.mp4",
+      "fit": "contain",
+      "expectedDurationMs": 74750.0,
+      "next": "credits"
+    },
+    {
+      "id": "kassandra-wins",
+      "kind": "video",
+      "src": "SMARTPHONOCRACY_4.3_Kassandra_1920x1080.mp4",
+      "fit": "contain",
+      "expectedDurationMs": 66750.0,
+      "next": "credits"
+    },
+    {
+      "id": "credits",
+      "kind": "video",
+      "src": "smartphonocracy-credits.mp4",
+      "fit": "contain",
+      "expectedDurationMs": 220480,
+      "next": "idle",
+      "showCursors": false
+    }
+  ]
+}

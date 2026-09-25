@@ -301,3 +301,14 @@ html, body, #root { width: 100%; height: 100%; margin: 0; overflow: hidden; }
 .reconnecting, .media-status, .notice { top: 1rem; left: 1rem; }
 .media-status { top: 3rem; }
 .notice { top: auto; bottom: 1rem; }
+
+
+/* The venue delivery has no baked QR or legacy perspective tracking. */
+.qr-badge { position: absolute; z-index: 5; padding: 6px; background: white; line-height: 0; }
+.qr-badge-canvas { display: block; width: 100%; height: auto; }
+.qr-badge-large { width: min(25vw, 250px); left: 50%; top: 50%; transform: translate(-50%, -50%); }
+.qr-badge-corner { width: clamp(88px, 8vw, 150px); }
+.qr-badge-top-left { top: 1rem; left: 1rem; }
+.qr-badge-top-right { top: 1rem; right: 1rem; }
+.qr-badge-bottom-left { bottom: 1rem; left: 1rem; }
+.qr-badge-bottom-right { bottom: 1rem; right: 1rem; }

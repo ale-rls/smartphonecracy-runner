@@ -42,3 +42,17 @@ describe("production secret configuration", () => {
     })).toMatchObject({ allowLateJoin: false, showPhoneJoinBaseUrl: false });
   });
 });
+
+
+it("keeps live mode default and forces late joining for venue mode", () => {
+  expect(loadConfig({}).runMode).toBe("live");
+  expect(loadConfig({ RUN_MODE: "venue", ALLOW_LATE_JOIN: "false" })).toMatchObject({
+    runMode: "venue", allowLateJoin: true,
+  });
+});
+
+
+it("only allows display-owned media in explicit venue mode", () => {
+  expect(() => loadConfig({ VENUE_MEDIA_LOCATION: "display" })).toThrow("requires RUN_MODE=venue");
+  expect(loadConfig({ RUN_MODE: "venue", VENUE_MEDIA_LOCATION: "display" }).venueMediaLocation).toBe("display");
+});

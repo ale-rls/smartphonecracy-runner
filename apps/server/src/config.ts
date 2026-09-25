@@ -9,6 +9,8 @@ const DEVELOPMENT_JOIN_GRANT_SECRET = "dev-join-grant-secret-please-change";
 const DEVELOPMENT_POCKETBASE_ADMIN_PASSWORD = "dev-pocketbase-password";
 
 const envSchema = z.object({
+  RUN_MODE: z.enum(["live", "venue"]).default("live"),
+  VENUE_MEDIA_LOCATION: z.enum(["server", "display"]).default("server"),
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   HOST: z.string().min(1).default("0.0.0.0"),
   PORT: z.coerce.number().int().min(1).max(65_535).default(3_000),
@@ -42,6 +44,8 @@ const envSchema = z.object({
 });
 
 export type ServerConfig = {
+  runMode?: "live" | "venue";
+  venueMediaLocation?: "server" | "display";
   nodeEnv: "development" | "test" | "production";
   host: string;
   port: number;
@@ -98,6 +102,9 @@ export function loadConfig(
   }
 
   const value = parsed.data;
+  if (value.VENUE_MEDIA_LOCATION === "display" && value.RUN_MODE !== "venue") {
+    throw new ConfigError("VENUE_MEDIA_LOCATION=display requires RUN_MODE=venue");
+  }
   if (value.NODE_ENV === "production") {
     const defaultSecret = [
       ["JOIN_GRANT_SECRET", value.JOIN_GRANT_SECRET, DEVELOPMENT_JOIN_GRANT_SECRET],
@@ -112,6 +119,8 @@ export function loadConfig(
     resolve(rootDir, path ?? fallback);
 
   return {
+    runMode: value.RUN_MODE,
+    venueMediaLocation: value.VENUE_MEDIA_LOCATION,
     nodeEnv: value.NODE_ENV,
     host: value.HOST,
     port: value.PORT,
@@ -133,7 +142,7 @@ export function loadConfig(
     },
     joinGrantSecret: value.JOIN_GRANT_SECRET,
     trustProxy: value.TRUST_PROXY === "true",
-    allowLateJoin: value.ALLOW_LATE_JOIN === "true",
+    allowLateJoin: value.RUN_MODE === "venue" || value.ALLOW_LATE_JOIN === "true",
     phoneJoinBaseUrl: value.PHONE_JOIN_BASE_URL,
     showPhoneJoinBaseUrl: value.SHOW_PHONE_JOIN_BASE_URL === "true",
     scenarioPath: fromRoot(value.SCENARIO_PATH, "content/scenarios/dev.json"),

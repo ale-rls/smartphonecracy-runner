@@ -1,5 +1,6 @@
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import type { DisplayToServerMessage, PhaseSnapshotMessage } from "@smartphonecracy/protocol";
+import type { ServerClock } from "../lib/serverClock.js";
 import { PhaseVideo } from "./PhaseVideo.js";
 
 type VideoPhase = Extract<
@@ -24,6 +25,7 @@ type Slot = 0 | 1;
  * ready <video> between React branches would remount it and recreate the gap.
  */
 export function PhaseVideoHandoff({
+  clock,
   desiredKey,
   candidate,
   soundEnabled,
@@ -32,6 +34,7 @@ export function PhaseVideoHandoff({
   onActiveKey,
   send,
 }: {
+  clock?: ServerClock;
   desiredKey: string | null;
   candidate: PhaseVideoCandidate | null;
   soundEnabled: boolean;
@@ -116,7 +119,9 @@ export function PhaseVideoHandoff({
 
   return <>
     {([0, 1] as const).map((slot) => {
-      const value = slots[slot];
+      const stored = slots[slot];
+      // Update cue/epoch without replacing the decoder for a shared timeline.
+      const value = stored?.key === candidate?.key ? candidate : stored;
       if (value === null) return null;
       return (
         <div
@@ -125,6 +130,7 @@ export function PhaseVideoHandoff({
           data-phase-key={value.key}
         >
           <PhaseVideo
+            {...(clock === undefined ? {} : { clock })}
             sessionId={value.sessionId}
             phase={value.phase}
             phaseEpoch={value.phaseEpoch}

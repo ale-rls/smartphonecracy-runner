@@ -100,6 +100,8 @@ export type PhaseEngineOptions = {
   onLobbyScheduleChanged?: (startTimes: readonly number[]) => void;
   /** Legacy/test compatibility; production disables participant-count auto-start. */
   autoStartOnFirstParticipant?: boolean;
+  /** Local unattended installation: prefer two visitors; abandon only when empty. */
+  venueMode?: boolean;
   qr?: Omit<QrGrantPushLoopOptions, "send" | "lifecycle" | "hasDisplay" | "now">;
 };
 
@@ -175,6 +177,8 @@ export class PhaseEngine {
   private readonly clients = new Set<WebSocket>();
   private readonly participantSockets = new Set<WebSocket>();
 
+  private readonly venueMode: boolean;
+  private emptySince: number | null = null;
   private lifecycle: EngineLifecycle = "idle";
   private phaseId = "idle";
   private sessionId = "idle";
@@ -203,6 +207,7 @@ export class PhaseEngine {
 
   constructor(options: PhaseEngineOptions) {
     this.scenario = options.scenario;
+    this.venueMode = options.venueMode ?? false;
     this.registry = options.registry;
     this.installationId = options.installationId;
     this.roomId = options.roomId;
@@ -400,8 +405,10 @@ export class PhaseEngine {
 
   getSnapshot(now = this.now()): PhaseSnapshotMessage {
     const phase = this.currentPhase();
+    const idleMediaSrc = this.scenario.phases.find((item) => item.kind === "idle")?.src;
     return {
       ...phase,
+      ...(idleMediaSrc === undefined ? {} : { idleMediaSrc }),
       scenarioVersion: this.scenario.version,
       startedAt: this.phaseStartedAt,
       deadlineAt: this.deadlineAt,
@@ -421,7 +428,8 @@ export class PhaseEngine {
 
   start(): void {
     if (this.timer !== null) return;
-    this.timer = setInterval(() => this.tick(), 250);
+    const timeline = this.scenario.phases.some((phase) => (phase.kind === "video" || phase.kind === "video-position-question") && phase.timeline);
+    this.timer = setInterval(() => this.tick(), timeline ? 25 : 250);
     this.cursors.start();
     this.movement.start();
     this.ghosts.start();
@@ -440,7 +448,7 @@ export class PhaseEngine {
   tick(now = this.now()): void {
     this.expireStaleDisplay(now);
     if (this.lifecycle === "idle") {
-      if (this.displaySocket !== undefined && this.nextLobbyStartAt !== null) this.startLobby(now);
+      if (this.displaySocket !== undefined && (this.nextLobbyStartAt !== null || (this.venueMode && this.registry.connectedCount > 0))) this.startLobby(now);
       return;
     }
 
@@ -455,7 +463,10 @@ export class PhaseEngine {
     }
 
     if (this.lifecycle === "lobby") {
-      if (this.deadlineAt !== null && now >= this.deadlineAt) {
+      if (this.venueMode && this.displaySocket !== undefined && this.registry.connectedCount >= 2) {
+        this.startSession(now);
+      }
+      if (this.lifecycle === "lobby" && this.deadlineAt !== null && now >= this.deadlineAt) {
         if (this.displaySocket !== undefined && this.registry.connectedCount > 0) {
           this.startSession(now);
         } else {
@@ -463,11 +474,20 @@ export class PhaseEngine {
           this.syncLobbyDeadline(now, "lobby-start-missed");
         }
       }
-      if (this.lifecycle === "lobby" && this.autoStartOnFirstParticipant && this.interactiveIdleTimedOut(now)) {
+      if (this.lifecycle === "lobby" && !this.venueMode && this.autoStartOnFirstParticipant && this.interactiveIdleTimedOut(now)) {
         this.abortToIdle("interactive-idle-timeout", now);
         return;
       }
       if (this.lifecycle === "lobby") return;
+    }
+
+    if (this.venueMode) {
+      if (this.registry.connectedCount > 0) this.emptySince = null;
+      else this.emptySince ??= now;
+      if (this.emptySince !== null && now - this.emptySince >= 120_000) {
+        this.abortToIdle("venue-empty-timeout", now);
+        return;
+      }
     }
 
     if (this.sessionStartedAt !== null && now - this.sessionStartedAt >= this.policy.maxSessionDurationMs) {
@@ -476,6 +496,23 @@ export class PhaseEngine {
     }
 
     const phase = this.currentPhase();
+
+    // Cues advance on one absolute media timeline, with no per-clip fallback
+    // grace or accumulated tick delay. The display retains the same video.
+    if ((phase.kind === "video" || phase.kind === "video-position-question") && phase.timeline) {
+      const cueEnd = this.phaseStartedAt + phase.expectedDurationMs;
+      if (now >= cueEnd) {
+        if (phase.kind === "video") this.advanceTo(phase.next, cueEnd, "timeline-cue");
+        else {
+          this.beginCompositeVoteIfDue(now, phase, true);
+          if (this.questionResolutionTarget === null) this.resolveCompositeQuestion(now, phase);
+          if (this.questionResolutionTarget !== null) {
+            this.advanceTo(this.questionResolutionTarget, cueEnd, "timeline-cue");
+          }
+        }
+        return;
+      }
+    }
 
     if (phase.kind === "video") {
       if (phase.rating) this.broadcastRatingStatus(now);
@@ -558,6 +595,7 @@ export class PhaseEngine {
   participantJoined(socket: WebSocket, _participant?: ParticipantRecord): void {
     this.clients.add(socket);
     this.participantSockets.add(socket);
+    this.emptySince = null;
     if (_participant !== undefined) {
       this.participantIds.set(socket, _participant.clientId);
       this.cursors.join(_participant.clientId, _participant.color);
@@ -576,6 +614,7 @@ export class PhaseEngine {
   }
 
   socketClosed(socket: WebSocket): void {
+    if (this.venueMode && this.lifecycle === "active" && this.registry.connectedCount === 0) this.emptySince ??= this.now();
     this.clients.delete(socket);
     this.participantSockets.delete(socket);
     const participantId = this.participantIds.get(socket);
@@ -814,6 +853,7 @@ export class PhaseEngine {
     this.lifecycle = "active";
     this.sessionId = this.sessionIdFactory();
     this.sessionStartedAt = now;
+    this.emptySince = null;
     this.lastInputAt = null;
     this.joinMovementRecordingForConnectedParticipants();
     this.ghosts.selectForSession(now);
@@ -859,12 +899,16 @@ export class PhaseEngine {
       : phase.kind === "position-question"
         ? now + phase.durationMs
         : null;
+    if ((phase.kind === "video" || phase.kind === "video-position-question") && phase.timeline) {
+      this.deadlineAt = now + phase.expectedDurationMs;
+    }
     this.phaseEpoch += 1;
     this.deadlineNotified = false;
     if (phase.kind === "idle") {
       this.lifecycle = "idle";
       this.sessionId = "idle";
       this.sessionStartedAt = null;
+      this.emptySince = null;
       this.lastInputAt = null;
     } else {
       this.lifecycle = "active";
@@ -966,7 +1010,7 @@ export class PhaseEngine {
       if (this.nextLobbyStartAt !== null && this.displaySocket !== undefined) this.startLobby(now);
       return;
     }
-    this.deadlineAt = this.nextLobbyStartAt;
+    this.deadlineAt = this.nextLobbyStartAt ?? (this.venueMode && this.registry.connectedCount > 0 ? now + this.policy.lobbyCountdownMs : null);
     this.deadlineNotified = false;
     this.transition(reason);
   }

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent, type Keyboard
 const POCKETBASE_URL = import.meta.env.VITE_POCKETBASE_URL ?? "http://127.0.0.1:8090";
 
 export type Status = {
+  runMode?: "live" | "venue";
   healthy: boolean;
   ready: boolean;
   uptimeMs: number;
@@ -218,7 +219,7 @@ export function App() {
   }, [connectedToken]);
 
   const loadShows = useCallback(async () => {
-    if (!connectedToken) return;
+    if (!connectedToken || statusRef.current?.runMode === "venue") return;
     try {
       const response = await api("shows", connectedToken);
       const info = await response.json() as ShowsInfo;
@@ -233,7 +234,7 @@ export function App() {
   }, [connectedToken]);
 
   const loadGhosts = useCallback(async () => {
-    if (!connectedToken) return;
+    if (!connectedToken || statusRef.current?.runMode === "venue") return;
     try {
       const response = await api("ghosts", connectedToken);
       const info = await response.json() as GhostsInfo;
@@ -247,7 +248,7 @@ export function App() {
   }, [connectedToken]);
 
   const loadLobby = useCallback(async () => {
-    if (!connectedToken) return;
+    if (!connectedToken || statusRef.current?.runMode === "venue") return;
     try {
       const response = await api("lobby", connectedToken);
       const info = await response.json() as LobbyInfo;
@@ -496,7 +497,7 @@ export function App() {
   return <div data-sc-tool-density="standard" data-sc-tool-root>
     <main className="admin-app">
       <header className="admin-header">
-        <div><p className="sc-tool-eyebrow">Live installation / operator console</p><h1>Operations</h1></div>
+        <div><p className="sc-tool-eyebrow">{status?.runMode === "venue" ? "Local venue / automatic shows" : "Live installation / operator console"}</p><h1>Operations</h1></div>
         <StatusLabel status={globalStatus}>{globalLabel}</StatusLabel>
       </header>
 
@@ -551,7 +552,12 @@ export function App() {
           </div>
         </section>
 
-        <section className="sc-tool-panel" aria-labelledby="admin-lobby-heading">
+        {status.runMode === "venue" && <section className="sc-tool-panel">
+          <h2>Automatic venue show</h2>
+          <p>Two visitors start the show immediately. One visitor starts after 30 seconds. Late joining stays open.</p>
+          <p>After two minutes with all phones disconnected, the show returns to the lobby. Winner film and credits play before each completed run returns to the lobby.</p>
+        </section>}
+        {status.runMode !== "venue" && <section className="sc-tool-panel" aria-labelledby="admin-lobby-heading">
           <div className="admin-section-heading">
             <div><p className="sc-tool-eyebrow">Waiting room timing</p><h2 id="admin-lobby-heading">Lobby schedule</h2></div>
             <StatusLabel status={lobbyInfo?.nextStartAt ? "info" : "warning"}>{lobbyInfo?.nextStartAt ? "Scheduled" : "Manual start"}</StatusLabel>
@@ -582,7 +588,7 @@ export function App() {
               <button className="sc-tool-button" data-sc-tool-variant="secondary" type="button" disabled={savingLobby} onClick={() => void saveLobbyTimes(lobbyInfo!.startTimes.filter((time) => time !== startAt), "Start time removed.")}>Remove</button>
             </li>)}
           </ol> : <p className="sc-tool-copy">The lobby waits until an operator presses Start show.</p>}
-        </section>
+        </section>}
 
         <section className="sc-tool-panel" aria-labelledby="admin-participants-heading">
           <div className="admin-section-heading">
@@ -599,7 +605,7 @@ export function App() {
         </section>
 
 
-        <section className="sc-tool-panel" aria-labelledby="admin-show-heading">
+        {status.runMode !== "venue" && <section className="sc-tool-panel" aria-labelledby="admin-show-heading">
           <div className="admin-section-heading">
             <div><p className="sc-tool-eyebrow">Which content is live</p><h2 id="admin-show-heading">Active show</h2></div>
           </div>
@@ -620,9 +626,9 @@ export function App() {
                 <button className="sc-tool-button" data-sc-tool-variant="primary" type="submit" disabled={savingShow || !selectedShowId}>{savingShow ? "Saving…" : "Save"}</button>
               </form>}
           <p className="sc-tool-help">Applies automatically; while a show is running, the change waits until that show ends.</p>
-        </section>
+        </section>}
 
-        <section className="sc-tool-panel" aria-labelledby="admin-ghosts-heading">
+        {status.runMode !== "venue" && <section className="sc-tool-panel" aria-labelledby="admin-ghosts-heading">
           <div className="admin-section-heading">
             <div><p className="sc-tool-eyebrow">Fill a sparse room</p><h2 id="admin-ghosts-heading">Ghost cursors</h2></div>
           </div>
@@ -638,7 +644,7 @@ export function App() {
             <button className="sc-tool-button" data-sc-tool-variant="primary" type="submit" disabled={savingGhosts || targetAudienceSize === ""}>{savingGhosts ? "Saving…" : "Save"}</button>
           </form>
           <p className="sc-tool-help">Live + replayed past-participant cursors are topped up to this count on display. 0 disables ghosts and defers to whatever the published show sets. While a show is running, the change waits until that show ends.</p>
-        </section>
+        </section>}
 
         <section className="sc-tool-panel admin-flow-panel" aria-labelledby="admin-flow-heading">
           <div className="admin-section-heading">

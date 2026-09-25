@@ -35,7 +35,7 @@ export function useMedia(manifestUrl = "/media-manifest.json") {
           const response = await fetch(manifestUrl, { cache: "no-cache" });
           if (!response.ok) throw new Error(`manifest http ${response.status}`);
           const manifest = mediaManifestSchema.parse(await response.json());
-          await store.sync(manifest);
+          await store.sync(manifest, response.headers.get("x-media-delivery") === "local-stream");
           return;
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);

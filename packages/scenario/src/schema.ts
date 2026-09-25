@@ -218,6 +218,8 @@ export const positionQuestionNextSchema = z.union([
 export const idlePhaseSchema = z.object({
   kind: z.literal("idle"),
   id: z.literal("idle"),
+  /** Optional venue lobby film; legacy shows use the bundled attract playlist. */
+  src: z.string().min(1).optional(),
 });
 
 /**
@@ -246,6 +248,12 @@ export const subtitleSchema = z.object({
   path: ["startAtMs"],
 });
 
+/** A cue in one uninterrupted video. Adjacent cues share an id and source. */
+export const mediaTimelineSchema = z.object({
+  id: z.string().min(1),
+  startMs: z.number().finite().nonnegative(),
+});
+
 export const videoPhaseSchema = z.object({
   kind: z.literal("video"),
   id: phaseIdSchema,
@@ -259,7 +267,9 @@ export const videoPhaseSchema = z.object({
   extraAudioSrc: z.string().min(1, "extraAudioSrc must be non-empty").optional(),
   /** Silent visual hold after video or image + MP3 playback ends. */
   tailDurationMs: z.number().int().nonnegative().optional(),
-  expectedDurationMs: z.number().int().positive(),
+  timeline: mediaTimelineSchema.optional(),
+  fit: z.enum(["contain", "cover"]).optional(),
+  expectedDurationMs: z.number().finite().positive(),
   next: phaseIdSchema,
   allowSkip: z.boolean().optional(),
   /** Whether display renders live/ghost cursors during this phase. Defaults to true when omitted. */
@@ -284,6 +294,8 @@ const positionQuestionBaseSchema = z.object({
   id: phaseIdSchema,
   title: z.string().min(1, "title must be non-empty").optional(),
   text: z.string().min(1, "question text must be non-empty"),
+  textBurnedIn: z.boolean().optional(),
+  soundEnabled: z.boolean().optional(),
   durationMs: z.number().int().positive(),
   freezeMs: z.number().int().nonnegative(),
   connectionStaleAfterMs: z.number().int().positive(),
@@ -336,8 +348,12 @@ const videoPositionQuestionBaseSchema = z.object({
   extraAudioSrc: z.string().min(1, "extraAudioSrc must be non-empty").optional(),
   /** Silent visual hold after video or image + MP3 playback ends. */
   tailDurationMs: z.number().int().nonnegative().optional(),
-  expectedDurationMs: z.number().int().positive(),
+  timeline: mediaTimelineSchema.optional(),
+  fit: z.enum(["contain", "cover"]).optional(),
+  expectedDurationMs: z.number().finite().positive(),
   text: z.string().min(1, "question text must be non-empty"),
+  textBurnedIn: z.boolean().optional(),
+  soundEnabled: z.boolean().optional(),
   /** Timeline offsets from the start of the timed media. */
   showAtMs: z.number().int().nonnegative(),
   openAtMs: z.number().int().nonnegative(),

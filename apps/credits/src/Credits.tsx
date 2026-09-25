@@ -1,5 +1,5 @@
 import type {CSSProperties, ReactNode} from 'react';
-import {AbsoluteFill, Easing, Html5Audio, interpolate, useCurrentFrame} from 'remotion';
+import {AbsoluteFill, Easing, Html5Audio, interpolate, Sequence, useCurrentFrame} from 'remotion';
 import creditsMusic from '../../display/src/assets/smartphonocracy-credits-music.mp3';
 
 type CreditProps = {
@@ -94,15 +94,17 @@ export const Credits: React.FC = () => {
   return (
     <AbsoluteFill className="credits" style={{opacity: masterOpacity}}>
       <RollingCredits />
-      <Html5Audio
-        src={creditsMusic}
-        volume={(audioFrame) =>
-          interpolate(audioFrame, [0, 72], [0, 1], {
-            extrapolateLeft: 'clamp',
-            extrapolateRight: 'clamp',
-          })
-        }
-      />
+      <Sequence from={240}>
+        <Html5Audio
+          src={creditsMusic}
+          volume={(audioFrame) =>
+            interpolate(audioFrame, [0, 240], [0, 1], {
+              extrapolateLeft: 'clamp',
+              extrapolateRight: 'clamp',
+            })
+          }
+        />
+      </Sequence>
     </AbsoluteFill>
   );
 };

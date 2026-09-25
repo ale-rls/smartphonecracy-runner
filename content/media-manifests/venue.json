@@ -1,0 +1,34 @@
+{
+  "files": [
+    {
+      "src": "SMARTPHONOCRACY_1.0_Lobby-Loop_1920x1080.mp4",
+      "bytes": 24941014,
+      "hash": "86625d4a6d1fd6ddab13d0556461ed64dffcf116956f92c036ba32eefaa3cb28"
+    },
+    {
+      "src": "SMARTPHONOCRACY_4.1_OpenApollo_1920x1080.mp4",
+      "bytes": 61870149,
+      "hash": "8b777fc75b693a09889d91546513f06d408d0e6e161a0aa897302b8e7df994b8"
+    },
+    {
+      "src": "SMARTPHONOCRACY_4.2_Dionysos69_1920x1080.mp4",
+      "bytes": 72118942,
+      "hash": "a34e3394c952ee446589e6fcbf2756333d16449b8ef7273d734197dddc27a3a0"
+    },
+    {
+      "src": "SMARTPHONOCRACY_4.3_Kassandra_1920x1080.mp4",
+      "bytes": 52073994,
+      "hash": "29a33de71036fcb827c8a4c78ec8fa6c1cdb62d734a32667a92e8763fd8c2a15"
+    },
+    {
+      "src": "SMARTPHONOCRACY_MAIN-SHOW_1920x1080.mp4",
+      "bytes": 1271641454,
+      "hash": "ae7f0e848985dfce10a2bb7c62e807975625dbdd02bb96ae217f45b5f45f0bc6"
+    },
+    {
+      "src": "smartphonocracy-credits.mp4",
+      "bytes": 19331438,
+      "hash": "38d36e2d2986dfa44e1f9e309b4a5805796179ebadb68bc0af9c004da71f0ed0"
+    }
+  ]
+}

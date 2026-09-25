@@ -134,6 +134,10 @@ env HOST=0.0.0.0 PORT=3000 BUILD_VERSION=0.0.0-dev NODE_ENV=development PHONE_JO
 
 The display uses an app-shell service worker and Cache Storage. After rebuilding, close duplicate display tabs and hard-refresh (`Cmd+Shift+R` on macOS or `Ctrl+Shift+R` elsewhere). If the old shell persists, open the authenticated URL on the other local hostname (`localhost` instead of `127.0.0.1`, or vice versa); those origins have separate browser storage. As a last resort, unregister the service worker and clear site data in the browser's developer tools, then reload the authenticated URL.
 
+## Local venue delivery
+
+For the continuous September 2026 film, automatic visitor starts and SSD playback, see [the venue guide](docs/venue-mode.md). The live server handles visitors on mobile data; the venue computer streams video from the SSD. The default live mode retains its current operation.
+
 ## Show Studio
 
 Start the local authoring tool with:

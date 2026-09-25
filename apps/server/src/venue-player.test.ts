@@ -1,0 +1,52 @@
+import { createHash } from "node:crypto";
+import { mkdtemp, writeFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { buildVenuePlayer } from "./venue-player.js";
+
+afterEach(() => vi.unstubAllGlobals());
+
+describe("venue playback gateway", () => {
+  it("verifies SSD hashes against the hosted manifest and rejects changed files", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "venue-player-"));
+    const file = join(dir, "film.mp4");
+    await writeFile(file, "film");
+    const manifest = { files: [{ src: "film.mp4", bytes: 4, hash: createHash("sha256").update("film").digest("hex") }] };
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(manifest))));
+    const player = await buildVenuePlayer({ serverUrl: "https://show.example", mediaDir: dir });
+    try {
+      const ready = await player.inject({ url: "/media-manifest.json" });
+      expect(ready.statusCode).toBe(200);
+      expect(ready.headers["x-media-delivery"]).toBe("local-stream");
+      expect(ready.json()).toEqual(manifest);
+      const range = await player.inject({ url: "/media/film.mp4", headers: { range: "bytes=1-2" } });
+      expect(range.statusCode).toBe(206);
+      expect(range.body).toBe("il");
+      await writeFile(file, "oops");
+      const changed = await player.inject({ url: "/media-manifest.json" });
+      expect(changed.statusCode).toBe(503);
+      expect(changed.json().error).toContain("does not match");
+      expect((await player.inject({ url: "/api/admin/status" })).statusCode).toBe(404);
+    } finally {
+      await player.close();
+      await rm(dir, { recursive: true });
+    }
+  });
+
+  it("rejects manifest paths outside the SSD directory", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      files: [{ src: "../outside.mp4", bytes: 1, hash: "fake" }],
+    }))));
+    const player = await buildVenuePlayer({ serverUrl: "https://show.example", mediaDir: tmpdir() });
+    try {
+      expect((await player.inject({ url: "/media-manifest.json" })).statusCode).toBe(503);
+    } finally { await player.close(); }
+  });
+
+  it.each(["http://show.example", "https://user:password@show.example", "https://show.example/path"])(
+    "rejects unsafe or ambiguous coordinator origins: %s", async (serverUrl) => {
+      await expect(buildVenuePlayer({ serverUrl, mediaDir: tmpdir() })).rejects.toThrow("HTTPS origin");
+    },
+  );
+});

@@ -15,7 +15,8 @@ export type ScenarioIssue = {
     | "broken-target"
     | "missing-media"
     | "unreachable-phase"
-    | "unmarked-cycle";
+    | "unmarked-cycle"
+    | "invalid-timeline";
   phaseId?: string;
   message: string;
 };
@@ -102,14 +103,29 @@ export function validateScenario(
     }
   }
 
+  for (const phase of scenario.phases) {
+    if ((phase.kind !== "video" && phase.kind !== "video-position-question") || !phase.timeline) continue;
+    const fail = (message: string) => errors.push({ severity: "error", code: "invalid-timeline", phaseId: phase.id, message });
+    if (phase.audioSrc || phase.extraAudioSrc || phase.tailDurationMs) {
+      fail(`timeline cue "${phase.id}" must use the video's own soundtrack and cannot have an extra tail`);
+    }
+    for (const { target } of targetsOf(phase)) {
+      const next = byId.get(target);
+      if (!next || (next.kind !== "video" && next.kind !== "video-position-question") || next.timeline?.id !== phase.timeline.id) continue;
+      if (next.src !== phase.src || Math.abs(next.timeline.startMs - phase.timeline.startMs - phase.expectedDurationMs) > 0.01) {
+        fail(`timeline cue "${phase.id}" must connect to a contiguous cue in the same file`);
+      }
+    }
+  }
+
   if (mediaManifest) {
     const known = new Set(mediaManifest.files.map((f) => f.src));
     for (const phase of scenario.phases) {
-      if (phase.kind !== "video" && phase.kind !== "video-position-question") continue;
+      if (phase.kind === "position-question" || phase.src === undefined) continue;
       for (const src of [
         phase.src,
-        ...(phase.audioSrc === undefined ? [] : [phase.audioSrc]),
-        ...(phase.extraAudioSrc === undefined ? [] : [phase.extraAudioSrc]),
+        ...(phase.kind === "idle" || phase.audioSrc === undefined ? [] : [phase.audioSrc]),
+        ...(phase.kind === "idle" || phase.extraAudioSrc === undefined ? [] : [phase.extraAudioSrc]),
       ]) {
         if (known.has(src)) continue;
         errors.push({

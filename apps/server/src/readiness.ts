@@ -26,6 +26,7 @@ async function validateScenarioContent(
   loadErrors: string[],
   mediaDir: string,
   showId: string,
+  mediaOnDisplay = false,
 ): Promise<ScenarioReadiness> {
   const errors = [...loadErrors];
   const warnings: string[] = [];
@@ -52,7 +53,7 @@ async function validateScenarioContent(
     errors.push(...graph.errors.map((issue) => issue.message));
     warnings.push(...graph.warnings.map((issue) => issue.message));
 
-    const media = await validateMediaManifest(manifestResult.data, statSizeWithNodeFs(mediaDir));
+    const media = await validateMediaManifest(manifestResult.data, mediaOnDisplay ? undefined : statSizeWithNodeFs(mediaDir));
     errors.push(...media.errors.map((issue) => issue.message));
   }
 
@@ -64,7 +65,7 @@ async function validateScenarioContent(
 
 /** Validate all deployment content without preventing liveness endpoints from booting. */
 export async function loadScenarioReadiness(
-  config: Pick<ServerConfig, "scenarioPath" | "mediaManifestPath" | "mediaDir" | "showId">,
+  config: Pick<ServerConfig, "scenarioPath" | "mediaManifestPath" | "mediaDir" | "showId" | "runMode" | "venueMediaLocation">,
 ): Promise<ScenarioReadiness> {
   const errors: string[] = [];
   let scenarioRaw: unknown;
@@ -79,7 +80,8 @@ export async function loadScenarioReadiness(
   } catch (error) {
     errors.push(`media manifest: ${(error as Error).message}`);
   }
-  return validateScenarioContent(scenarioRaw, manifestRaw, errors, config.mediaDir, config.showId);
+  return validateScenarioContent(scenarioRaw, manifestRaw, errors, config.mediaDir, config.showId,
+    config.runMode === "venue" && config.venueMediaLocation === "display");
 }
 
 type PublishedScenarioRecord = {

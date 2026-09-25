@@ -312,3 +312,23 @@ describe("chunked large-file downloads", () => {
     expect(statuses.at(-1)).toEqual({ state: "ready" });
   });
 });
+
+
+describe("local venue streaming", () => {
+  it("checks files using HEAD and streams versioned URLs without cache/blob allocation", async () => {
+    const { caches, stores } = fakeCaches();
+    const fetchFn = vi.fn(async (input: RequestInfo | URL) => new Response(null, {
+      headers: { "content-length": String(String(input).includes("a.mp4") ? 3 : 5) },
+    }));
+    const statuses: MediaSyncStatus[] = [];
+    const store = makeStore({ caches, statuses, fetchFn });
+    await expect(store.sync(manifest, true)).resolves.toBe(true);
+    expect(fetchFn.mock.calls).toHaveLength(2);
+    expect(fetchFn).toHaveBeenCalledWith("/media/a.mp4?v=hash-a", { method: "HEAD", cache: "no-store" });
+    expect(stores.size).toBe(0);
+    expect(await store.getBlobUrl("a.mp4")).toBe("/media/a.mp4?v=hash-a");
+    expect(await store.getBlobUrl("unknown.mp4")).toBeNull();
+    expect(store.activeBlobCount).toBe(0);
+    expect(statuses.at(-1)).toEqual({ state: "ready" });
+  });
+});

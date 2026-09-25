@@ -24,6 +24,7 @@ export interface AdminDataSource {
 }
 
 export type RegisterAdminOptions = {
+  runMode?: "live" | "venue";
   /** Validates a bearer token against the operators auth collection. */
   verifyToken: (token: string) => Promise<boolean>;
   engine: () => PhaseEngine | null;
@@ -119,6 +120,7 @@ export function registerAdminRoutes(app: FastifyInstance, options: RegisterAdmin
       const engine = options.engine();
       return {
         healthy: true,
+        runMode: options.runMode ?? "live",
         ready: options.ready,
         uptimeMs: Date.now() - options.startedAt,
         displayConnected: engine?.isDisplayConnected ?? false,

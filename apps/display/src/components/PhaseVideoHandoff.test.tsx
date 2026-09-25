@@ -136,3 +136,34 @@ describe("PhaseVideoHandoff", () => {
     expect(document.querySelector("audio")?.getAttribute("src")).toBe("blob:question-2");
   });
 });
+
+
+it("keeps one decoder across timeline cues and reports the current cue identity", async () => {
+  vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
+  vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => undefined);
+  Object.defineProperty(HTMLVideoElement.prototype, "requestVideoFrameCallback", {
+    configurable: true, value: undefined,
+  });
+  const send = vi.fn();
+  const first: PhaseVideoCandidate = {
+    ...candidate("first", 1), key: "session-1:main:1000", src: "blob:main",
+    phase: { ...phase("first", "main.mp4"), timeline: { id: "main", startMs: 0 } },
+  };
+  document.body.innerHTML = '<div id="root"></div>';
+  root = createRoot(document.querySelector("#root")!);
+  const render = async (value: PhaseVideoCandidate) => {
+    await act(async () => root?.render(<PhaseVideoHandoff
+      desiredKey={value.key} candidate={value} soundEnabled={false} send={send} />));
+  };
+  await render(first);
+  const video = document.querySelector("video")!;
+  video.currentTime = 10;
+  const second: PhaseVideoCandidate = { ...first, phaseEpoch: 2,
+    phase: { ...phase("second", "main.mp4"), startedAt: 11_000, timeline: { id: "main", startMs: 10_000 } } };
+  await render(second);
+  expect(document.querySelectorAll("video")).toHaveLength(1);
+  expect(document.querySelector("video")).toBe(video);
+  expect(video.currentTime).toBe(10);
+  await act(async () => video.dispatchEvent(new Event("ended")));
+  expect(send).toHaveBeenCalledWith(expect.objectContaining({ t: "video_ended", phaseId: "second", phaseEpoch: 2 }));
+});

@@ -117,7 +117,9 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Ser
       showId: readiness.showId,
       displayToken: config.displayToken,
       participantLeaseTtlMs: admission.participantLeaseTtlMs,
-      autoStartOnFirstParticipant: false,
+      autoStartOnFirstParticipant: config.runMode === "venue",
+      venueMode: config.runMode === "venue",
+      ...(config.runMode === "venue" ? { policy: { lobbyCountdownMs: 30_000 } } : {}),
       qr: {
         phoneJoinBaseUrl: config.phoneJoinBaseUrl,
         issueGrant: (now) => admission.issueJoinGrant(now),
@@ -216,12 +218,14 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Ser
       return reply.code(503).send({ error: "media_manifest_not_found" });
     }
     reply.header("cache-control", "no-cache");
+    if (config.runMode === "venue") reply.header("x-media-delivery", "local-stream");
     return readiness.mediaManifest;
   });
   app.addHook("onError", async (request, _reply, error) => {
     adminData?.recordError?.({ message: error.message, at: new Date().toISOString(), path: request.url });
   });
   registerAdminRoutes(app, {
+    runMode: config.runMode ?? "live",
     verifyToken: options.verifyOperatorToken ?? createOperatorTokenVerifier(config.pocketbase.url),
     engine: () => engine,
     ready: readiness.ready,
@@ -229,7 +233,7 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Ser
     trustProxy: config.trustProxy,
     rateLimitPolicy: config.adminRateLimit,
     ...(adminData === undefined ? {} : { data: adminData }),
-    ...(options.pocketbase === undefined ? {} : {
+    ...(options.pocketbase === undefined || config.runMode === "venue" ? {} : {
       showConfig: {
         activeShowId: readiness.ready ? readiness.showId : null,
         list: () => listPublishedShows(options.pocketbase!),
@@ -250,7 +254,7 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Ser
     }),
   });
 
-  registerMediaRoutes(app, config.mediaDir);
+  if (config.runMode !== "venue" || config.venueMediaLocation !== "display") registerMediaRoutes(app, config.mediaDir);
   registerBundleRoutes(app, config.bundleDirs);
 
   app.server.on("upgrade", (request, socket, head) => {

@@ -42,6 +42,7 @@ export const phaseSnapshotSchema = z.intersection(
   phaseSchema,
   z.object({
     scenarioVersion: nonEmpty,
+    idleMediaSrc: nonEmpty.optional(),
     startedAt: timestamp,
     deadlineAt: timestamp.nullable(),
   }),

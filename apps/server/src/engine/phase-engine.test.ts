@@ -70,12 +70,14 @@ function setup(options: {
   ghostPool?: GhostPool;
   qr?: boolean;
   autoStartOnFirstParticipant?: boolean;
+  venueMode?: boolean;
   scheduledStartTimes?: number[];
 } ) {
   const registry = new ParticipantRegistry(2, 50);
   const checkpoints = options.checkpoints ?? [];
   const engine = new PhaseEngine({
     scenario: options.testScenario ?? scenario,
+    ...(options.venueMode === undefined ? {} : { venueMode: options.venueMode }),
     registry,
     installationId: "inst-1",
     roomId: "room-1",
@@ -1376,5 +1378,135 @@ describe("PhaseEngine lifecycle", () => {
     now = 1_150;
     engine.tick(now);
     expect(display.sent.some((message) => message.t === "rating_status")).toBe(false);
+  });
+});
+
+
+describe("venue operation", () => {
+  function venueSetup() {
+    let now = 1_000;
+    const long = scenarioSchema.parse({ ...longVideoScenario, phases: longVideoScenario.phases.map((p) =>
+      p.id === "intro" ? { ...p, expectedDurationMs: 600_000 } : p) });
+    const setupResult = setup({ now: () => now, venueMode: true, lobbyCountdownMs: 30_000,
+      testScenario: long, maxSessionDurationMs: 1_800_000 });
+    const { engine, registry } = setupResult;
+    const display = new MockSocket();
+    connectDisplay(engine, display as unknown as WebSocket);
+    const join = (id: string) => {
+      const socket = new MockSocket() as unknown as WebSocket;
+      addParticipant(registry, socket, now, id);
+      engine.participantJoined(socket, registry.values().find((p) => p.clientId === id));
+      return socket;
+    };
+    const leave = (socket: WebSocket) => {
+      registry.releaseSocket(socket, now);
+      engine.socketClosed(socket);
+    };
+    return { ...setupResult, join, leave, at: (time: number) => { now = time; engine.tick(now); } };
+  }
+
+  it("waits for a visitor, starts a solo visitor after 30 seconds, and allows quiet watching", () => {
+    const { engine, join, at } = venueSetup();
+    at(10_000);
+    expect(engine.lifecycleState).toBe("idle");
+    join("one");
+    expect(engine.getSnapshot().deadlineAt).toBe(40_000);
+    at(39_999);
+    expect(engine.lifecycleState).toBe("lobby");
+    at(40_000);
+    expect(engine.lifecycleState).toBe("active");
+    at(200_000);
+    expect(engine.lifecycleState).toBe("active");
+  });
+
+  it("starts when the second visitor joins before the solo countdown finishes", () => {
+    const { engine, join, at } = venueSetup();
+    join("one");
+    at(2_000);
+    join("two");
+    at(2_025);
+    expect(engine.lifecycleState).toBe("active");
+  });
+
+  it("waits two minutes after everyone disconnects; a late join cancels that timeout", () => {
+    const { engine, join, leave, at } = venueSetup();
+    const first = join("one");
+    at(31_000);
+    leave(first);
+    at(150_999);
+    expect(engine.lifecycleState).toBe("active");
+    const second = join("two");
+    at(151_001);
+    expect(engine.lifecycleState).toBe("active");
+    leave(second);
+    at(271_000);
+    expect(engine.lifecycleState).toBe("active");
+    at(271_001);
+    expect(engine.lifecycleState).toBe("idle");
+  });
+
+  it("cancels an empty lobby and gives the next visitor a fresh countdown", () => {
+    const { engine, join, leave, at } = venueSetup();
+    const first = join("one");
+    at(5_000);
+    leave(first);
+    expect(engine.lifecycleState).toBe("idle");
+    at(10_000);
+    join("two");
+    expect(engine.getSnapshot().deadlineAt).toBe(40_000);
+  });
+});
+
+describe("continuous media timeline", () => {
+  it("advances cues at exact absolute boundaries without adding fallback grace or tick drift", () => {
+    let now = 1_000;
+    const timeline = scenarioSchema.parse({ version: "timeline", entryPhaseId: "a", phases: [
+      { id: "idle", kind: "idle", src: "lobby.mp4" },
+      { id: "a", kind: "video", src: "main.mp4", expectedDurationMs: 1000 / 24,
+        timeline: { id: "main", startMs: 0 }, next: "b" },
+      { id: "b", kind: "video", src: "main.mp4", expectedDurationMs: 1000,
+        timeline: { id: "main", startMs: 1000 / 24 }, next: "idle" },
+    ] });
+    const { engine, registry } = setup({ now: () => now, testScenario: timeline });
+    const phone = new MockSocket() as unknown as WebSocket;
+    addParticipant(registry, phone, now, "one");
+    connectDisplay(engine, new MockSocket() as unknown as WebSocket);
+    engine.adminStart();
+    now = 1050;
+    engine.tick();
+    expect(engine.currentPhaseId).toBe("b");
+    expect(engine.getSnapshot().startedAt).toBeCloseTo(1041.6666667);
+    expect(engine.getSnapshot().idleMediaSrc).toBe("lobby.mp4");
+    now = 2042;
+    engine.tick();
+    expect(engine.currentPhaseId).toBe("idle");
+  });
+
+  it("resolves the final vote and leaves the baked hold at hideAt", () => {
+    let now = 1000;
+    const timeline = scenarioSchema.parse({ version: "timeline", entryPhaseId: "vote", phases: [
+      { id: "idle", kind: "idle" },
+      { id: "vote", kind: "video-position-question", src: "main.mp4", text: "Choose",
+        timeline: { id: "main", startMs: 10000 }, expectedDurationMs: 400,
+        showAtMs: 0, openAtMs: 0, closeAtMs: 200, hideAtMs: 400,
+        connectionStaleAfterMs: 10000, showLiveCounts: true,
+        field: { type: "two-quadrant", axis: "x", labels: { minLabel: "A", maxLabel: "B" } },
+        next: { type: "quadrant-plurality", map: { min: "winner", max: "winner" },
+          tie: "idle", empty: "idle", countedStatuses: ["valid"] } },
+      { id: "winner", kind: "video", src: "winner.mp4", expectedDurationMs: 1000, next: "idle" },
+    ] });
+    const { engine, registry } = setup({ now: () => now, testScenario: timeline });
+    const phone = new MockSocket() as unknown as WebSocket;
+    addParticipant(registry, phone, now, "one");
+    connectDisplay(engine, new MockSocket() as unknown as WebSocket);
+    engine.adminStart();
+    engine.tick();
+    engine.recordInput(now, "one", 0.2, 0.5);
+    now = 1200;
+    engine.tick();
+    expect(engine.currentPhaseId).toBe("vote");
+    now = 1400;
+    engine.tick();
+    expect(engine.currentPhaseId).toBe("winner");
   });
 });

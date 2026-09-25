@@ -1,3 +1,4 @@
+import { VenueLobbyVideo } from "./components/VenueLobbyVideo.js";
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import type { DisplayToServerMessage } from "@smartphonecracy/protocol";
 import { CursorField } from "./cursors/cursorField.js";
@@ -225,7 +226,9 @@ export function App() {
     : null;
   const phaseVideoKey = (phase?.kind === "video" || phase?.kind === "video-position-question")
     && phase.audioSrc === undefined
-    ? `${state.sessionId ?? "pending"}:${state.phaseEpoch}`
+    ? phase.timeline
+      ? `${state.sessionId ?? "pending"}:timeline:${phase.timeline.id}:${Math.round(phase.startedAt - phase.timeline.startMs)}`
+      : `${state.sessionId ?? "pending"}:${state.phaseEpoch}`
     : null;
   const phaseVideoCandidate: PhaseVideoCandidate | null = phaseVideoKey !== null
     && (phase?.kind === "video" || phase?.kind === "video-position-question")
@@ -257,13 +260,14 @@ export function App() {
     <main className="display-root">
       {/* Layer 1: video */}
       <section className="layer layer-video">
-        <IdleAttract
+        {phase?.idleMediaSrc ? <VenueLobbyVideo src={phase.idleMediaSrc} visible={idleMediaVisible} soundEnabled={soundEnabled} /> : <IdleAttract
           grant={state.qrGrant}
           qrHidden={state.qrHidden}
           clock={connection.clock}
           mediaVisible={idleMediaVisible}
-        />
+        />}
         <PhaseVideoHandoff
+          clock={connection.clock}
           desiredKey={phaseVideoKey}
           candidate={phaseVideoCandidate}
           soundEnabled={soundEnabled}
@@ -331,7 +335,7 @@ export function App() {
         {/* Plain statement videos (e.g. the host's greeting) don't need a
             join code on screen -- the QR only matters once there's
             something to vote on. */}
-        {!isIdle && phase?.kind !== "video" && (
+        {((isIdle && phase?.idleMediaSrc) || (!isIdle && phase?.kind !== "video")) && (
           <QrBadge grant={state.qrGrant} qrHidden={state.qrHidden} clock={connection.clock} />
         )}
         <LobbyCountdown
@@ -368,13 +372,13 @@ export function App() {
             liveField={state.liveField}
             liveCounts={state.liveCounts}
             resolution={state.resolution}
-            soundEnabled={soundEnabled}
+            soundEnabled={soundEnabled && phase.soundEnabled !== false}
           />
         )}
         {(phase?.kind === "video" || phase?.kind === "video-position-question") && phase.rating && (
           <CrowdReactionSounds status={state.ratingStatus} soundEnabled={soundEnabled} {...(phase.rating.windows === undefined ? {} : { windows: phase.rating.windows })} elapsedMs={connection.clock.now() - phase.startedAt} />
         )}
-        <VoteDecisionSound resolution={state.resolution} soundEnabled={soundEnabled} />
+        <VoteDecisionSound resolution={state.resolution} soundEnabled={soundEnabled && (!(phase?.kind === "video-position-question" || phase?.kind === "position-question") || phase.soundEnabled !== false)} />
         {state.notice && (
           <div
             className={[

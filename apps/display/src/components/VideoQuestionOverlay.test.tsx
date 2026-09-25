@@ -183,3 +183,12 @@ describe("videoQuestionStage", () => {
     expect(closed).not.toContain("arena-region-blink");
   });
 });
+
+
+it("omits burned-in question text while keeping interactive field labels", () => {
+  const html = renderToStaticMarkup(<VideoQuestionOverlay phase={{ ...twoQuadrantPhase, textBurnedIn: true }}
+    clock={clockAt(17_000)} liveField={null} liveCounts={null} resolution={null} />);
+  expect(html).not.toContain("Choose the future you want");
+  expect(html).toContain("Fakt");
+  expect(html).toContain("Lüge");
+});

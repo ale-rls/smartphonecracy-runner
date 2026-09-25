@@ -4,6 +4,7 @@ import {
   type DisplayToServerMessage,
   type PhaseSnapshotMessage,
 } from "@smartphonecracy/protocol";
+import type { ServerClock } from "../lib/serverClock.js";
 import { useVideoPlaybackDiagnostics } from "../media/useVideoPlaybackDiagnostics.js";
 
 type VideoPhase = Extract<
@@ -12,6 +13,7 @@ type VideoPhase = Extract<
 >;
 
 export type PhaseVideoProps = {
+  clock?: ServerClock;
   sessionId: string | null;
   phase: VideoPhase;
   phaseEpoch: number;
@@ -25,6 +27,7 @@ export type PhaseVideoProps = {
 };
 
 export function PhaseVideo({
+  clock,
   sessionId,
   phase,
   phaseEpoch,
@@ -88,6 +91,21 @@ export function PhaseVideo({
       firstFrameAnimation.current = null;
     };
   }, [phaseEpoch, src]);
+  const timelineStart = phase.timeline === undefined ? null : phase.startedAt - phase.timeline.startMs;
+  const synchronizeTimeline = useCallback(() => {
+    const video = videoRef.current;
+    if (timelineStart === null || clock === undefined || video === null || video.readyState < 1) return;
+    const target = Math.max(0, (clock.now() - timelineStart) / 1000);
+    // Rejoin, operator jumps and decoder stalls must not leave overlays ahead
+    // of the picture. Ordinary cue boundaries do not seek or restart playback.
+    if (target < video.duration && Math.abs(video.currentTime - target) > 0.5) video.currentTime = target;
+  }, [clock, timelineStart]);
+  useEffect(() => {
+    if (timelineStart === null) return;
+    synchronizeTimeline();
+    const timer = setInterval(synchronizeTimeline, 500);
+    return () => clearInterval(timer);
+  }, [timelineStart, synchronizeTimeline]);
   const handleEnded = () => {
     extraAudioRef.current?.pause();
     const tailDurationMs = phase.tailDurationMs ?? 0;
@@ -140,6 +158,8 @@ export function PhaseVideo({
     <video
       ref={setVideoRef}
       src={src}
+      style={{ objectFit: phase.fit ?? "cover" }}
+      onLoadedMetadata={synchronizeTimeline}
       autoPlay
       muted={!soundEnabled}
       playsInline
