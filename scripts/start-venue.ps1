@@ -37,24 +37,46 @@ if ($OpenBrowser) {
 $nodeArgs = @('--import', 'tsx')
 if (Test-Path -LiteralPath '.env.venue') { $nodeArgs += '--env-file=.env.venue' }
 $nodeArgs += 'scripts/serve-venue-display.mts'
+Write-Host "Player logs: $logDir"
+if ($OpenBrowser) { Write-Host "Edge: $edge" }
 while ($true) {
   $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
   $process = Start-Process -FilePath $node -ArgumentList $nodeArgs -PassThru -NoNewWindow -RedirectStandardOutput "$logDir\player-$stamp.log" -RedirectStandardError "$logDir\player-$stamp.err.log"
   try {
     if ($OpenBrowser -and !$browserOpened) {
+      $lastWaitMessage = ''
       while (!$process.HasExited) {
+        $ready = $false
         try {
-          Invoke-WebRequest "http://localhost:$Port/healthz" -UseBasicParsing -TimeoutSec 2 | Out-Null
-          $status = Invoke-RestMethod "http://localhost:$Port/api/status" -TimeoutSec 10
-          if (!$status.ready) { Start-Sleep -Seconds 2; continue }
+          # The gateway binds IPv4 explicitly. Avoid localhost resolving to ::1.
+          $health = Invoke-RestMethod "http://127.0.0.1:$Port/healthz" -TimeoutSec 3
+          if ($health.role -ne 'venue-player') { throw "Port $Port is occupied by another service." }
+          $status = Invoke-RestMethod "http://127.0.0.1:$Port/api/status" -TimeoutSec 20
+          if (!$status.ready) { throw 'The live show server is not ready yet.' }
+          $ready = $true
+        } catch {
+          $message = $_.Exception.Message
+          if ($message -ne $lastWaitMessage) {
+            Write-Host "Waiting to open Edge: $message"
+            $lastWaitMessage = $message
+          }
+        }
+        $process.Refresh()
+        if ($ready -and !$process.HasExited) {
           $edgeProfile = Join-Path $env:LOCALAPPDATA 'Smartphonocracy\EdgeProfile'
+          Write-Host "Opening Edge at http://localhost:$Port/display/?sound=1"
+          # Launch errors must reach the operator, not disappear in the readiness retry.
           Start-Process $edge -ArgumentList @('--kiosk',"http://localhost:$Port/display/?sound=1",'--edge-kiosk-type=fullscreen','--no-first-run','--autoplay-policy=no-user-gesture-required', ('--user-data-dir="' + $edgeProfile + '"'))
           $browserOpened = $true
           break
-        } catch { Start-Sleep -Seconds 2 }
+        }
+        Start-Sleep -Seconds 2
+        $process.Refresh()
       }
     }
     $process.WaitForExit()
+    Write-Host "Venue player exited with code $($process.ExitCode). Latest errors:"
+    Get-Content -LiteralPath "$logDir\player-$stamp.err.log" -Tail 20 -ErrorAction SilentlyContinue
   } finally {
     if (!$process.HasExited) { Stop-Process -Id $process.Id }
   }
