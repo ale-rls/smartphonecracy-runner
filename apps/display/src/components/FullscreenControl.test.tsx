@@ -15,6 +15,7 @@ afterEach(async () => {
   if (root) await act(async () => root?.unmount());
   root = null;
   document.body.replaceChildren();
+  vi.useRealTimers();
   vi.restoreAllMocks();
 });
 
@@ -26,6 +27,23 @@ async function renderControl() {
 }
 
 describe("FullscreenControl", () => {
+  it("hides after three idle seconds and resets the timer on mouse activity", async () => {
+    vi.useFakeTimers();
+    await renderControl();
+    await act(async () => vi.advanceTimersByTime(2_000));
+    await act(async () => document.dispatchEvent(new MouseEvent("mousemove")));
+    await act(async () => vi.advanceTimersByTime(2_999));
+    expect(document.querySelector(".fullscreen-control")).not.toBeNull();
+    await act(async () => vi.advanceTimersByTime(1));
+    expect(document.querySelector(".fullscreen-control")).toBeNull();
+    await act(async () => document.dispatchEvent(new MouseEvent("mousemove")));
+    expect(document.querySelector(".fullscreen-control")).not.toBeNull();
+    await act(async () => vi.advanceTimersByTime(3_000));
+    expect(document.querySelector(".fullscreen-control")).toBeNull();
+    await act(async () => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab" })));
+    expect(document.querySelector(".fullscreen-control")).not.toBeNull();
+  });
+
   it("enters fullscreen, hides the control there, and returns after an external exit", async () => {
     let fullscreenElement: Element | null = null;
     Object.defineProperty(document, "fullscreenElement", {

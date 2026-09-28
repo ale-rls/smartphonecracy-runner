@@ -4,8 +4,25 @@ export function FullscreenControl({ doc = document }: { doc?: Document }) {
   const [isFullscreen, setIsFullscreen] = useState(() => Boolean(doc.fullscreenElement));
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [active, setActive] = useState(true);
   const supported = typeof doc.documentElement.requestFullscreen === "function"
     && typeof doc.exitFullscreen === "function";
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    const showControl = () => {
+      setActive(true);
+      clearTimeout(timer);
+      timer = setTimeout(() => setActive(false), 3_000);
+    };
+    const events = ["mousemove", "mousedown", "touchstart", "keydown"] as const;
+    for (const event of events) doc.addEventListener(event, showControl);
+    showControl();
+    return () => {
+      clearTimeout(timer);
+      for (const event of events) doc.removeEventListener(event, showControl);
+    };
+  }, [doc]);
 
   useEffect(() => {
     const syncState = () => {
@@ -37,7 +54,7 @@ export function FullscreenControl({ doc = document }: { doc?: Document }) {
     }
   }, [doc, pending, supported]);
 
-  if (isFullscreen) return null;
+  if (isFullscreen || !active) return null;
 
   return <>
     <button
