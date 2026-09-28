@@ -13,6 +13,9 @@ dist-proof/
 content/media/*
 !content/media/intro.mp4
 
+# Museum PCs copy the full local playback delivery here.
+venue-media/
+
 # Playwright artifacts
 test-results/
 
