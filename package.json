@@ -6,6 +6,7 @@
     "node": ">=22"
   },
   "scripts": {
+    "venue:build": "node --env-file=.env.venue --import tsx scripts/build-venue-display.mts",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
     "test:e2e": "pnpm --filter @smartphonecracy/display build && pnpm --filter @smartphonecracy/phone build && pnpm --filter @smartphonecracy/admin build && playwright test --config tests/e2e/playwright.config.ts",

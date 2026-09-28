@@ -16,6 +16,11 @@ content/media/*
 # Museum PCs copy the full local playback delivery here.
 venue-media/
 
+# USB deliveries contain media and configured display bundles, not source.
+output/smartphonocracy-install/
+output/smartphonocracy-fresh-install.zip
+output/venue-display-usb.zip
+
 # Playwright artifacts
 test-results/
 

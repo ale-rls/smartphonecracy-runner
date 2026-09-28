@@ -1,6 +1,6 @@
 param(
   [string]$MediaDir,
-  [string]$ServerUrl = 'https://smartphonocracy-venue-server.enabler.space'
+  [string]$ServerUrl
 )
 $ErrorActionPreference = 'Stop'
 $script = Join-Path $PSScriptRoot 'start-venue.ps1'
@@ -11,7 +11,8 @@ if (!(Test-Path -LiteralPath $MediaDir -PathType Container)) {
 }
 $MediaDir = (Resolve-Path -LiteralPath $MediaDir).Path
 $who = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
-$arguments = '-NoProfile -ExecutionPolicy Bypass -File "{0}" -MediaDir "{1}" -ServerUrl "{2}" -OpenBrowser' -f $script,$MediaDir,$ServerUrl
+$arguments = '-NoProfile -ExecutionPolicy Bypass -File "{0}" -MediaDir "{1}" -OpenBrowser' -f $script,$MediaDir
+if ($ServerUrl) { $arguments += ' -ServerUrl "{0}"' -f $ServerUrl }
 $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument $arguments -WorkingDirectory (Split-Path $PSScriptRoot -Parent)
 $trigger = New-ScheduledTaskTrigger -AtLogOn -User $who
 $principal = New-ScheduledTaskPrincipal -UserId $who -LogonType Interactive -RunLevel Limited

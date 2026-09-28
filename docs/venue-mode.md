@@ -61,6 +61,8 @@ The coordinator validates the scenario and manifest but does not require video f
 
 ### Venue computer
 
+For a fresh Windows installation maintained through Git, use [Windows installation and updates](venue-windows-git.md). That workflow builds the local display, opens Edge automatically, and supports startup at Windows sign-in. The Windows launcher uses the local build by default; `-UseLiveDisplay` explicitly selects the hosted display instead.
+
 Install this repository's dependencies with Node 22+ and pnpm. Copy the supplied video folder into the repository and name it `venue-media`, so the files are laid out like this:
 
 ```text
