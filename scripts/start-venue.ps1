@@ -33,6 +33,16 @@ if ($OpenBrowser) {
     "$env:LOCALAPPDATA\Microsoft\Edge\Application\msedge.exe"
   ) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
   if (!$edge) { throw 'Microsoft Edge was not found. Install it before starting the venue display.' }
+  # Supported Edge policy: kiosk mode alone does not suppress translation offers.
+  # HKCU affects this Windows user's Edge profiles, not other Windows accounts.
+  $edgePolicy = 'HKCU:\Software\Policies\Microsoft\Edge'
+  try {
+    New-Item -Path $edgePolicy -Force | Out-Null
+    New-ItemProperty -Path $edgePolicy -Name 'TranslateEnabled' -PropertyType DWord -Value 0 -Force | Out-Null
+    Write-Host 'Edge translation disabled for this Windows user.'
+  } catch {
+    throw "Cannot disable Edge translation. Ask venue IT to set TranslateEnabled=0. $($_.Exception.Message)"
+  }
 }
 $nodeArgs = @('--import', 'tsx')
 if (Test-Path -LiteralPath '.env.venue') { $nodeArgs += '--env-file=.env.venue' }
