@@ -9,6 +9,7 @@ and apply light temporal smoothing before emitting TypeScript data.
 
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
 
@@ -161,6 +162,14 @@ def typescript(track_data: dict[str, dict[str, object]]) -> str:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--venue-video", type=Path)
+    args = parser.parse_args()
+    if args.venue_video:
+        output = ROOT / "apps/display/src/idle/venueMarkerTrack.generated.ts"
+        output.write_text(typescript({args.venue_video.name: track_video(args.venue_video)}).replace("GENERATED_MARKER_TRACKS", "VENUE_MARKER_TRACKS"), encoding="utf-8")
+        print(f"wrote {output}")
+        return
     videos = sorted(ASSETS.glob("1.0_25_*.mp4"))
     legacy_video = ASSETS / "idle-attract.mp4"
     if legacy_video.exists():

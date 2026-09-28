@@ -1458,6 +1458,30 @@ describe("venue operation", () => {
 });
 
 describe("continuous media timeline", () => {
+  it("ends the credits session only after the fade boundary, triggering movement finalization", () => {
+    let now = 1000;
+    const sessionEnds: Array<{ reason: string; sessionId: string; endedAt: number }> = [];
+    const credits = scenarioSchema.parse({ version: "credits", entryPhaseId: "credits", phases: [
+      { id: "idle", kind: "idle" },
+      { id: "credits", kind: "video", src: "credits.mp4", expectedDurationMs: 63000,
+        fadeOutMs: 3000, showCursors: true, timeline: { id: "credits", startMs: 0 }, next: "idle" },
+    ] });
+    const { engine, registry } = setup({ now: () => now, testScenario: credits, sessionEnds,
+      maxSessionDurationMs: 100000, interactiveIdleTimeoutMs: 100000 });
+    addParticipant(registry, new MockSocket() as unknown as WebSocket, now, "one");
+    connectDisplay(engine, new MockSocket() as unknown as WebSocket);
+    engine.adminStart();
+    now = 61000;
+    engine.tick();
+    expect(engine.currentPhaseId).toBe("credits");
+    expect(sessionEnds).toHaveLength(0);
+    now = 64000;
+    engine.tick();
+    expect(engine.currentPhaseId).toBe("idle");
+    expect(sessionEnds).toHaveLength(1);
+    expect(sessionEnds[0]?.endedAt).toBe(64000);
+  });
+
   it("advances cues at exact absolute boundaries without adding fallback grace or tick drift", () => {
     let now = 1_000;
     const timeline = scenarioSchema.parse({ version: "timeline", entryPhaseId: "a", phases: [

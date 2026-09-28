@@ -88,9 +88,13 @@ def prepare(timings_path, backup_path, masters, media_dir):
         phases.append({"id": phase_id, "kind": "video", "src": source(entry), "fit": "contain",
                        "expectedDurationMs": entry["frames"] * 1000 / timings["conventions"]["fps"], "next": "credits"})
     phases.append({"id": "credits", "kind": "video", "src": credits_target.name, "fit": "contain",
-                   "expectedDurationMs": credits_ms, "next": "idle", "showCursors": False})
+                   "expectedDurationMs": 63000, "fadeOutMs": 3000, "timeline": {"id": "credits", "startMs": 0}, "next": "idle", "showCursors": True})
+    for phase in [p for p in phases if p["kind"] == "video-position-question"]:
+        phase["showLiveCounts"] = False
+    for phase in [p for p in phases if p["kind"] == "video-position-question"][:3]:
+        phase["countdownSoundEnabled"] = True
     scenario = {"version": "smartphonocracy-venue-2026.09.24", "entryPhaseId": segments[0]["phaseId"],
-                "cyclesAllowed": False, "targetAudienceSize": 0, "phases": phases}
+                "cyclesAllowed": False, "targetAudienceSize": 50, "phases": phases}
     files = []
     for name in sorted([*names.values(), credits_target.name]):
         path = media_dir / name

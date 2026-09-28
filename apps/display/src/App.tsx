@@ -1,3 +1,4 @@
+import { PhaseFade } from "./components/PhaseFade.js";
 import { VenueLobbyVideo } from "./components/VenueLobbyVideo.js";
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import type { DisplayToServerMessage } from "@smartphonecracy/protocol";
@@ -56,7 +57,7 @@ const config = {
 
 export function App() {
   const [state, dispatch] = useReducer(displayReducer, initialDisplayState);
-  const [soundEnabled, setSoundEnabled] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(() => new URLSearchParams(location.search).get("sound") === "1");
   const [presentedVideoKey, setPresentedVideoKey] = useState<string | null>(null);
   const stateRef = useRef(state);
   const activeMediaRef = useRef<HTMLMediaElement | null>(null);
@@ -260,7 +261,7 @@ export function App() {
     <main className="display-root">
       {/* Layer 1: video */}
       <section className="layer layer-video">
-        {phase?.idleMediaSrc ? <VenueLobbyVideo src={phase.idleMediaSrc} visible={idleMediaVisible} soundEnabled={soundEnabled} /> : <IdleAttract
+        {phase?.idleMediaSrc ? <VenueLobbyVideo src={phase.idleMediaSrc} visible={idleMediaVisible} soundEnabled={soundEnabled} grant={state.qrGrant} qrHidden={state.qrHidden} clock={connection.clock} /> : <IdleAttract
           grant={state.qrGrant}
           qrHidden={state.qrHidden}
           clock={connection.clock}
@@ -335,7 +336,7 @@ export function App() {
         {/* Plain statement videos (e.g. the host's greeting) don't need a
             join code on screen -- the QR only matters once there's
             something to vote on. */}
-        {((isIdle && phase?.idleMediaSrc) || (!isIdle && phase?.kind !== "video")) && (
+        {(!phase?.idleMediaSrc && !isIdle && phase?.kind !== "video") && (
           <QrBadge grant={state.qrGrant} qrHidden={state.qrHidden} clock={connection.clock} />
         )}
         <LobbyCountdown
@@ -372,7 +373,7 @@ export function App() {
             liveField={state.liveField}
             liveCounts={state.liveCounts}
             resolution={state.resolution}
-            soundEnabled={soundEnabled && phase.soundEnabled !== false}
+            soundEnabled={soundEnabled && (phase.countdownSoundEnabled ?? phase.soundEnabled) !== false}
           />
         )}
         {(phase?.kind === "video" || phase?.kind === "video-position-question") && phase.rating && (
@@ -396,6 +397,8 @@ export function App() {
           </div>
         )}
       </section>
+
+      {phase?.idleMediaSrc && <PhaseFade phase={phase} clock={connection.clock} media={activeMediaRef} extraAudio={activeExtraAudioRef} />}
 
       {/* Layer 3: cursor canvas */}
       <section className="layer layer-cursors">

@@ -312,3 +312,6 @@ html, body, #root { width: 100%; height: 100%; margin: 0; overflow: hidden; }
 .qr-badge-top-right { top: 1rem; right: 1rem; }
 .qr-badge-bottom-left { bottom: 1rem; left: 1rem; }
 .qr-badge-bottom-right { bottom: 1rem; right: 1rem; }
+
+.venue-return-from-black { animation: venue-return-from-black 1s linear forwards; }
+@keyframes venue-return-from-black { from { opacity: 1; } to { opacity: 0; } }

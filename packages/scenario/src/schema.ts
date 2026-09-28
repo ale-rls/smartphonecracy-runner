@@ -267,6 +267,7 @@ export const videoPhaseSchema = z.object({
   extraAudioSrc: z.string().min(1, "extraAudioSrc must be non-empty").optional(),
   /** Silent visual hold after video or image + MP3 playback ends. */
   tailDurationMs: z.number().int().nonnegative().optional(),
+  fadeOutMs: z.number().int().positive().optional(),
   timeline: mediaTimelineSchema.optional(),
   fit: z.enum(["contain", "cover"]).optional(),
   expectedDurationMs: z.number().finite().positive(),
@@ -277,6 +278,9 @@ export const videoPhaseSchema = z.object({
   rating: ratingConfigSchema.optional(),
   subtitles: z.array(subtitleSchema).optional(),
 }).superRefine((phase, ctx) => {
+  if (phase.fadeOutMs !== undefined && phase.fadeOutMs > phase.expectedDurationMs) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "fade must fit within the phase", path: ["fadeOutMs"] });
+  }
   const problem = mediaCombinationError(phase.src, phase.audioSrc);
   if (problem) ctx.addIssue({ code: z.ZodIssueCode.custom, message: problem, path: [phase.audioSrc === undefined ? "src" : "audioSrc"] });
   const extraAudioProblem = extraAudioCombinationError(phase.src, phase.audioSrc, phase.extraAudioSrc);
@@ -296,6 +300,7 @@ const positionQuestionBaseSchema = z.object({
   text: z.string().min(1, "question text must be non-empty"),
   textBurnedIn: z.boolean().optional(),
   soundEnabled: z.boolean().optional(),
+  countdownSoundEnabled: z.boolean().optional(),
   durationMs: z.number().int().positive(),
   freezeMs: z.number().int().nonnegative(),
   connectionStaleAfterMs: z.number().int().positive(),
@@ -354,6 +359,7 @@ const videoPositionQuestionBaseSchema = z.object({
   text: z.string().min(1, "question text must be non-empty"),
   textBurnedIn: z.boolean().optional(),
   soundEnabled: z.boolean().optional(),
+  countdownSoundEnabled: z.boolean().optional(),
   /** Timeline offsets from the start of the timed media. */
   showAtMs: z.number().int().nonnegative(),
   openAtMs: z.number().int().nonnegative(),

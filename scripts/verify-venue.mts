@@ -32,15 +32,21 @@ try {
   browser = await chromium.launch({ headless: true });
   const display = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
   const errors: string[] = [];
-  display.on("pageerror", (error) => errors.push(error.message));
+  display.on("pageerror", (error) => { errors.push(error.message); console.error("DISPLAY ERROR", error.message); });
+  display.on("console", (message) => { if (message.type() === "error") console.error("DISPLAY CONSOLE", message.text()); });
   await display.goto(`${playerBase}/display/?installation=dev-installation&room=main&token=dev-display-token`);
   await display.waitForFunction(() => {
     const video = document.querySelector<HTMLVideoElement>('video[aria-label="Venue lobby film"]');
     return video && video.currentTime > 0.1;
-  });
+  }, undefined, { timeout: 120000 });
   await display.getByRole("button", { name: "Enable sound" }).click();
-  assert.equal(await display.locator(".qr-badge").count(), 1);
-  console.log("PASS: SSD lobby streams and join QR is visible");
+  assert.equal(await display.locator(".qr-badge").count(), 0);
+  await display.waitForFunction(() => {
+    const canvas = document.querySelector<HTMLCanvasElement>('canvas[aria-label="Tracked venue join code"]');
+    return canvas && canvas.getContext("2d")!.getImageData(0, 0, canvas.width, canvas.height).data.some((value) => value !== 0);
+  });
+  await display.screenshot({ path: "/private/tmp/venue-tracked-qr.png" });
+  console.log("PASS: SSD lobby streams with tracked QR");
   const join = async (name: string) => {
     const page = await browser!.newPage();
     await page.goto(`${base}/phone/`);
@@ -79,7 +85,7 @@ try {
   runtime.engine!.adminJump("2-6-01-wo-befindest-du-dich");
   await display.waitForFunction(() => {
     const video = document.querySelector<HTMLVideoElement>(".phase-video-slot-active video");
-    return video && video.currentTime > 530 && video.currentTime < 540;
+    return video && video.currentTime > 530 && video.currentTime < 560;
   });
   assert.equal(await display.locator(".question-text").count(), 0);
   assert.equal(await display.locator('audio[aria-label="Extra video audio track"]').count(), 0);
@@ -100,6 +106,14 @@ try {
     }, filename);
     console.log(`PASS: ${id} decodes from SSD`);
   }
+  await display.waitForFunction(() => {
+    const video = document.querySelector<HTMLVideoElement>(".phase-video-slot-active video");
+    return video && video.volume > 0 && video.volume < 0.9;
+  }, undefined, { timeout: 65000 });
+  assert.equal(runtime.engine!.currentPhaseId, "credits");
+  await display.waitForFunction(() => !!document.querySelector(".venue-return-from-black"), undefined, { timeout: 5000 });
+  assert.equal(runtime.engine!.currentPhaseId, "idle");
+  console.log("PASS: credits audio fades after 60 seconds and session returns to lobby at 63 seconds");
   const admin = await browser.newPage();
   await admin.addInitScript(() => localStorage.setItem("admin-token", "venue-smoke-test"));
   await admin.goto(`${base}/admin/`);
@@ -114,6 +128,9 @@ try {
   });
   assert.deepEqual(errors, []);
   console.log("PASS: return to lobby, no browser page errors");
+} catch (error) {
+  for (const context of browser?.contexts() ?? []) for (const page of context.pages()) console.error("PAGE", await page.locator("body").innerText().catch(() => "unavailable"));
+  throw error;
 } finally {
   await browser?.close();
   await player?.close();

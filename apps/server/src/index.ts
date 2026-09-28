@@ -57,13 +57,26 @@ async function boot(
   // A local venue delivery is explicitly pinned to disk, independent of Studio publishes.
   if (config.runMode === "venue") {
     const readiness = await loadScenarioReadiness(config);
+    const ghostPool = readiness.ready
+      ? await loadGhostPool(pocketbase, readiness.showId, readiness.scenario.version)
+      : { tracks: [] };
     const runtime = await buildServer({
-      config, readiness, pocketbase,
+      config, readiness, pocketbase, ghostPool,
       adminData: new PocketBaseAdminDataSource(pocketbase, {
         installationId: config.installationId, roomId: config.roomId,
       }),
       ...(onSessionEnded === undefined ? {} : { onSessionEnded }),
     });
+    // Refresh saved consented recordings for future sessions without interrupting the show.
+    let loadingGhosts = false;
+    const refreshGhosts = setInterval(() => {
+      if (loadingGhosts || !readiness.ready) return;
+      loadingGhosts = true;
+      void loadGhostPool(pocketbase, readiness.showId, readiness.scenario.version)
+        .then((pool) => { ghostPool.tracks = pool.tracks; })
+        .finally(() => { loadingGhosts = false; });
+    }, 60_000);
+    runtime.app.addHook("onClose", async () => { clearInterval(refreshGhosts); });
     await listenWithCleanup(runtime.app, { host: config.host, port: config.port });
     return runtime;
   }

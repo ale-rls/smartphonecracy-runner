@@ -2,7 +2,7 @@
   "version": "smartphonocracy-venue-2026.09.24",
   "entryPhaseId": "2-0-Athene",
   "cyclesAllowed": false,
-  "targetAudienceSize": 0,
+  "targetAudienceSize": 50,
   "phases": [
     {
       "id": "idle",
@@ -64,7 +64,7 @@
       "closeAtMs": 39793,
       "hideAtMs": 44793,
       "connectionStaleAfterMs": 10000,
-      "showLiveCounts": true,
+      "showLiveCounts": false,
       "field": {
         "axis": "x",
         "labels": {
@@ -76,7 +76,8 @@
         "variant": "split"
       },
       "soundEnabled": false,
-      "text": "OSTRAKISMÓS"
+      "text": "OSTRAKISMÓS",
+      "countdownSoundEnabled": true
     },
     {
       "id": "2-4-prometheus",
@@ -97,7 +98,7 @@
       "closeAtMs": 43001,
       "hideAtMs": 48301,
       "connectionStaleAfterMs": 10000,
-      "showLiveCounts": true,
+      "showLiveCounts": false,
       "field": {
         "axis": "x",
         "labels": {
@@ -109,7 +110,8 @@
         "variant": "split"
       },
       "soundEnabled": false,
-      "text": "PROMETHEUS-ABGABE"
+      "text": "PROMETHEUS-ABGABE",
+      "countdownSoundEnabled": true
     },
     {
       "id": "2-5-kleroterion",
@@ -130,7 +132,7 @@
       "closeAtMs": 38100,
       "hideAtMs": 43201,
       "connectionStaleAfterMs": 10000,
-      "showLiveCounts": true,
+      "showLiveCounts": false,
       "field": {
         "axis": "x",
         "labels": {
@@ -142,7 +144,8 @@
         "variant": "split"
       },
       "soundEnabled": false,
-      "text": "KLĒROTERION"
+      "text": "KLĒROTERION",
+      "countdownSoundEnabled": true
     },
     {
       "id": "2-6-01-wo-befindest-du-dich",
@@ -164,7 +167,7 @@
       "hideAtMs": 25000,
       "closeCountdownSeconds": 5,
       "connectionStaleAfterMs": 10000,
-      "showLiveCounts": true,
+      "showLiveCounts": false,
       "field": {
         "arena": {
           "centerX": 0.503,
@@ -206,7 +209,7 @@
       "hideAtMs": 25000,
       "closeCountdownSeconds": 5,
       "connectionStaleAfterMs": 10000,
-      "showLiveCounts": true,
+      "showLiveCounts": false,
       "field": {
         "arena": {
           "centerX": 0.503,
@@ -248,7 +251,7 @@
       "hideAtMs": 25000,
       "closeCountdownSeconds": 5,
       "connectionStaleAfterMs": 10000,
-      "showLiveCounts": true,
+      "showLiveCounts": false,
       "field": {
         "arena": {
           "centerX": 0.503,
@@ -290,7 +293,7 @@
       "hideAtMs": 25000,
       "closeCountdownSeconds": 5,
       "connectionStaleAfterMs": 10000,
-      "showLiveCounts": true,
+      "showLiveCounts": false,
       "field": {
         "arena": {
           "centerX": 0.503,
@@ -334,7 +337,7 @@
       "hideAtMs": 25000,
       "closeCountdownSeconds": 5,
       "connectionStaleAfterMs": 10000,
-      "showLiveCounts": true,
+      "showLiveCounts": false,
       "field": {
         "arena": {
           "centerX": 0.503,
@@ -378,7 +381,7 @@
       "hideAtMs": 25000,
       "closeCountdownSeconds": 5,
       "connectionStaleAfterMs": 10000,
-      "showLiveCounts": true,
+      "showLiveCounts": false,
       "field": {
         "arena": {
           "centerX": 0.503,
@@ -422,7 +425,7 @@
       "hideAtMs": 25000,
       "closeCountdownSeconds": 5,
       "connectionStaleAfterMs": 10000,
-      "showLiveCounts": true,
+      "showLiveCounts": false,
       "field": {
         "arena": {
           "centerX": 0.503,
@@ -466,7 +469,7 @@
       "hideAtMs": 25000,
       "closeCountdownSeconds": 5,
       "connectionStaleAfterMs": 10000,
-      "showLiveCounts": true,
+      "showLiveCounts": false,
       "field": {
         "arena": {
           "centerX": 0.503,
@@ -510,7 +513,7 @@
       "hideAtMs": 25000,
       "closeCountdownSeconds": 5,
       "connectionStaleAfterMs": 10000,
-      "showLiveCounts": true,
+      "showLiveCounts": false,
       "field": {
         "arena": {
           "centerX": 0.503,
@@ -554,7 +557,7 @@
       "hideAtMs": 25000,
       "closeCountdownSeconds": 5,
       "connectionStaleAfterMs": 10000,
-      "showLiveCounts": true,
+      "showLiveCounts": false,
       "field": {
         "arena": {
           "centerX": 0.503,
@@ -737,7 +740,7 @@
       "hideAtMs": 42600,
       "closeCountdownSeconds": 10,
       "connectionStaleAfterMs": 10000,
-      "showLiveCounts": true,
+      "showLiveCounts": false,
       "field": {
         "type": "polygon-zones",
         "zones": [
@@ -840,9 +843,14 @@
       "kind": "video",
       "src": "smartphonocracy-credits.mp4",
       "fit": "contain",
-      "expectedDurationMs": 220480,
+      "expectedDurationMs": 63000,
       "next": "idle",
-      "showCursors": false
+      "showCursors": true,
+      "fadeOutMs": 3000,
+      "timeline": {
+        "id": "credits",
+        "startMs": 0
+      }
     }
   ]
 }
