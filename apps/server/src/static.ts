@@ -42,7 +42,7 @@ async function sendFile(
   }
 }
 
-async function sendBundleFile(
+export async function sendBundleFile(
   reply: FastifyReply,
   root: string,
   requestedPath: string,

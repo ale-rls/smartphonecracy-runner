@@ -6,10 +6,10 @@ import { resolve, sep } from "node:path";
 import { Readable } from "node:stream";
 import { WebSocket, WebSocketServer } from "ws";
 import { mediaManifestSchema, validateMediaManifest } from "@smartphonecracy/scenario";
-import { registerMediaRoutes } from "./static.js";
+import { registerMediaRoutes, sendBundleFile } from "./static.js";
 
 /** Local playback only: the public server remains the sole show authority. */
-export async function buildVenuePlayer(options: { serverUrl: string; mediaDir: string }) {
+export async function buildVenuePlayer(options: { serverUrl: string; mediaDir: string; displayDir?: string }) {
   const upstream = new URL(options.serverUrl);
   if (upstream.username || upstream.password || upstream.pathname !== "/" || upstream.search || upstream.hash
     || (upstream.protocol !== "https:" && !(upstream.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(upstream.hostname)))) {
@@ -20,6 +20,10 @@ export async function buildVenuePlayer(options: { serverUrl: string; mediaDir: s
   const upstreamSockets = new Set<WebSocket>();
   const verified = new Map<string, string>();
   const mediaRoot = resolve(options.mediaDir);
+  const displayRoot = options.displayDir === undefined ? undefined : resolve(options.displayDir);
+  if (displayRoot !== undefined && !(await stat(resolve(displayRoot, "index.html"))).isFile()) {
+    throw new Error("Local display build is missing index.html; build the display first");
+  }
 
   const mediaPath = (src: string) => {
     const path = resolve(mediaRoot, src);
@@ -58,10 +62,14 @@ export async function buildVenuePlayer(options: { serverUrl: string; mediaDir: s
   });
 
   // Load the display shell from the live deployment so its build version and
-  // protocol always match the phones and coordinator. Only video bytes stay local.
+  // protocol always match the phones and coordinator. An explicit local build
+  // override lets venue fixes be tested before the live deployment is updated.
   for (const path of ["/display", "/display/*", "/api/status", "/api/phases"] as const) {
     app.get(path, async (request, reply) => {
       if (request.url === "/display") return reply.redirect("/display/");
+      if (displayRoot !== undefined && request.url.startsWith("/display/")) {
+        return sendBundleFile(reply, displayRoot, (request.params as { "*": string })["*"], request.headers.range);
+      }
       try {
         const response = await fetch(new URL(request.url, upstream), { signal: AbortSignal.timeout(15_000), redirect: "error" });
         for (const header of ["content-type", "cache-control", "etag", "last-modified"]) {

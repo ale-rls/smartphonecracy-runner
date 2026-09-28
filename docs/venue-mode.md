@@ -4,11 +4,12 @@ The September 24 delivery uses one uninterrupted main film with timed interactiv
 
 ## Behavior
 
-- The supplied lobby film loops until a visitor joins.
+- The supplied lobby film loops until a visitor joins, with the join QR tracked onto its marker.
 - One visitor starts a 30-second countdown. Two connected visitors start immediately.
 - Phones remain live, including late joins through the printed QR code. No QR is drawn over the film. Quiet watching does not end a session.
 - When all phones disconnect, the film continues for up to two minutes. A returning visitor cancels that timeout. Otherwise the runner returns to the lobby. Broken connections are first detected by the existing WebSocket heartbeat.
 - The final vote resolves normally, including the existing Kleroterion tie-break. Its result stays visible until the delivery's hide cue, then the winner film plays, followed by the current credits. An empty vote returns to the lobby as in the supplied timing file.
+- Credits keep live cursors visible and fade picture, cursors, and music from 60 to 63 seconds. The lobby fades in from black. Vote totals are hidden; countdown numbers remain and the initial three votes have countdown pings.
 - At the end, the existing visit cleanup disconnects phones and clears their results. Visitors join again for a fresh run.
 - The same `/admin/` provides start, skip, restart, return to idle and scene navigation. Venue mode displays its automatic behavior and hides Studio show selection, ghost settings and scheduling. It does not need a separate admin route.
 
@@ -35,10 +36,10 @@ The generator also writes the repository's `content/scenarios/venue.json` and `c
 Visitors use their own phones on mobile data or venue Wi-Fi. The printed QR should link to:
 
 ```text
-https://smartphonocracy-server.enabler.space/phone/
+https://smartphonocracy-venue-server.enabler.space/phone/
 ```
 
-The live server handles admission, show timing, votes, and automatic starts. The venue computer runs only the playback gateway; video and audio bytes stay on the SSD. Both the venue computer and visitors need internet access. The existing admin is on the live site at `/admin/`.
+The live server handles admission, show timing, votes, and automatic starts. The venue computer runs only the playback gateway; video and audio bytes stay on that computer. Both the venue computer and visitors need internet access. The existing admin is on the live site at `/admin/`.
 
 ### Live deployment (Coolify)
 
@@ -46,11 +47,13 @@ Deploy this repository with build context `.` and Dockerfile `apps/server/Docker
 
 ```dotenv
 RUN_MODE=venue
+INSTALLATION_ID=smartphonocracy-venue
+ROOM_ID=venue
 VENUE_MEDIA_LOCATION=display
 SHOW_ID=smartphonocracy-venue-2026-09-24
 SCENARIO_PATH=content/scenarios/venue.json
 MEDIA_MANIFEST_PATH=content/media-manifests/venue.json
-PHONE_JOIN_BASE_URL=https://smartphonocracy-server.enabler.space/phone/
+PHONE_JOIN_BASE_URL=https://smartphonocracy-venue-server.enabler.space/phone/
 ALLOW_LATE_JOIN=true
 ```
 
@@ -58,7 +61,16 @@ The coordinator validates the scenario and manifest but does not require video f
 
 ### Venue computer
 
-Install this repository's dependencies with Node 22+ and pnpm, connect the SSD, and run:
+Install this repository's dependencies with Node 22+ and pnpm. Copy the supplied video folder into the repository and name it `venue-media`, so the files are laid out like this:
+
+```text
+smartphonecracy-runner/
+  venue-media/
+    *.mp4
+  scripts/
+```
+
+The copied folder may also contain `venue.json` and `media-manifest.json`; the player ignores those local metadata copies and verifies the videos against the live show's manifest. Then run:
 
 ```sh
 bash scripts/start-venue.sh
@@ -66,13 +78,15 @@ bash scripts/start-venue.sh
 
 Open `http://localhost:3000/display/`, enable sound once, and enter fullscreen. The display token is supplied by the live build as before; an explicit `?token=...` override also works. No local PocketBase or frontend build is required.
 
-The local gateway loads the display app from the live deployment, forwards its WebSocket to that same server, and serves `/media/` only from the SSD. It checks the SSD file sizes and SHA-256 hashes against the live manifest before allowing the display to connect. Hashing takes a little time on first launch. The gateway binds only to localhost.
+The local gateway loads the display app from the live deployment, forwards its WebSocket to that same server, and serves `/media/` only from `venue-media`. It checks the local file sizes and SHA-256 hashes against the live manifest before allowing the display to connect. Hashing takes a little time on first launch. The gateway binds only to localhost.
+
+To test local display changes (including lobby QR tracking) before deployment, build `@smartphonecracy/display` with the live show's `BUILD_VERSION` and `DISPLAY_TOKEN`, then set `VENUE_DISPLAY_DIR=apps/display/dist` when starting the player. Reload the display after building. This overrides only `/display/`; status, participation, and show timing still use the live server. Without this explicit override, editing or rebuilding the local display does not change what the player shows.
 
 Optional overrides:
 
 ```sh
-VENUE_SERVER_URL=https://smartphonocracy-server.enabler.space \
-MEDIA_DIR='/Volumes/SANDISK SSD/Smartphonocracy/Masters/runner-fullHD' \
+VENUE_SERVER_URL=https://smartphonocracy-venue-server.enabler.space \
+MEDIA_DIR='/another/location/runner-fullHD' \
 PORT=3000 bash scripts/start-venue.sh
 ```
 
@@ -87,3 +101,28 @@ Before unattended use, check picture, sound and one actual phone using mobile da
 ### Live performance mode
 
 To restore the previous operator-driven show, deploy with `RUN_MODE=live` and `VENUE_MEDIA_LOCATION=server`. This retains the existing PocketBase show selection and operator/scheduled starts. The standalone local-engine setup is still available by running the server with `RUN_MODE=venue` and `VENUE_MEDIA_LOCATION=server`, using the SSD media directory, but it is not the mobile-data setup described above.
+
+### Venue ghosts
+
+The venue scenario sets `targetAudienceSize` to 50. This fills up to 50 total cursors (visitors plus saved ghosts), limited by available completed recordings for the venue show ID. It does not synthesize recordings. The venue loads its own pool and refreshes it every minute for future sessions. Studio's shared audience override does not affect venue mode. Change this number in `content/scenarios/venue.json` and redeploy to change the target.
+
+### Windows startup and recovery
+
+Install Node 22+ and pnpm, put this repository on the venue PC, and run `pnpm install` once. Copy the supplied video folder to `venue-media` inside the repository. In PowerShell, from the repository folder, run:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start-venue.ps1 -OpenBrowser
+```
+
+This starts the gateway, opens Edge fullscreen, and restarts the gateway five seconds after it exits. The kiosk URL requests sound automatically and Edge is launched with autoplay enabled. Check that sound actually plays on the venue PC. Logs are in `%LOCALAPPDATA%\Smartphonocracy`.
+
+For automatic startup at Windows sign-in:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-venue-startup.ps1
+Start-ScheduledTask -TaskName "Smartphonocracy Venue Player"
+```
+
+Pass `-MediaDir "D:\some\other\folder"` to either script only when the videos are stored somewhere else.
+
+The task runs as the signed-in user, without administrator privileges. Keep the PC awake while plugged in. Startup requires Windows sign-in; this script does not configure automatic Windows login. To stop/remove startup, use Task Scheduler's **End** / **Disable**, or `Unregister-ScheduledTask -TaskName "Smartphonocracy Venue Player"`. Native Windows execution must be checked on the venue PC.

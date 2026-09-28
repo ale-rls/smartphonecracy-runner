@@ -8,6 +8,36 @@ import { buildVenuePlayer } from "./venue-player.js";
 afterEach(() => vi.unstubAllGlobals());
 
 describe("venue playback gateway", () => {
+  it("serves an explicit local display build while keeping status on the live server", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "venue-display-"));
+    await writeFile(join(dir, "index.html"), "local tracked QR display");
+    await writeFile(join(dir, "app.js"), "local tracking code");
+    const fetchLive = vi.fn(async (_url: URL) => new Response(JSON.stringify({ ready: true })));
+    vi.stubGlobal("fetch", fetchLive);
+    const player = await buildVenuePlayer({ serverUrl: "https://show.example", mediaDir: dir, displayDir: dir });
+    try {
+      const page = await player.inject({ url: "/display/?sound=1" });
+      expect(page.body).toBe("local tracked QR display");
+      expect(page.headers["cache-control"]).toBe("no-cache");
+      expect((await player.inject({ url: "/display/app.js" })).body).toBe("local tracking code");
+      expect((await player.inject({ url: "/display/missing.js" })).statusCode).toBe(404);
+      expect(fetchLive).not.toHaveBeenCalled();
+      expect((await player.inject({ url: "/api/status" })).json()).toEqual({ ready: true });
+      expect(String(fetchLive.mock.calls[0]?.[0])).toBe("https://show.example/api/status");
+    } finally {
+      await player.close();
+      await rm(dir, { recursive: true });
+    }
+  });
+
+  it("uses the live display unless a local build is explicitly selected", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("live display")));
+    const player = await buildVenuePlayer({ serverUrl: "https://show.example", mediaDir: tmpdir() });
+    try {
+      expect((await player.inject({ url: "/display/" })).body).toBe("live display");
+    } finally { await player.close(); }
+  });
+
   it("verifies SSD hashes against the hosted manifest and rejects changed files", async () => {
     const dir = await mkdtemp(join(tmpdir(), "venue-player-"));
     const file = join(dir, "film.mp4");
