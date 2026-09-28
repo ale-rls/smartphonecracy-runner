@@ -91,6 +91,8 @@ def prepare(timings_path, backup_path, masters, media_dir):
                    "expectedDurationMs": 63000, "fadeOutMs": 3000, "timeline": {"id": "credits", "startMs": 0}, "next": "idle", "showCursors": True})
     for phase in [p for p in phases if p["kind"] == "video-position-question"]:
         phase["showLiveCounts"] = False
+        for zone in phase.get("field", {}).get("zones", []):
+            zone["label"] = {"Apollo": "OpenApollo", "Dionysos": "Dionysos69"}.get(zone["label"], zone["label"])
     for phase in [p for p in phases if p["kind"] == "video-position-question"][:3]:
         phase["countdownSoundEnabled"] = True
     scenario = {"version": "smartphonocracy-venue-2026.09.24", "entryPhaseId": segments[0]["phaseId"],

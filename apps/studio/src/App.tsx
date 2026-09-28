@@ -37,6 +37,13 @@ const download = (name: string, value: unknown) => {
 type InlineFeedback = { status: "info" | "success" | "danger"; message: string };
 type ShowLifecycle = "idle" | "lobby" | "active";
 
+function VenueJsonWarning() {
+  return <p className="live-show-warning" role="note">
+    <strong>Venue mode uses a separate JSON file.</strong> Saving or publishing in Studio does not update the venue show.
+    Edit <code>content/scenarios/venue.json</code> on the deployed Git branch, then push and redeploy the venue server.
+  </p>;
+}
+
 function LiveShowWarning({ compact = false }: { compact?: boolean }) {
   return <p className={`live-show-warning${compact ? " live-show-warning-compact" : ""}`} role="status">
     <strong>Live show running.</strong> Draft saves are safe; publishing and shared-media changes will apply after the show ends.
@@ -746,6 +753,7 @@ export function App() {
   if (!draft) return <main className="home" data-sc-tool-density="compact" data-sc-tool-root>
     <header className="home-heading"><p className="sc-tool-eyebrow">Authoring workspace</p><h1 ref={homeHeadingRef} tabIndex={-1}>Show Studio</h1><p className="sc-tool-copy lede">Create and safely round-trip Smartphonecracy shows.</p></header>
     {showLifecycle === "active" && <LiveShowWarning />}
+    <VenueJsonWarning />
     <div className="home-actions">
       <button className="sc-tool-button" data-sc-tool-variant="primary" onClick={createShow}>New show</button>
       <button className="sc-tool-button" data-sc-tool-variant="secondary" onClick={() => void importLatestProduction()}>New from active production</button>
@@ -921,6 +929,7 @@ export function App() {
       <button className="sc-tool-button" data-sc-tool-variant="secondary" type="button" onClick={openMediaLibrary}>Media</button>
       <input aria-label="Show name" className="sc-tool-field show-name" value={draft.name} onChange={(event) => saveCanvas({ ...draft, name: event.target.value })} />
       <SaveStatus status={status} />
+      <VenueJsonWarning />
       {showLifecycle === "active" && <LiveShowWarning compact />}
       {selectedPhase && <a className="sc-tool-button" data-sc-tool-variant="primary" href="preview.html" target="_blank" rel="noreferrer" onClick={preparePreviewFromSelected}>Preview from here</a>}
       <a className="sc-tool-button" data-sc-tool-variant="secondary" href="/display/" target="_blank" rel="noreferrer">Display</a>
@@ -933,6 +942,7 @@ export function App() {
       {exportFeedback && <Feedback id="studio-export-feedback" className="menubar-feedback" feedback={exportFeedback} />}
       {publishOpen && <div className="sc-tool-panel publish-panel" role="dialog" aria-labelledby="publish-heading">
         <p className="sc-tool-eyebrow" id="publish-heading">Publish to PocketBase</p>
+        <VenueJsonWarning />
         {showLifecycle === "active" && <LiveShowWarning />}
         {operatorEmail === null ? <>
           <p className="sc-tool-help">Sign in with your operator credentials (the same ones used for /admin). Stays signed in on this device for 30 days.</p>
