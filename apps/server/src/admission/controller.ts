@@ -223,6 +223,15 @@ export class AdmissionController {
     const knownLease = parsed.message.participantLease && lease
       ? this.registry.get(parsed.message.participantLease)
       : undefined;
+    // An old phone reconnecting through the public URL is not a fresh visit.
+    // Do not let public admission resurrect its ID and start another lobby.
+    if (parsed.message.participantLease && knownLease === undefined && (
+      (lease !== null && this.lastVisitEndedAt !== null && lease.issuedAt <= this.lastVisitEndedAt)
+      || (lease === null && this.options.allowPublicJoin)
+    )) {
+      this.close(socket, SHOW_ENDED_CLOSE_CODE, "show ended");
+      return;
+    }
     // A valid lease issued during the current visit marks a returning
     // participant: the registry may have dropped their record after the
     // disconnect grace (phone asleep) and their QR grant is likely expired,

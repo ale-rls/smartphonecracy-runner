@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import WebSocket from "ws";
+import { SHOW_ENDED_CLOSE_CODE } from "@smartphonecracy/protocol";
 import { buildServer } from "./server.js";
 import { loadConfig } from "./config.js";
 
@@ -76,12 +77,24 @@ describe("venue session stress", () => {
         }));
         expect(runtime.engine!.lifecycleState).toBe("active");
         runtime.engine!.adminJump("credits");
+        const oldLeases = runtime.admission.registry.values().map((record) => record.participantLease);
         const closed = phones.map((phone) => new Promise<number>((resolve) => phone.once("close", resolve)));
         runtime.engine!.adminSkip(); // Exercise actual server/admission end-of-show cleanup.
         await Promise.all(closed);
         expect(runtime.admission.registry.connectedCount).toBe(0);
         expect(runtime.admission.registry.leaseCount).toBe(0);
         runtime.engine!.tick();
+        expect(runtime.engine!.lifecycleState).toBe("idle");
+        // Sleeping phones may miss the original close packet and reconnect later.
+        await Promise.all(oldLeases.map(async (participantLease) => {
+          const retry = await open(url); sockets.push(retry);
+          const closed = new Promise<number>((resolve) => retry.once("close", resolve));
+          send(retry, { t: "join", clientVersion: "dev", installationId: config.installationId,
+            roomId: config.roomId, name: "Old phone", participantLease });
+          expect(await closed).toBe(SHOW_ENDED_CLOSE_CODE);
+        }));
+        runtime.engine!.tick();
+        expect(runtime.admission.registry.connectedCount).toBe(0);
         expect(runtime.engine!.lifecycleState).toBe("idle");
       }
     } finally {

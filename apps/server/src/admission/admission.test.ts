@@ -254,7 +254,7 @@ describe("participant admission", () => {
     });
   });
 
-  it("rejects an unknown valid lease when its grant has expired", () => {
+  it("ends a reconnect using a lease from the completed visit", () => {
     let now = 1_000;
     const admission = controller({ now: () => now });
     const grant = admission.issueJoinGrant(now).token;
@@ -267,7 +267,8 @@ describe("participant admission", () => {
     const retry = socket();
     join(admission, retry, grant, lease, "198.51.100.6");
 
-    expect(lastMessage(retry)).toMatchObject({ t: "join_rejected", reason: "expired_grant" });
+    expect((retry as unknown as MockSocket).closeCalls).toContainEqual({ code: SHOW_ENDED_CLOSE_CODE, reason: "show ended" });
+    expect(admission.registry.connectedCount).toBe(0);
   });
 
   it("rejects an expired lease when its grant has expired", () => {
@@ -530,4 +531,30 @@ describe("participant admission", () => {
     expect((s as unknown as MockSocket).closeCalls[0]).toMatchObject({ code: 1008 });
     expect(parseServerMessage(JSON.stringify(lastMessage(s))).ok).toBe(false);
   });
+});
+
+
+it("does not revive old IDs through public joining after a visit ends", () => {
+  let now = 1000;
+  const joined = vi.fn();
+  const admission = controller({ now: () => now, allowPublicJoin: true, onParticipantJoin: joined });
+  const first = socket();
+  join(admission, first, "");
+  const identity = lastMessage(first);
+  now = 2000;
+  admission.endParticipantSession(now);
+  joined.mockClear();
+  for (let i = 0; i < 100; i++) {
+    const retry = socket();
+    join(admission, retry, "", identity.participantLease, `198.51.100.${i + 1}`);
+    expect((retry as unknown as MockSocket).closeCalls).toContainEqual({ code: SHOW_ENDED_CLOSE_CODE, reason: "show ended" });
+  }
+  expect(admission.registry.connectedCount).toBe(0);
+  expect(joined).not.toHaveBeenCalled();
+  now = 3000;
+  const deliberateJoin = socket();
+  join(admission, deliberateJoin, "", undefined, "203.0.113.1");
+  expect(lastMessage(deliberateJoin)).toMatchObject({ t: "identity" });
+  expect(lastMessage(deliberateJoin).clientId).not.toBe(identity.clientId);
+  expect(admission.registry.connectedCount).toBe(1);
 });
