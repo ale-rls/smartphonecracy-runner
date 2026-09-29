@@ -554,7 +554,7 @@ export function App() {
 
         {status.runMode === "venue" && <section className="sc-tool-panel">
           <h2>Automatic venue show</h2>
-          <p>Two visitors start the show immediately. One visitor starts after 30 seconds. Late joining stays open.</p>
+          <p>The first visitor starts a 45-second countdown. Additional visitors do not shorten it. Late joining stays open.</p>
           <p>After two minutes with all phones disconnected, the show returns to the lobby. Winner film and credits play before each completed run returns to the lobby.</p>
         </section>}
         {status.runMode !== "venue" && <section className="sc-tool-panel" aria-labelledby="admin-lobby-heading">

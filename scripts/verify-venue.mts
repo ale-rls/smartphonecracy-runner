@@ -60,13 +60,16 @@ try {
   assert.equal(runtime.engine!.lifecycleState, "lobby");
   const remaining = runtime.engine!.getSnapshot().deadlineAt! - Date.now();
   assert.ok(remaining > 35_000 && remaining <= 45_000);
+  const lobbyDeadline = runtime.engine!.getSnapshot().deadlineAt;
   await join("Venue test two");
+  assert.equal(runtime.engine!.lifecycleState, "lobby");
+  assert.equal(runtime.engine!.getSnapshot().deadlineAt, lobbyDeadline);
   await display.waitForFunction(() => {
     const video = document.querySelector<HTMLVideoElement>(".phase-video-slot-active video");
     return video && video.currentTime > 0.1;
-  });
+  }, undefined, { timeout: 50_000 });
   assert.equal(runtime.engine!.currentPhaseId, "2-0-Athene");
-  console.log("PASS: solo countdown, second visitor start, main-film playback");
+  console.log("PASS: full lobby countdown despite second visitor, main-film playback");
 
   runtime.engine!.adminJump("title-apollo");
   await display.waitForFunction(() => {

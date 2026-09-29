@@ -100,7 +100,7 @@ export type PhaseEngineOptions = {
   onLobbyScheduleChanged?: (startTimes: readonly number[]) => void;
   /** Legacy/test compatibility; production disables participant-count auto-start. */
   autoStartOnFirstParticipant?: boolean;
-  /** Local unattended installation: prefer two visitors; abandon only when empty. */
+  /** Local unattended installation: timed lobby and empty-session joining invitation. */
   venueMode?: boolean;
   qr?: Omit<QrGrantPushLoopOptions, "send" | "lifecycle" | "hasDisplay" | "now">;
 };
@@ -465,9 +465,6 @@ export class PhaseEngine {
     }
 
     if (this.lifecycle === "lobby") {
-      if (this.venueMode && this.displaySocket !== undefined && this.registry.connectedCount >= 2) {
-        this.startSession(now);
-      }
       if (this.lifecycle === "lobby" && this.deadlineAt !== null && now >= this.deadlineAt) {
         if (this.displaySocket !== undefined && this.registry.connectedCount > 0) {
           this.startSession(now);

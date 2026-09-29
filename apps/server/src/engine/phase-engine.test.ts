@@ -1419,12 +1419,17 @@ describe("venue operation", () => {
     expect(engine.lifecycleState).toBe("active");
   });
 
-  it("starts when the second visitor joins before the solo countdown finishes", () => {
+  it("keeps the original 45-second countdown when a second visitor joins", () => {
     const { engine, join, at } = venueSetup();
     join("one");
     at(2_000);
     join("two");
     at(2_025);
+    expect(engine.lifecycleState).toBe("lobby");
+    expect(engine.getSnapshot().deadlineAt).toBe(46_000);
+    at(45_999);
+    expect(engine.lifecycleState).toBe("lobby");
+    at(46_000);
     expect(engine.lifecycleState).toBe("active");
   });
 
