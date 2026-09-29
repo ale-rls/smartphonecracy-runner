@@ -71,6 +71,9 @@ describe("end-of-show website redirect", () => {
 
   it("redirects after the existing no-answer timeout and deletion message", async () => {
     await act(async () => vi.advanceTimersByTime(60_000));
+    expect(document.querySelector(".consent-actions")).not.toBeNull();
+    expect(navigate).not.toHaveBeenCalled();
+    await act(async () => vi.advanceTimersByTime(60_000));
     expect(document.querySelector(".consent-result")?.textContent).toContain("gelöscht");
     await act(async () => vi.advanceTimersByTime(2_000));
     expect(navigate).toHaveBeenCalledOnce();

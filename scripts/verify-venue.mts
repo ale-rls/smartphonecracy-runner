@@ -59,7 +59,7 @@ try {
   await join("Venue test one");
   assert.equal(runtime.engine!.lifecycleState, "lobby");
   const remaining = runtime.engine!.getSnapshot().deadlineAt! - Date.now();
-  assert.ok(remaining > 20_000 && remaining <= 30_000);
+  assert.ok(remaining > 35_000 && remaining <= 45_000);
   await join("Venue test two");
   await display.waitForFunction(() => {
     const video = document.querySelector<HTMLVideoElement>(".phase-video-slot-active video");
@@ -109,11 +109,11 @@ try {
   await display.waitForFunction(() => {
     const video = document.querySelector<HTMLVideoElement>(".phase-video-slot-active video");
     return video && video.volume > 0 && video.volume < 0.9;
-  }, undefined, { timeout: 65000 });
+  }, undefined, { timeout: 75000 });
   assert.equal(runtime.engine!.currentPhaseId, "credits");
   await display.waitForFunction(() => !!document.querySelector(".venue-return-from-black"), undefined, { timeout: 5000 });
   assert.equal(runtime.engine!.currentPhaseId, "idle");
-  console.log("PASS: credits audio fades after 60 seconds and session returns to lobby at 63 seconds");
+  console.log("PASS: credits audio fades after 70 seconds and session returns to lobby at 73 seconds");
   const admin = await browser.newPage();
   await admin.addInitScript(() => localStorage.setItem("admin-token", "venue-smoke-test"));
   await admin.goto(`${base}/admin/`);

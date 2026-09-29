@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useReducer, useRef, useState, type FormEvent } from "react";
+import { MOVEMENT_CONSENT_TIMEOUT_MS } from "@smartphonecracy/shared";
 import { PROTOCOL_VERSION } from "@smartphonecracy/protocol";
 import { PhoneConnection, type EndedPhoneSession } from "./lib/connection.js";
 import { RealtimeCursorPublisher } from "./lib/realtimeWsClient.js";
@@ -38,8 +39,6 @@ type ConsentState = {
   status: ConsentStatus;
   error: string | null;
 };
-
-const CONSENT_TIMEOUT_MS = 60_000;
 
 const cursorTransform = (value: TrackpadState, surfaceSizePx: number): string =>
   `translate3d(${value.x * surfaceSizePx}px, ${value.y * surfaceSizePx}px, 0) translate3d(-50%, -50%, 0)`;
@@ -108,7 +107,7 @@ export function App() {
         onSocketLost: () => dispatch({ type: "socket-lost" }),
         onSessionEnded: (session) => {
           if (session !== null && session.sessionId !== "idle" && session.sessionId !== "lobby") {
-            setConsent({ session, deadlineAt: Date.now() + CONSENT_TIMEOUT_MS, status: "prompt", error: null });
+            setConsent({ session, deadlineAt: Date.now() + MOVEMENT_CONSENT_TIMEOUT_MS, status: "prompt", error: null });
           } else {
             setSubmittedName(null);
           }

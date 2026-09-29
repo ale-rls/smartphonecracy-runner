@@ -18,6 +18,9 @@ export const DEFAULT_INSTALLATION_POLICY = {
   maxSessionDurationMs: 1_800_000,
 } as const;
 
+/** Time to answer the post-show movement-data donation prompt, on phone and server. */
+export const MOVEMENT_CONSENT_TIMEOUT_MS = 120_000;
+
 /** v1 media manifest ceiling in bytes (plan §5). */
 export const MEDIA_BUDGET_BYTES = 2 * 1024 * 1024 * 1024;
 

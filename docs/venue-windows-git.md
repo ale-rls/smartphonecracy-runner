@@ -84,7 +84,7 @@ First deploy any intended coordinator changes to the live venue server and wait 
    powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/setup-venue.ps1 -Update
    ```
 
-   This runs `git pull --ff-only`, installs locked dependencies, and rebuilds the display. It refuses to update tracked files with local edits. It preserves `.env.venue` and `venue-media`. If any step fails, resolve the reported problem before restarting.
+   This runs `git pull --ff-only`, installs locked dependencies, and rebuilds the display. It refuses to update tracked files with local edits. It preserves `.env.venue` and the main venue films, and updates `venue-media\smartphonocracy-credits.mp4` from the bundled installation credits. For a custom media folder, add `-MediaDir "D:\venue-media"` to the setup command. If any step fails, resolve the reported problem before restarting.
 
 4. Start the player again:
 

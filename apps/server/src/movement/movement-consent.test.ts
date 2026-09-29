@@ -12,8 +12,20 @@ describe("MovementConsentManager", () => {
     manager.endSession("session-1");
 
     await expect(manager.respond("session-1", "participant-1", true)).resolves.toBe("accepted");
-    await vi.advanceTimersByTimeAsync(60_000);
+    await vi.advanceTimersByTimeAsync(120_000);
 
+    expect(deleteMovementRecordings).not.toHaveBeenCalled();
+    manager.stop();
+  });
+
+  it("still accepts a donation during the second minute", async () => {
+    const deleteMovementRecordings = vi.fn(async () => undefined);
+    const manager = new MovementConsentManager({ deleteMovementRecordings });
+    manager.track("session-1", "participant-1");
+    manager.endSession("session-1");
+    await vi.advanceTimersByTimeAsync(90_000);
+    await expect(manager.respond("session-1", "participant-1", true)).resolves.toBe("accepted");
+    await vi.advanceTimersByTimeAsync(60_000);
     expect(deleteMovementRecordings).not.toHaveBeenCalled();
     manager.stop();
   });
@@ -30,13 +42,13 @@ describe("MovementConsentManager", () => {
     manager.stop();
   });
 
-  it("deletes recordings after one minute without feedback", async () => {
+  it("deletes recordings after two minutes without feedback", async () => {
     const deleteMovementRecordings = vi.fn(async () => undefined);
     const manager = new MovementConsentManager({ deleteMovementRecordings });
     manager.track("session-1", "participant-1");
     manager.endSession("session-1");
 
-    await vi.advanceTimersByTimeAsync(59_999);
+    await vi.advanceTimersByTimeAsync(119_999);
     expect(deleteMovementRecordings).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(1);
 

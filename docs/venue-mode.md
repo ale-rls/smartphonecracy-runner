@@ -9,8 +9,8 @@ The September 24 delivery uses one uninterrupted main film with timed interactiv
 - Phones remain live, including late joins through the printed QR code. A top-left QR with “Mach mit” fades in after three minutes with no connected visitors and fades out as soon as someone joins. Quiet watching does not end a session.
 - When all phones disconnect, the film keeps playing. After three minutes the joining invitation appears; a returning visitor resets this timer. Broken connections are first detected by the existing WebSocket heartbeat.
 - The final vote resolves normally, including the existing Kleroterion tie-break. Its result stays visible until the delivery's hide cue, then the winner film plays, followed by the current credits. An empty vote returns to the lobby as in the supplied timing file.
-- Credits keep live cursors visible and fade picture, cursors, and music from 60 to 63 seconds. The lobby fades in from black. Vote totals are hidden; countdown numbers remain and the initial three votes have countdown pings.
-- At the end, the existing visit cleanup disconnects phones and clears their results. Visitors join again for a fresh run.
+- Credits keep live cursors visible and fade picture, cursors, and music from 70 to 73 seconds (ten extra seconds after the credit roll). The lobby fades in from black. Vote totals are hidden; countdown numbers remain and the initial three votes have countdown pings.
+- At the end, the existing visit cleanup disconnects phones and clears their results. The data donation choice remains available for two minutes; unanswered recordings are then deleted. After a choice or timeout, phones redirect to Interrobang. Visitors join again for a fresh run.
 - The same `/admin/` provides start, skip, restart, return to idle and scene navigation. Venue mode displays its automatic behavior and hides Studio show selection, ghost settings and scheduling. It does not need a separate admin route.
 
 ## Prepared SSD delivery

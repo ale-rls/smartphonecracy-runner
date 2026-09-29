@@ -1487,7 +1487,7 @@ describe("continuous media timeline", () => {
     const sessionEnds: Array<{ reason: string; sessionId: string; endedAt: number }> = [];
     const credits = scenarioSchema.parse({ version: "credits", entryPhaseId: "credits", phases: [
       { id: "idle", kind: "idle" },
-      { id: "credits", kind: "video", src: "credits.mp4", expectedDurationMs: 63000,
+      { id: "credits", kind: "video", src: "credits.mp4", expectedDurationMs: 73000,
         fadeOutMs: 3000, showCursors: true, timeline: { id: "credits", startMs: 0 }, next: "idle" },
     ] });
     const { engine, registry } = setup({ now: () => now, testScenario: credits, sessionEnds,
@@ -1495,15 +1495,15 @@ describe("continuous media timeline", () => {
     addParticipant(registry, new MockSocket() as unknown as WebSocket, now, "one");
     connectDisplay(engine, new MockSocket() as unknown as WebSocket);
     engine.adminStart();
-    now = 61000;
+    now = 73999;
     engine.tick();
     expect(engine.currentPhaseId).toBe("credits");
     expect(sessionEnds).toHaveLength(0);
-    now = 64000;
+    now = 74000;
     engine.tick();
     expect(engine.currentPhaseId).toBe("idle");
     expect(sessionEnds).toHaveLength(1);
-    expect(sessionEnds[0]?.endedAt).toBe(64000);
+    expect(sessionEnds[0]?.endedAt).toBe(74000);
   });
 
   it("advances cues at exact absolute boundaries without adding fallback grace or tick drift", () => {

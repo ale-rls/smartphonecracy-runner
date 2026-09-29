@@ -45,13 +45,15 @@ def prepare(timings_path, backup_path, masters, media_dir):
     def source(entry):
         return names[Path(entry["files"]["fullHD"]).name]
 
-    credits = ROOT / "apps/display/src/assets/smartphonocracy-credits.mp4"
+    credits = ROOT / "apps/display/src/assets/smartphonocracy-credits-installation.mp4"
     credits_target = media_dir / "smartphonocracy-credits.mp4"
     if not credits_target.exists():
         shutil.copy2(credits, credits_target)
     elif hashlib.sha256(credits.read_bytes()).digest() != hashlib.sha256(credits_target.read_bytes()).digest():
         raise ValueError(f"Existing credits differ from current credits; move {credits_target} before rerunning")
     credits_ms = round(float(probe(credits_target)["format"]["duration"]) * 1000)
+    if credits_ms < 73000:
+        raise ValueError("Installation credits must cover the 73-second venue closing sequence")
 
     phases = [{"id": "idle", "kind": "idle", "src": source(delivery["lobby"])}]
     segments = delivery["mainShow"]["segments"]
@@ -88,7 +90,7 @@ def prepare(timings_path, backup_path, masters, media_dir):
         phases.append({"id": phase_id, "kind": "video", "src": source(entry), "fit": "contain",
                        "expectedDurationMs": entry["frames"] * 1000 / timings["conventions"]["fps"], "next": "credits"})
     phases.append({"id": "credits", "kind": "video", "src": credits_target.name, "fit": "contain",
-                   "expectedDurationMs": 63000, "fadeOutMs": 3000, "timeline": {"id": "credits", "startMs": 0}, "next": "idle", "showCursors": True})
+                   "expectedDurationMs": 73000, "fadeOutMs": 3000, "timeline": {"id": "credits", "startMs": 0}, "next": "idle", "showCursors": True})
     for phase in [p for p in phases if p["kind"] == "video-position-question"]:
         phase["showLiveCounts"] = False
         for zone in phase.get("field", {}).get("zones", []):

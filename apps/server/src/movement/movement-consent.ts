@@ -1,4 +1,5 @@
-export const MOVEMENT_CONSENT_TIMEOUT_MS = 60_000;
+import { MOVEMENT_CONSENT_TIMEOUT_MS } from "@smartphonecracy/shared";
+export { MOVEMENT_CONSENT_TIMEOUT_MS } from "@smartphonecracy/shared";
 
 export type MovementConsentDataSource = {
   deleteMovementRecordings(sessionId: string, participantId: string): Promise<void>;
@@ -16,8 +17,8 @@ const keyFor = (sessionId: string, participantId: string): string =>
   `${sessionId}\u0000${participantId}`;
 
 /**
- * Keeps consent deadlines on the server, so cursor data is removed after one
- * minute even if a phone is backgrounded, loses its connection, or closes the
+ * Keeps consent deadlines on the server, so cursor data is removed after two
+ * minutes even if a phone is backgrounded, loses its connection, or closes the
  * page without answering the end-of-show prompt.
  */
 export class MovementConsentManager {

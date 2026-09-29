@@ -843,7 +843,7 @@
       "kind": "video",
       "src": "smartphonocracy-credits.mp4",
       "fit": "contain",
-      "expectedDurationMs": 63000,
+      "expectedDurationMs": 73000,
       "next": "idle",
       "showCursors": true,
       "fadeOutMs": 3000,
