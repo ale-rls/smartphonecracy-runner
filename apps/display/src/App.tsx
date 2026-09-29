@@ -13,6 +13,7 @@ import { startQrGrantRefresh } from "./qr/refreshGrant.js";
 import { useMedia } from "./media/useMedia.js";
 import { displayReducer, initialDisplayState } from "./state/store.js";
 import { Countdown } from "./components/Countdown.js";
+import { VenueJoinInvitation } from "./components/VenueJoinInvitation.js";
 import { QrBadge } from "./components/QrBadge.js";
 import { QuadrantOverlay, questionFieldCenter } from "./components/QuadrantOverlay.js";
 import { IdleAttract } from "./components/IdleAttract.js";
@@ -339,6 +340,12 @@ export function App() {
         {(!phase?.idleMediaSrc && !isIdle && phase?.kind !== "video") && (
           <QrBadge grant={state.qrGrant} qrHidden={state.qrHidden} clock={connection.clock} />
         )}
+        <VenueJoinInvitation
+          enabled={!isIdle && Boolean(phase?.idleMediaSrc)}
+          grant={state.qrGrant}
+          qrHidden={state.qrHidden}
+          clock={connection.clock}
+        />
         <LobbyCountdown
           sessionId={state.sessionId}
           phase={phase}

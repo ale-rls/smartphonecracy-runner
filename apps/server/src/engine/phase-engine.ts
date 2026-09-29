@@ -179,6 +179,7 @@ export class PhaseEngine {
 
   private readonly venueMode: boolean;
   private emptySince: number | null = null;
+  private emptyQrVisible = false;
   private lifecycle: EngineLifecycle = "idle";
   private phaseId = "idle";
   private sessionId = "idle";
@@ -255,6 +256,7 @@ export class PhaseEngine {
       ...options.qr,
       send: (message) => this.sendToDisplay(message),
       lifecycle: () => this.lifecycle,
+      showActiveInvitation: () => this.venueMode && this.emptyQrVisible && this.registry.connectedCount === 0,
       hasDisplay: () => this.displaySocket !== undefined,
       now: this.now,
     });
@@ -484,9 +486,10 @@ export class PhaseEngine {
     if (this.venueMode) {
       if (this.registry.connectedCount > 0) this.emptySince = null;
       else this.emptySince ??= now;
-      if (this.emptySince !== null && now - this.emptySince >= 120_000) {
-        this.abortToIdle("venue-empty-timeout", now);
-        return;
+      const showInvitation = this.emptySince !== null && now - this.emptySince >= 180_000;
+      if (showInvitation !== this.emptyQrVisible) {
+        this.emptyQrVisible = showInvitation;
+        this.qr?.push();
       }
     }
 
@@ -596,6 +599,10 @@ export class PhaseEngine {
     this.clients.add(socket);
     this.participantSockets.add(socket);
     this.emptySince = null;
+    if (this.emptyQrVisible) {
+      this.emptyQrVisible = false;
+      this.qr?.push();
+    }
     if (_participant !== undefined) {
       this.participantIds.set(socket, _participant.clientId);
       this.cursors.join(_participant.clientId, _participant.color);
@@ -854,6 +861,7 @@ export class PhaseEngine {
     this.sessionId = this.sessionIdFactory();
     this.sessionStartedAt = now;
     this.emptySince = null;
+    this.emptyQrVisible = false;
     this.lastInputAt = null;
     this.joinMovementRecordingForConnectedParticipants();
     this.ghosts.selectForSession(now);
@@ -909,6 +917,7 @@ export class PhaseEngine {
       this.sessionId = "idle";
       this.sessionStartedAt = null;
       this.emptySince = null;
+      this.emptyQrVisible = false;
       this.lastInputAt = null;
     } else {
       this.lifecycle = "active";

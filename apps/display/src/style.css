@@ -319,3 +319,27 @@ html, body, #root { width: 100%; height: 100%; margin: 0; overflow: hidden; }
 
 .venue-return-from-black { animation: venue-return-from-black 1s linear forwards; }
 @keyframes venue-return-from-black { from { opacity: 1; } to { opacity: 0; } }
+
+.venue-join-invitation {
+  position: absolute;
+  z-index: 6;
+  top: 1rem;
+  left: 1rem;
+  width: clamp(128px, 12.5cqw, 200px);
+  padding: .4rem;
+  border-radius: .35rem;
+  background: rgb(0 0 0 / 78%);
+  color: #fff;
+  font-size: clamp(1.25rem, 2cqw, 2rem);
+  line-height: 1.2;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 600ms ease;
+  pointer-events: none;
+}
+.venue-join-invitation-visible { opacity: 1; }
+/* qrcode sets inline pixel dimensions; keep its high-resolution canvas within the badge. */
+.venue-join-invitation canvas { display: block; width: 100% !important; height: auto !important; margin-bottom: .35rem; }
+@media (prefers-reduced-motion: reduce) {
+  .venue-join-invitation { transition-duration: 0ms; }
+}

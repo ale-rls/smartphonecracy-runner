@@ -58,11 +58,25 @@ describe("QR grant push loop", () => {
     { allowLateJoin: false },
     { activeQrVisibility: "corner" as const },
     { activeQrVisibility: "hidden" as const },
-  ])("always hides QR during active play (%o)", (policy) => {
+  ])("hides QR during active play without an empty-session invitation (%o)", (policy) => {
     const { loop, sent, setLifecycle } = setup(policy);
     setLifecycle("active");
     loop.push();
     expect(sent).toEqual([{ t: "qr_hidden", v: 2 }]);
+  });
+
+  it("refreshes active invitations and stops advertising when late joins are disabled", () => {
+    const { loop, sent, setLifecycle, setNow } = setup({ showActiveInvitation: () => true });
+    setLifecycle("active");
+    loop.push();
+    expect(sent.at(-1)).toMatchObject({ t: "qr_grant", placement: "corner", expiresAt: 121_000 });
+    setNow(61_000);
+    loop.push();
+    expect(sent.at(-1)).toMatchObject({ t: "qr_grant", placement: "corner", expiresAt: 181_000 });
+    const disabled = setup({ showActiveInvitation: () => true, allowLateJoin: false });
+    disabled.setLifecycle("active");
+    disabled.loop.push();
+    expect(disabled.sent.at(-1)).toMatchObject({ t: "qr_hidden" });
   });
 
   it("rotates every configured interval only while a display is connected", () => {

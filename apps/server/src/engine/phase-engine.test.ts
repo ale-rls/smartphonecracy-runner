@@ -1387,7 +1387,7 @@ describe("venue operation", () => {
     let now = 1_000;
     const long = scenarioSchema.parse({ ...longVideoScenario, phases: longVideoScenario.phases.map((p) =>
       p.id === "intro" ? { ...p, expectedDurationMs: 600_000 } : p) });
-    const setupResult = setup({ now: () => now, venueMode: true, lobbyCountdownMs: 45_000,
+    const setupResult = setup({ now: () => now, venueMode: true, qr: true, lobbyCountdownMs: 45_000,
       testScenario: long, maxSessionDurationMs: 1_800_000 });
     const { engine, registry } = setupResult;
     const display = new MockSocket();
@@ -1402,7 +1402,7 @@ describe("venue operation", () => {
       registry.releaseSocket(socket, now);
       engine.socketClosed(socket);
     };
-    return { ...setupResult, join, leave, at: (time: number) => { now = time; engine.tick(now); } };
+    return { ...setupResult, display, join, leave, at: (time: number) => { now = time; engine.tick(now); } };
   }
 
   it("waits for a visitor, starts a solo visitor after 45 seconds, and allows quiet watching", () => {
@@ -1428,21 +1428,45 @@ describe("venue operation", () => {
     expect(engine.lifecycleState).toBe("active");
   });
 
-  it("waits two minutes after everyone disconnects; a late join cancels that timeout", () => {
-    const { engine, join, leave, at } = venueSetup();
+  it("shows a corner invitation only after three empty minutes and hides it immediately on join", () => {
+    const { engine, display, join, leave, at } = venueSetup();
+    const first = join("one");
+    at(46_000);
+    at(240_000); // A connected visitor watching quietly does not trigger the invitation.
+    expect(display.sent.at(-1)).not.toMatchObject({ t: "qr_grant", placement: "corner" });
+    leave(first);
+    display.sent.length = 0;
+    at(419_999);
+    expect(engine.lifecycleState).toBe("active");
+    expect(display.sent.some((m) => m.t === "qr_grant")).toBe(false);
+    at(420_000);
+    expect(engine.lifecycleState).toBe("active");
+    expect(display.sent.at(-1)).toMatchObject({ t: "qr_grant", placement: "corner" });
+    const second = join("two");
+    expect(display.sent.filter((m) => m.t === "qr_grant" || m.t === "qr_hidden").at(-1)).toMatchObject({ t: "qr_hidden" });
+    at(421_000);
+    leave(second);
+    display.sent.length = 0;
+    at(600_999);
+    expect(display.sent.some((m) => m.t === "qr_grant")).toBe(false);
+    at(601_000);
+    expect(display.sent.at(-1)).toMatchObject({ t: "qr_grant", placement: "corner" });
+  });
+
+  it("resets the empty timer when someone joins before the invitation appears", () => {
+    const { display, join, leave, at } = venueSetup();
     const first = join("one");
     at(46_000);
     leave(first);
-    at(165_999);
-    expect(engine.lifecycleState).toBe("active");
+    at(200_000);
     const second = join("two");
-    at(166_001);
-    expect(engine.lifecycleState).toBe("active");
+    at(210_000);
     leave(second);
-    at(286_000);
-    expect(engine.lifecycleState).toBe("active");
-    at(286_001);
-    expect(engine.lifecycleState).toBe("idle");
+    display.sent.length = 0;
+    at(389_999);
+    expect(display.sent.some((m) => m.t === "qr_grant")).toBe(false);
+    at(390_000);
+    expect(display.sent.at(-1)).toMatchObject({ t: "qr_grant", placement: "corner" });
   });
 
   it("cancels an empty lobby and gives the next visitor a fresh countdown", () => {

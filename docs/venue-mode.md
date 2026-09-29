@@ -6,8 +6,8 @@ The September 24 delivery uses one uninterrupted main film with timed interactiv
 
 - The supplied lobby film loops until a visitor joins, with the join QR tracked onto its marker.
 - One visitor starts a 45-second countdown. Two connected visitors start immediately.
-- Phones remain live, including late joins through the printed QR code. No QR is drawn over the film. Quiet watching does not end a session.
-- When all phones disconnect, the film continues for up to two minutes. A returning visitor cancels that timeout. Otherwise the runner returns to the lobby. Broken connections are first detected by the existing WebSocket heartbeat.
+- Phones remain live, including late joins through the printed QR code. A top-left QR with “Mach mit” fades in after three minutes with no connected visitors and fades out as soon as someone joins. Quiet watching does not end a session.
+- When all phones disconnect, the film keeps playing. After three minutes the joining invitation appears; a returning visitor resets this timer. Broken connections are first detected by the existing WebSocket heartbeat.
 - The final vote resolves normally, including the existing Kleroterion tie-break. Its result stays visible until the delivery's hide cue, then the winner film plays, followed by the current credits. An empty vote returns to the lobby as in the supplied timing file.
 - Credits keep live cursors visible and fade picture, cursors, and music from 60 to 63 seconds. The lobby fades in from black. Vote totals are hidden; countdown numbers remain and the initial three votes have countdown pings.
 - At the end, the existing visit cleanup disconnects phones and clears their results. Visitors join again for a fresh run.
