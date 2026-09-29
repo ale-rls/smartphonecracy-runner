@@ -40,7 +40,9 @@ Test a Windows reboot after updating. Windows can restrict [foreground activatio
 
 ### Translation prompts
 
-When `-OpenBrowser` is used, the launcher sets the supported Edge `TranslateEnabled` policy to `0` in `HKCU:\Software\Policies\Microsoft\Edge` before opening Edge. This disables built-in translation and its prompts for the current Windows user, including that user's other Edge profiles. Use the dedicated venue Windows account. Other Windows accounts are unaffected.
+When `-OpenBrowser` is used, the launcher attempts to set the supported Edge `TranslateEnabled` policy to `0` in `HKCU:\Software\Policies\Microsoft\Edge` before opening Edge. This disables built-in translation and its prompts for the current Windows user, including that user's other Edge profiles. Use the dedicated venue Windows account. Other Windows accounts are unaffected.
+
+If registry access is denied, the launcher logs a warning and continues starting the player and Edge. Translation prompts may remain enabled; this does not require administrator access to run the show.
 
 Close the venue Edge window before restarting the launcher after this update. On managed computers, IT should ensure the effective `TranslateEnabled` value in `edge://policy` is false; an organization policy can take precedence. See [Microsoft's TranslateEnabled documentation](https://learn.microsoft.com/en-us/deployedge/microsoft-edge-policies/translateenabled).
 

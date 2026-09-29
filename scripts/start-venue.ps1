@@ -42,7 +42,9 @@ if ($OpenBrowser) {
     New-ItemProperty -Path $edgePolicy -Name 'TranslateEnabled' -PropertyType DWord -Value 0 -Force | Out-Null
     Write-Host 'Edge translation disabled for this Windows user.'
   } catch {
-    throw "Cannot disable Edge translation. Ask venue IT to set TranslateEnabled=0. $($_.Exception.Message)"
+    # Managed venue accounts may not be allowed to write Edge policies.
+    # Translation preferences must never prevent the player from starting.
+    Write-Warning "Could not disable Edge translation; continuing venue startup. Translation prompts may still appear. Venue IT can set TranslateEnabled=0. $($_.Exception.Message)"
   }
 }
 $nodeArgs = @('--import', 'tsx')
