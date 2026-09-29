@@ -7,6 +7,11 @@ type CreditProps = {
   children: ReactNode;
 };
 
+export type CreditsProps = {
+  subtitle?: string;
+  showWebsite?: boolean;
+};
+
 const Credit: React.FC<CreditProps> = ({label, children}) => (
   <div className="credit-row">
     <div className="credit-label">{label}</div>
@@ -14,7 +19,7 @@ const Credit: React.FC<CreditProps> = ({label, children}) => (
   </div>
 );
 
-const RollingCredits: React.FC = () => {
+const RollingCredits: React.FC<Required<CreditsProps>> = ({subtitle, showWebsite}) => {
   const frame = useCurrentFrame();
   const rollStart = 0;
   const rollEnd = 1440;
@@ -23,14 +28,14 @@ const RollingCredits: React.FC = () => {
     extrapolateRight: 'clamp',
     easing: Easing.linear,
   });
-  const y = interpolate(progress, [0, 1], [1140, -3820]);
+  const y = interpolate(progress, [0, 1], [1140, showWebsite ? -3940 : -3820]);
   const style = {transform: `translate3d(0, ${y}px, 0)`} satisfies CSSProperties;
 
   return (
     <div className="roll" style={style}>
       <section className="roll-title">
         <h2>Smartphonocracy</h2>
-        <p>Eine interaktive KI-Performance</p>
+        <p>{subtitle}</p>
       </section>
 
       <section className="credits-block credits-team">
@@ -79,12 +84,18 @@ const RollingCredits: React.FC = () => {
 
       <section className="end-mark">
         <div className="interrobang-logo" role="img" aria-label="Interrobang Performance" />
+        {showWebsite ? (
+          <div className="end-website">www.interrobang-performance.com</div>
+        ) : null}
       </section>
     </div>
   );
 };
 
-export const Credits: React.FC = () => {
+export const Credits: React.FC<CreditsProps> = ({
+  subtitle = 'Eine interaktive KI-Performance',
+  showWebsite = false,
+}) => {
   const frame = useCurrentFrame();
   const masterOpacity = interpolate(frame, [0, 16], [0, 1], {
     extrapolateLeft: 'clamp',
@@ -93,7 +104,7 @@ export const Credits: React.FC = () => {
 
   return (
     <AbsoluteFill className="credits" style={{opacity: masterOpacity}}>
-      <RollingCredits />
+      <RollingCredits subtitle={subtitle} showWebsite={showWebsite} />
       <Sequence from={240}>
         <Html5Audio
           src={creditsMusic}

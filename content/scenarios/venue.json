@@ -71,7 +71,7 @@
           "maxLabel": "Lüge",
           "minLabel": "Fakt"
         },
-        "splitX": 0.493,
+        "splitX": 0.5,
         "type": "two-quadrant",
         "variant": "split"
       },
@@ -105,7 +105,7 @@
           "maxLabel": "Fakt",
           "minLabel": "Lüge"
         },
-        "splitX": 0.493,
+        "splitX": 0.5,
         "type": "two-quadrant",
         "variant": "split"
       },
@@ -139,7 +139,7 @@
           "maxLabel": "Lüge",
           "minLabel": "Fakt"
         },
-        "splitX": 0.493,
+        "splitX": 0.5,
         "type": "two-quadrant",
         "variant": "split"
       },

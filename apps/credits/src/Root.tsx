@@ -11,13 +11,27 @@ export const VIDEO = {
 
 export const RemotionRoot: React.FC = () => {
   return (
-    <Composition
-      id="SmartphonocracyCredits"
-      component={Credits}
-      durationInFrames={VIDEO.durationInFrames}
-      fps={VIDEO.fps}
-      width={VIDEO.width}
-      height={VIDEO.height}
-    />
+    <>
+      <Composition
+        id="SmartphonocracyCredits"
+        component={Credits}
+        durationInFrames={VIDEO.durationInFrames}
+        fps={VIDEO.fps}
+        width={VIDEO.width}
+        height={VIDEO.height}
+      />
+      <Composition
+        id="SmartphonocracyCreditsInstallation"
+        component={Credits}
+        defaultProps={{
+          subtitle: 'Eine interaktive KI-Installation',
+          showWebsite: true,
+        }}
+        durationInFrames={VIDEO.durationInFrames}
+        fps={VIDEO.fps}
+        width={VIDEO.width}
+        height={VIDEO.height}
+      />
+    </>
   );
 };
