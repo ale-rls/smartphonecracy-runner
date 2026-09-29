@@ -194,6 +194,14 @@ export function App() {
     return () => window.clearTimeout(timer);
   }, [consent?.deadlineAt, consent?.status]);
 
+  useEffect(() => {
+    if (consent?.status !== "granted" && consent?.status !== "deleted") return;
+    const timer = window.setTimeout(() => {
+      location.assign("https://www.interrobang-performance.com/");
+    }, 2_000);
+    return () => window.clearTimeout(timer);
+  }, [consent?.status]);
+
   const submitConsent = async (granted: boolean) => {
     if (consent === null || consent.status === "submitting") return;
     const session = consent.session;
