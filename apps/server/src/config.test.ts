@@ -56,3 +56,10 @@ it("only allows display-owned media in explicit venue mode", () => {
   expect(() => loadConfig({ VENUE_MEDIA_LOCATION: "display" })).toThrow("requires RUN_MODE=venue");
   expect(loadConfig({ RUN_MODE: "venue", VENUE_MEDIA_LOCATION: "display" }).venueMediaLocation).toBe("display");
 });
+
+
+it("enforces venue capacity and supports shared-Wi-Fi bursts despite legacy limits", () => {
+  expect(loadConfig({ RUN_MODE: "venue", MAX_PARTICIPANTS: "30", JOIN_RATE_LIMIT_MAX_ATTEMPTS: "30" }))
+    .toMatchObject({ maxParticipants: 100, joinRateLimit: { maxAttempts: 300 } });
+  expect(loadConfig({ MAX_PARTICIPANTS: "12" }).maxParticipants).toBe(12);
+});

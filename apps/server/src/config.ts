@@ -134,10 +134,10 @@ export function loadConfig(
       maxAuthenticationFailures: value.ADMIN_RATE_LIMIT_MAX_AUTH_FAILURES,
       windowMs: value.ADMIN_RATE_LIMIT_WINDOW_MS,
     },
-    maxParticipants: value.MAX_PARTICIPANTS,
+    maxParticipants: value.RUN_MODE === "venue" ? 100 : value.MAX_PARTICIPANTS,
     maxWebSocketConnections: value.MAX_WEBSOCKET_CONNECTIONS,
     joinRateLimit: {
-      maxAttempts: value.JOIN_RATE_LIMIT_MAX_ATTEMPTS,
+      maxAttempts: value.RUN_MODE === "venue" ? Math.max(300, value.JOIN_RATE_LIMIT_MAX_ATTEMPTS) : value.JOIN_RATE_LIMIT_MAX_ATTEMPTS,
       windowMs: value.JOIN_RATE_LIMIT_WINDOW_MS,
     },
     joinGrantSecret: value.JOIN_GRANT_SECRET,

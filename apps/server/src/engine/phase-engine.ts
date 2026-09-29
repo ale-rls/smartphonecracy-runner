@@ -246,7 +246,7 @@ export class PhaseEngine {
     });
     this.ghosts = new GhostCursorPlayer({
       pool: options.ghostPool ?? { tracks: [] },
-      targetAudienceSize: () => options.targetAudienceSizeOverride ?? this.scenario.targetAudienceSize ?? 0,
+      targetAudienceSize: () => this.venueMode ? 15 : options.targetAudienceSizeOverride ?? this.scenario.targetAudienceSize ?? 0,
       liveConnectedCount: () => this.registry.connectedCount,
       sessionStartedAt: () => this.sessionStartedAt,
       onFrame: (frame) => this.cursors.setGhostCursors(frame),
@@ -749,6 +749,9 @@ export class PhaseEngine {
     const phase = this.currentPhase();
     if (phase.kind !== "video" && phase.kind !== "video-position-question") return { ok: false, reason: "wrong-phase" };
     if (!this.matches(sessionId, phaseId, phaseEpoch)) return { ok: false, reason: "stale" };
+    // Timeline cues are owned by the server clock, not decoder end events.
+    // A short/stalled/replaced media element must not skip the remaining cue.
+    if (phase.timeline) return { ok: false, reason: "wrong-phase" };
     if (!this.video.complete({ sessionId, phaseId, phaseEpoch })) return { ok: false, reason: "stale" };
     if (phase.kind === "video") return this.advanceTo(phase.next, now, "video-complete");
     if (this.questionResolutionTarget !== null) {

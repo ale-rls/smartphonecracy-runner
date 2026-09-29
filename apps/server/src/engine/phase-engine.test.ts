@@ -1500,6 +1500,9 @@ describe("continuous media timeline", () => {
     addParticipant(registry, new MockSocket() as unknown as WebSocket, now, "one");
     connectDisplay(engine, new MockSocket() as unknown as WebSocket);
     engine.adminStart();
+    now = 2000;
+    expect(engine.completeVideo("session-1", "credits", engine.currentPhaseEpoch, now).ok).toBe(false);
+    expect(engine.currentPhaseId).toBe("credits");
     now = 73999;
     engine.tick();
     expect(engine.currentPhaseId).toBe("credits");

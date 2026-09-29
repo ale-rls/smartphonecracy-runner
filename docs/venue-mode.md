@@ -106,7 +106,7 @@ To restore the previous operator-driven show, deploy with `RUN_MODE=live` and `V
 
 ### Venue ghosts
 
-The venue scenario sets `targetAudienceSize` to 50. This fills up to 50 total cursors (visitors plus saved ghosts), limited by available completed recordings for the venue show ID. It does not synthesize recordings. The venue loads its own pool and refreshes it every minute for future sessions. Studio's shared audience override does not affect venue mode. Change this number in `content/scenarios/venue.json` and redeploy to change the target.
+Venue mode admits at most 100 human participants. Ghosts fill only up to 15 total cursors (humans plus ghosts), limited by available completed recordings. At 15 or more connected humans there are no ghosts. It does not synthesize recordings. The venue loads its own pool and refreshes it every minute for future sessions. Studio's shared audience override does not affect venue mode. Venue mode enforces the 15-cursor ghost fill independently of Studio overrides. Its join rate limit allows at least 300 attempts per minute per source IP so 100 visitors sharing Wi-Fi can join.
 
 ### Windows startup and recovery
 

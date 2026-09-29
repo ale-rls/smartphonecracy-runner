@@ -113,3 +113,21 @@ describe("GhostCursorPlayer", () => {
     expect(frames.length).toBe(countAfterSelect + 3);
   });
 });
+
+
+it("reduces ghost fill through 100 live arrivals and restores it after departures", () => {
+  let live = 0;
+  const pool = { tracks: Array.from({ length: 50 }, (_, i) => ({ recordingId: String(i), samples: [{ t: 0, x: .5, y: .5 }] })) };
+  const { player, frames } = makePlayer({ pool, targetAudienceSize: () => 15, liveConnectedCount: () => live });
+  player.selectForSession(0);
+  for (let cycle = 0; cycle < 10; cycle++) {
+    for (live = 0; live <= 100; live++) {
+      player.onPhaseChanged(1000);
+      expect(frames.at(-1)).toHaveLength(Math.max(0, 15 - live));
+    }
+    for (live = 100; live >= 0; live--) {
+      player.onPhaseChanged(2000);
+      expect(frames.at(-1)).toHaveLength(Math.max(0, 15 - live));
+    }
+  }
+});

@@ -2,7 +2,7 @@
   "version": "smartphonocracy-venue-2026.09.24",
   "entryPhaseId": "2-0-Athene",
   "cyclesAllowed": false,
-  "targetAudienceSize": 50,
+  "targetAudienceSize": 15,
   "phases": [
     {
       "id": "idle",

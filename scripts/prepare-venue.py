@@ -98,7 +98,7 @@ def prepare(timings_path, backup_path, masters, media_dir):
     for phase in [p for p in phases if p["kind"] == "video-position-question"][:3]:
         phase["countdownSoundEnabled"] = True
     scenario = {"version": "smartphonocracy-venue-2026.09.24", "entryPhaseId": segments[0]["phaseId"],
-                "cyclesAllowed": False, "targetAudienceSize": 50, "phases": phases}
+                "cyclesAllowed": False, "targetAudienceSize": 15, "phases": phases}
     files = []
     for name in sorted([*names.values(), credits_target.name]):
         path = media_dir / name
