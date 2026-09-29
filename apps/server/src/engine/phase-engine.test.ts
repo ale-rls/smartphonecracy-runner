@@ -1387,7 +1387,7 @@ describe("venue operation", () => {
     let now = 1_000;
     const long = scenarioSchema.parse({ ...longVideoScenario, phases: longVideoScenario.phases.map((p) =>
       p.id === "intro" ? { ...p, expectedDurationMs: 600_000 } : p) });
-    const setupResult = setup({ now: () => now, venueMode: true, lobbyCountdownMs: 30_000,
+    const setupResult = setup({ now: () => now, venueMode: true, lobbyCountdownMs: 45_000,
       testScenario: long, maxSessionDurationMs: 1_800_000 });
     const { engine, registry } = setupResult;
     const display = new MockSocket();
@@ -1405,15 +1405,15 @@ describe("venue operation", () => {
     return { ...setupResult, join, leave, at: (time: number) => { now = time; engine.tick(now); } };
   }
 
-  it("waits for a visitor, starts a solo visitor after 30 seconds, and allows quiet watching", () => {
+  it("waits for a visitor, starts a solo visitor after 45 seconds, and allows quiet watching", () => {
     const { engine, join, at } = venueSetup();
     at(10_000);
     expect(engine.lifecycleState).toBe("idle");
     join("one");
-    expect(engine.getSnapshot().deadlineAt).toBe(40_000);
-    at(39_999);
+    expect(engine.getSnapshot().deadlineAt).toBe(55_000);
+    at(54_999);
     expect(engine.lifecycleState).toBe("lobby");
-    at(40_000);
+    at(55_000);
     expect(engine.lifecycleState).toBe("active");
     at(200_000);
     expect(engine.lifecycleState).toBe("active");
@@ -1431,17 +1431,17 @@ describe("venue operation", () => {
   it("waits two minutes after everyone disconnects; a late join cancels that timeout", () => {
     const { engine, join, leave, at } = venueSetup();
     const first = join("one");
-    at(31_000);
+    at(46_000);
     leave(first);
-    at(150_999);
+    at(165_999);
     expect(engine.lifecycleState).toBe("active");
     const second = join("two");
-    at(151_001);
+    at(166_001);
     expect(engine.lifecycleState).toBe("active");
     leave(second);
-    at(271_000);
+    at(286_000);
     expect(engine.lifecycleState).toBe("active");
-    at(271_001);
+    at(286_001);
     expect(engine.lifecycleState).toBe("idle");
   });
 
@@ -1453,7 +1453,7 @@ describe("venue operation", () => {
     expect(engine.lifecycleState).toBe("idle");
     at(10_000);
     join("two");
-    expect(engine.getSnapshot().deadlineAt).toBe(40_000);
+    expect(engine.getSnapshot().deadlineAt).toBe(55_000);
   });
 });
 

@@ -52,7 +52,7 @@ export function CursorCanvas({
           ctx.globalAlpha = cursorOpacity(cursor.ghost, blinkActiveVoters, field.isFrozen, renderAt);
           ctx.fillStyle = cursor.color;
           ctx.beginPath();
-          ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+          ctx.arc(cx, cy, radius * (cursor.ghost ? 1 : 1.25), 0, Math.PI * 2);
           ctx.fill();
         }
         ctx.globalAlpha = 1;

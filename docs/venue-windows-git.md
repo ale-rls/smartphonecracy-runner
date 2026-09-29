@@ -32,6 +32,12 @@ The launcher starts the local gateway and opens Edge fullscreen with sound enabl
 
 ## Browser settings at startup
 
+### Foreground window
+
+Both Windows launchers explicitly open Edge in a normal window state, then use `focus-edge.ps1` to find the dedicated venue profile's window, restore it if minimized, and retry foreground activation for up to 30 seconds. The helper confirms focus for three consecutive checks and logs a warning if activation never succeeds. It releases temporary topmost status immediately, so staff can still switch apps afterwards. The portable package must include `focus-edge.ps1` beside `start-windows.ps1`.
+
+Test a Windows reboot after updating. Windows can restrict [foreground activation](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setforegroundwindow); the startup log confirms whether it succeeded on this host.
+
 ### Translation prompts
 
 When `-OpenBrowser` is used, the launcher sets the supported Edge `TranslateEnabled` policy to `0` in `HKCU:\Software\Policies\Microsoft\Edge` before opening Edge. This disables built-in translation and its prompts for the current Windows user, including that user's other Edge profiles. Use the dedicated venue Windows account. Other Windows accounts are unaffected.

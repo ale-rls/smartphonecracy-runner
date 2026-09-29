@@ -32,8 +32,18 @@ describe("LobbyCountdown", () => {
     expect(lobby.indexOf("lobby-heading")).toBeLessThan(lobby.indexOf("lobby-instructions"));
 
     expect(renderToStaticMarkup(
-      <LobbyCountdown sessionId="idle" phase={idlePhase(null)} clock={clock} joinUrl={null} />,
+      <LobbyCountdown sessionId="session-1" phase={idlePhase(null)} clock={clock} joinUrl={null} />,
     )).toBe("");
+  });
+
+  it("shows joining instructions before the first visitor and before a QR grant", () => {
+    const lobby = renderToStaticMarkup(
+      <LobbyCountdown sessionId="idle" phase={idlePhase(null)} clock={new ServerClock()} joinUrl={null} />,
+    );
+    expect(lobby).toContain("Join the show");
+    expect(lobby).toContain("Besucher-WLAN Staedel_WiFi");
+    expect(lobby).toContain("Scanne den QR-Code");
+    expect(lobby).not.toContain("Show starts in");
   });
 
   it("formats zero-padded durations and floors expired deadlines at zero", () => {

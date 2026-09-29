@@ -119,7 +119,7 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Ser
       participantLeaseTtlMs: admission.participantLeaseTtlMs,
       autoStartOnFirstParticipant: config.runMode === "venue",
       venueMode: config.runMode === "venue",
-      ...(config.runMode === "venue" ? { policy: { lobbyCountdownMs: 30_000 } } : {}),
+      ...(config.runMode === "venue" ? { policy: { lobbyCountdownMs: 45_000 } } : {}),
       qr: {
         phoneJoinBaseUrl: config.phoneJoinBaseUrl,
         issueGrant: (now) => admission.issueJoinGrant(now),

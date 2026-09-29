@@ -1,5 +1,6 @@
 param([switch]$InstallStartup)
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'focus-edge.ps1')
 Set-Location $PSScriptRoot
 
 if ($InstallStartup) {
@@ -53,7 +54,8 @@ try {
         } catch { }
         $player.Refresh()
         if ($ready -and !$player.HasExited) {
-          Start-Process -FilePath $edge -ArgumentList @('--kiosk', $url, '--edge-kiosk-type=fullscreen', '--no-first-run', '--autoplay-policy=no-user-gesture-required', ('--user-data-dir="' + $edgeProfile + '"')) | Out-Null
+          Start-Process -FilePath $edge -WindowStyle Normal -ArgumentList @('--kiosk', $url, '--edge-kiosk-type=fullscreen', '--no-first-run', '--autoplay-policy=no-user-gesture-required', ('--user-data-dir="' + $edgeProfile + '"')) | Out-Null
+          Focus-VenueEdge -ProfilePath $edgeProfile
           $browserOpened = $true
         }
       }

@@ -6,6 +6,7 @@ param(
   [switch]$UseLiveDisplay
 )
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'venue-package\focus-edge.ps1')
 Set-Location (Split-Path $PSScriptRoot -Parent)
 $repoDir = (Get-Location).Path
 if ([string]::IsNullOrWhiteSpace($MediaDir)) { $MediaDir = Join-Path $repoDir 'venue-media' }
@@ -76,7 +77,8 @@ while ($true) {
           $edgeProfile = Join-Path $env:LOCALAPPDATA 'Smartphonocracy\EdgeProfile'
           Write-Host "Opening Edge at http://localhost:$Port/display/?sound=1"
           # Launch errors must reach the operator, not disappear in the readiness retry.
-          Start-Process $edge -ArgumentList @('--kiosk',"http://localhost:$Port/display/?sound=1",'--edge-kiosk-type=fullscreen','--no-first-run','--autoplay-policy=no-user-gesture-required', ('--user-data-dir="' + $edgeProfile + '"'))
+          Start-Process $edge -WindowStyle Normal -ArgumentList @('--kiosk',"http://localhost:$Port/display/?sound=1",'--edge-kiosk-type=fullscreen','--no-first-run','--autoplay-policy=no-user-gesture-required', ('--user-data-dir="' + $edgeProfile + '"'))
+          Focus-VenueEdge -ProfilePath $edgeProfile
           $browserOpened = $true
           break
         }

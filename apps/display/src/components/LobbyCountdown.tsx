@@ -47,11 +47,9 @@ export function LobbyCountdown({
   joinUrl: string | null;
   networkName?: string;
 }) {
-  if (sessionId !== "lobby" || phase?.kind !== "idle") {
+  if ((sessionId !== "lobby" && sessionId !== "idle") || phase?.kind !== "idle") {
     return null;
   }
-
-  if (phase.deadlineAt === null && joinUrl === null) return null;
 
   return (
     <div className="lobby-information">
