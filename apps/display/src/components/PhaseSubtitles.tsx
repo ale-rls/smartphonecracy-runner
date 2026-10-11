@@ -14,5 +14,8 @@ export function PhaseSubtitles({ phase, clock }: { phase: MediaPhase; clock: Ser
   }, [clock, phase.id, phase.startedAt]);
   const active = phase.subtitles?.filter((entry) => elapsed >= entry.startAtMs && elapsed < entry.endAtMs) ?? [];
   if (active.length === 0) return null;
-  return <div className="phase-subtitles" aria-live="polite">{active.map((entry, index) => <p key={`${entry.startAtMs}-${entry.endAtMs}-${index}`}>{entry.text}</p>)}</div>;
+  const style = phase.subtitleStyle;
+  const background = style?.background ?? "#000000";
+  const rgb = [1, 3, 5].map((offset) => parseInt(background.slice(offset, offset + 2), 16)).join(" ");
+  return <div className="phase-subtitles" aria-live="polite" style={{ bottom: `${style?.bottomPercent ?? 7}%`, textAlign: style?.textAlign ?? "center", pointerEvents: "none" }}>{active.map((entry, index) => <p style={{ whiteSpace: "pre-line", color: style?.color ?? "#ffffff", background: `rgb(${rgb} / ${style?.backgroundOpacity ?? .72})`, ...(style?.fontSize === undefined ? {} : { fontSize: `${style.fontSize}cqw` }) }} key={`${entry.startAtMs}-${entry.endAtMs}-${index}`}>{entry.text}</p>)}</div>;
 }
