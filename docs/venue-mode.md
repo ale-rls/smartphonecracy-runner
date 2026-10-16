@@ -139,7 +139,7 @@ Run it again after regenerating the venue scenario with `prepare-venue.py`.
 
 The ten arena-question translations sit beneath the burned-in German headings:
 7.8% from the top for a single line, 12.8% for the three two-line headings. Dialogue
-uses a compact white sans-serif caption on a dark background, 1.2% from the bottom,
+uses a compact white Leander caption on a dark background, 1.2% from the bottom,
 below the film's existing instruction bars. These positions were checked against
 frames from the supplied 1920×1080 main film. Font and top/bottom placement remain
 editable via `subtitleStyle`; Studio exposes the same controls. Text and timing

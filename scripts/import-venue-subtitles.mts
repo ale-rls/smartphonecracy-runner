@@ -6,8 +6,8 @@ import { scenarioSchema, type Scenario } from '../packages/scenario/src/schema.j
 const path = 'content/scenarios/venue.json';
 const scenario: Scenario = JSON.parse(await readFile(path, 'utf8'));
 scenarioSchema.parse(scenario);
-const questionStyle = { fontSize: 1.9, fontFamily: 'sans-serif' as const, backgroundOpacity: 0, topPercent: 7.8 };
-const dialogueStyle = { fontSize: 1.85, fontFamily: 'sans-serif' as const, backgroundOpacity: .82, bottomPercent: 1.2 };
+const questionStyle = { fontSize: 1.9, fontFamily: 'show' as const, backgroundOpacity: 0, topPercent: 7.8 };
+const dialogueStyle = { fontSize: 1.85, fontFamily: 'show' as const, backgroundOpacity: .82, bottomPercent: 1.2 };
 // These headings occupy two lines in the supplied 1920×1080 film.
 const twoLineQuestions = new Set(['2-6-04-demokratie-in-50-jahren', '2-6-07-politisches-system', '2-6-08-politisches-klima']);
 let count = 0;

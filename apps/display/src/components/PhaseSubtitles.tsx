@@ -15,6 +15,7 @@ export function PhaseSubtitles({ phase, clock }: { phase: MediaPhase; clock: Ser
   const active = phase.subtitles?.filter((entry) => elapsed >= entry.startAtMs && elapsed < entry.endAtMs) ?? [];
   if (active.length === 0) return null;
   const style = phase.subtitleStyle ?? {};
+  const compact = style.fontFamily !== undefined;
   const background = style.background ?? "#000000";
   const rgb = [1, 3, 5].map((offset) => parseInt(background.slice(offset, offset + 2), 16)).join(" ");
   return <div className="phase-subtitles" aria-live="polite" style={{
@@ -22,13 +23,13 @@ export function PhaseSubtitles({ phase, clock }: { phase: MediaPhase; clock: Ser
       bottom: style.topPercent === undefined ? `${style.bottomPercent ?? 7}%` : "auto",
       textAlign: style.textAlign ?? "center", pointerEvents: "none",
     }}>{active.map((entry, index) => <p style={{
-      whiteSpace: style.fontFamily === "sans-serif" ? "normal" : "pre-line", color: style.color ?? "#ffffff",
+      whiteSpace: compact ? "normal" : "pre-line", color: style.color ?? "#ffffff",
       background: `rgb(${rgb} / ${style.backgroundOpacity ?? .72})`,
-      fontFamily: style.fontFamily === "sans-serif" ? "Arial, Helvetica, sans-serif" : undefined,
-      padding: style.fontFamily === "sans-serif" ? ".12em .45em" : undefined,
-      margin: style.fontFamily === "sans-serif" ? ".1em auto" : undefined,
-      maxWidth: style.fontFamily === "sans-serif" ? "100%" : undefined,
-      textShadow: style.fontFamily === "sans-serif" ? "0 1px 2px rgb(0 0 0 / 85%), 0 0 5px rgb(0 0 0 / 45%)" : undefined,
+      fontFamily: style.fontFamily === "sans-serif" ? "Arial, Helvetica, sans-serif" : style.fontFamily === "show" ? "Leander, serif" : undefined,
+      padding: compact ? ".12em .45em" : undefined,
+      margin: compact ? ".1em auto" : undefined,
+      maxWidth: compact ? "100%" : undefined,
+      textShadow: compact ? "0 1px 2px rgb(0 0 0 / 85%), 0 0 5px rgb(0 0 0 / 45%)" : undefined,
       ...(style.fontSize === undefined ? {} : { fontSize: `${style.fontSize}cqw` }),
     }} key={`${entry.startAtMs}-${entry.endAtMs}-${index}`}>{entry.text}</p>)}</div>;
 }

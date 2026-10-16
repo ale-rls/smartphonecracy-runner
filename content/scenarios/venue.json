@@ -209,7 +209,7 @@
       ],
       "subtitleStyle": {
         "fontSize": 1.85,
-        "fontFamily": "sans-serif",
+        "fontFamily": "show",
         "backgroundOpacity": 0.82,
         "bottomPercent": 1.2
       }
@@ -228,7 +228,7 @@
       "subtitles": [],
       "subtitleStyle": {
         "fontSize": 1.85,
-        "fontFamily": "sans-serif",
+        "fontFamily": "show",
         "backgroundOpacity": 0.82,
         "bottomPercent": 1.2
       }
@@ -328,7 +328,7 @@
       ],
       "subtitleStyle": {
         "fontSize": 1.85,
-        "fontFamily": "sans-serif",
+        "fontFamily": "show",
         "backgroundOpacity": 0.82,
         "bottomPercent": 1.2
       }
@@ -520,7 +520,7 @@
       ],
       "subtitleStyle": {
         "fontSize": 1.85,
-        "fontFamily": "sans-serif",
+        "fontFamily": "show",
         "backgroundOpacity": 0.82,
         "bottomPercent": 1.2
       }
@@ -672,7 +672,7 @@
       ],
       "subtitleStyle": {
         "fontSize": 1.85,
-        "fontFamily": "sans-serif",
+        "fontFamily": "show",
         "backgroundOpacity": 0.82,
         "bottomPercent": 1.2
       }
@@ -834,7 +834,7 @@
       ],
       "subtitleStyle": {
         "fontSize": 1.85,
-        "fontFamily": "sans-serif",
+        "fontFamily": "show",
         "backgroundOpacity": 0.82,
         "bottomPercent": 1.2
       }
@@ -889,7 +889,7 @@
       ],
       "subtitleStyle": {
         "fontSize": 1.9,
-        "fontFamily": "sans-serif",
+        "fontFamily": "show",
         "backgroundOpacity": 0,
         "topPercent": 7.8
       }
@@ -944,7 +944,7 @@
       ],
       "subtitleStyle": {
         "fontSize": 1.9,
-        "fontFamily": "sans-serif",
+        "fontFamily": "show",
         "backgroundOpacity": 0,
         "topPercent": 7.8
       }
@@ -999,7 +999,7 @@
       ],
       "subtitleStyle": {
         "fontSize": 1.9,
-        "fontFamily": "sans-serif",
+        "fontFamily": "show",
         "backgroundOpacity": 0,
         "topPercent": 7.8
       }
@@ -1056,7 +1056,7 @@
       ],
       "subtitleStyle": {
         "fontSize": 1.9,
-        "fontFamily": "sans-serif",
+        "fontFamily": "show",
         "backgroundOpacity": 0,
         "topPercent": 12.8
       }
@@ -1113,7 +1113,7 @@
       ],
       "subtitleStyle": {
         "fontSize": 1.9,
-        "fontFamily": "sans-serif",
+        "fontFamily": "show",
         "backgroundOpacity": 0,
         "topPercent": 7.8
       }
@@ -1170,7 +1170,7 @@
       ],
       "subtitleStyle": {
         "fontSize": 1.9,
-        "fontFamily": "sans-serif",
+        "fontFamily": "show",
         "backgroundOpacity": 0,
         "topPercent": 7.8
       }
@@ -1227,7 +1227,7 @@
       ],
       "subtitleStyle": {
         "fontSize": 1.9,
-        "fontFamily": "sans-serif",
+        "fontFamily": "show",
         "backgroundOpacity": 0,
         "topPercent": 12.8
       }
@@ -1284,7 +1284,7 @@
       ],
       "subtitleStyle": {
         "fontSize": 1.9,
-        "fontFamily": "sans-serif",
+        "fontFamily": "show",
         "backgroundOpacity": 0,
         "topPercent": 12.8
       }
@@ -1341,7 +1341,7 @@
       ],
       "subtitleStyle": {
         "fontSize": 1.9,
-        "fontFamily": "sans-serif",
+        "fontFamily": "show",
         "backgroundOpacity": 0,
         "topPercent": 7.8
       }
@@ -1396,7 +1396,7 @@
       ],
       "subtitleStyle": {
         "fontSize": 1.9,
-        "fontFamily": "sans-serif",
+        "fontFamily": "show",
         "backgroundOpacity": 0,
         "topPercent": 7.8
       }
@@ -1461,7 +1461,7 @@
       ],
       "subtitleStyle": {
         "fontSize": 1.85,
-        "fontFamily": "sans-serif",
+        "fontFamily": "show",
         "backgroundOpacity": 0.82,
         "bottomPercent": 1.2
       }
@@ -1480,7 +1480,7 @@
       "subtitles": [],
       "subtitleStyle": {
         "fontSize": 1.85,
-        "fontFamily": "sans-serif",
+        "fontFamily": "show",
         "backgroundOpacity": 0.82,
         "bottomPercent": 1.2
       }
@@ -1678,7 +1678,7 @@
       ],
       "subtitleStyle": {
         "fontSize": 1.85,
-        "fontFamily": "sans-serif",
+        "fontFamily": "show",
         "backgroundOpacity": 0.82,
         "bottomPercent": 1.2
       }
@@ -1697,7 +1697,7 @@
       "subtitles": [],
       "subtitleStyle": {
         "fontSize": 1.85,
-        "fontFamily": "sans-serif",
+        "fontFamily": "show",
         "backgroundOpacity": 0.82,
         "bottomPercent": 1.2
       }
@@ -1899,7 +1899,7 @@
       ],
       "subtitleStyle": {
         "fontSize": 1.85,
-        "fontFamily": "sans-serif",
+        "fontFamily": "show",
         "backgroundOpacity": 0.82,
         "bottomPercent": 1.2
       }
@@ -1924,7 +1924,7 @@
       ],
       "subtitleStyle": {
         "fontSize": 1.85,
-        "fontFamily": "sans-serif",
+        "fontFamily": "show",
         "backgroundOpacity": 0.82,
         "bottomPercent": 1.2
       }
@@ -2112,7 +2112,7 @@
       ],
       "subtitleStyle": {
         "fontSize": 1.85,
-        "fontFamily": "sans-serif",
+        "fontFamily": "show",
         "backgroundOpacity": 0.82,
         "bottomPercent": 1.2
       }
@@ -2248,7 +2248,7 @@
       ],
       "subtitleStyle": {
         "fontSize": 1.85,
-        "fontFamily": "sans-serif",
+        "fontFamily": "show",
         "backgroundOpacity": 0.82,
         "bottomPercent": 1.2
       }
@@ -2344,7 +2344,7 @@
       ],
       "subtitleStyle": {
         "fontSize": 1.85,
-        "fontFamily": "sans-serif",
+        "fontFamily": "show",
         "backgroundOpacity": 0.82,
         "bottomPercent": 1.2
       }
@@ -2440,7 +2440,7 @@
       ],
       "subtitleStyle": {
         "fontSize": 1.85,
-        "fontFamily": "sans-serif",
+        "fontFamily": "show",
         "backgroundOpacity": 0.82,
         "bottomPercent": 1.2
       }
@@ -2506,7 +2506,7 @@
       ],
       "subtitleStyle": {
         "fontSize": 1.85,
-        "fontFamily": "sans-serif",
+        "fontFamily": "show",
         "backgroundOpacity": 0.82,
         "bottomPercent": 1.2
       }
