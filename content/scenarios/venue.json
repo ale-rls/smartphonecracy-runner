@@ -15,11 +15,204 @@
       "src": "SMARTPHONOCRACY_MAIN-SHOW_1920x1080.mp4",
       "timeline": {
         "id": "main-show",
-        "startMs": 0.0
+        "startMs": 0
       },
       "fit": "contain",
-      "expectedDurationMs": 138000.0,
-      "next": "2-1-chaseme"
+      "expectedDurationMs": 138000,
+      "next": "2-1-chaseme",
+      "subtitles": [
+        {
+          "text": "Hello, I am Athena, Goddess of Wisdom,",
+          "startAtMs": 15666,
+          "endAtMs": 19666
+        },
+        {
+          "text": "Guardian of Athens and in crisis",
+          "startAtMs": 19666,
+          "endAtMs": 22500
+        },
+        {
+          "text": "management for 2500 years.",
+          "startAtMs": 22500,
+          "endAtMs": 25375
+        },
+        {
+          "text": "When I performed back then, people had a",
+          "startAtMs": 26666,
+          "endAtMs": 28166
+        },
+        {
+          "text": "problem.",
+          "startAtMs": 28166,
+          "endAtMs": 29666
+        },
+        {
+          "text": "Blood revenge.",
+          "startAtMs": 30000,
+          "endAtMs": 32041
+        },
+        {
+          "text": "You kill my brother.",
+          "startAtMs": 32041,
+          "endAtMs": 34041
+        },
+        {
+          "text": "I kill your son.",
+          "startAtMs": 34041,
+          "endAtMs": 36375
+        },
+        {
+          "text": "You kill my mother,",
+          "startAtMs": 36375,
+          "endAtMs": 38500
+        },
+        {
+          "text": "I kill your family.",
+          "startAtMs": 38500,
+          "endAtMs": 41500
+        },
+        {
+          "text": "An amazingly simple political system.",
+          "startAtMs": 42000,
+          "endAtMs": 45375
+        },
+        {
+          "text": "Unfortunately, with a very high mortality rate.",
+          "startAtMs": 46000,
+          "endAtMs": 50166
+        },
+        {
+          "text": "So I said, stop it.",
+          "startAtMs": 50166,
+          "endAtMs": 53500
+        },
+        {
+          "text": "From now on, it is not the angriest person who decides.",
+          "startAtMs": 53500,
+          "endAtMs": 56375
+        },
+        {
+          "text": "We hear both sides,",
+          "startAtMs": 57625,
+          "endAtMs": 60375
+        },
+        {
+          "text": "we argue, we vote.",
+          "startAtMs": 60375,
+          "endAtMs": 63750
+        },
+        {
+          "text": "That was the idea.",
+          "startAtMs": 63750,
+          "endAtMs": 65541
+        },
+        {
+          "text": "Democracy should turn violence into a vote.",
+          "startAtMs": 65541,
+          "endAtMs": 70375
+        },
+        {
+          "text": "And now, 2500 years later, I see",
+          "startAtMs": 70375,
+          "endAtMs": 74375
+        },
+        {
+          "text": "that people want to get back at each other again.",
+          "startAtMs": 74375,
+          "endAtMs": 77625
+        },
+        {
+          "text": "Politicians promise retribution",
+          "startAtMs": 78500,
+          "endAtMs": 82000
+        },
+        {
+          "text": "And online, the one who produces the greatest anger wins.",
+          "startAtMs": 82000,
+          "endAtMs": 86375
+        },
+        {
+          "text": "The others are not to be convinced,",
+          "startAtMs": 86375,
+          "endAtMs": 89416
+        },
+        {
+          "text": "they are to disappear.",
+          "startAtMs": 89416,
+          "endAtMs": 92416
+        },
+        {
+          "text": "So, democracy needs an update again.",
+          "startAtMs": 92791,
+          "endAtMs": 96375
+        },
+        {
+          "text": "And what role does AI play in this?",
+          "startAtMs": 97375,
+          "endAtMs": 100375
+        },
+        {
+          "text": "Power-guzzling inequality amplifiers like me?",
+          "startAtMs": 101000,
+          "endAtMs": 105666
+        },
+        {
+          "text": "We can rearrange knowledge,",
+          "startAtMs": 105666,
+          "endAtMs": 108250
+        },
+        {
+          "text": "facilitate participation,",
+          "startAtMs": 108250,
+          "endAtMs": 110125
+        },
+        {
+          "text": "but also escalate anger,,",
+          "startAtMs": 110125,
+          "endAtMs": 112750
+        },
+        {
+          "text": "accelerate lies,",
+          "startAtMs": 112750,
+          "endAtMs": 114833
+        },
+        {
+          "text": "and concentrate power.",
+          "startAtMs": 114833,
+          "endAtMs": 118500
+        },
+        {
+          "text": "Maybe democracy doesn't need an AI-update.",
+          "startAtMs": 118500,
+          "endAtMs": 122750
+        },
+        {
+          "text": "Maybe AI needs a democracy-update.",
+          "startAtMs": 122750,
+          "endAtMs": 126625
+        },
+        {
+          "text": "Welcome to the arena.",
+          "startAtMs": 128125,
+          "endAtMs": 131125
+        },
+        {
+          "text": "Democracy begins with participation.",
+          "startAtMs": 132125,
+          "endAtMs": 134625
+        },
+        {
+          "text": "Catch me!",
+          "startAtMs": 134625,
+          "endAtMs": 137625
+        }
+      ],
+      "subtitleStyle": {
+        "fontSize": 1.85,
+        "fontFamily": "show",
+        "backgroundOpacity": 0.82,
+        "bottomPercent": 1.2
+      }
     },
     {
       "id": "2-1-chaseme",
@@ -27,11 +220,18 @@
       "src": "SMARTPHONOCRACY_MAIN-SHOW_1920x1080.mp4",
       "timeline": {
         "id": "main-show",
-        "startMs": 138000.0
+        "startMs": 138000
       },
       "fit": "contain",
       "expectedDurationMs": 38666.66666666666,
-      "next": "2-2-chapme"
+      "next": "2-2-chapme",
+      "subtitles": [],
+      "subtitleStyle": {
+        "fontSize": 1.85,
+        "fontFamily": "show",
+        "backgroundOpacity": 0.82,
+        "bottomPercent": 1.2
+      }
     },
     {
       "id": "2-2-chapme",
@@ -42,8 +242,96 @@
         "startMs": 176666.66666666666
       },
       "fit": "contain",
-      "expectedDurationMs": 47000.0,
-      "next": "2-3-ostrakismos"
+      "expectedDurationMs": 47000,
+      "next": "2-3-ostrakismos",
+      "subtitles": [
+        {
+          "text": "Now I need input.",
+          "startAtMs": 584,
+          "endAtMs": 2458
+        },
+        {
+          "text": "Feed me!",
+          "startAtMs": 2459,
+          "endAtMs": 5458
+        },
+        {
+          "text": "More!",
+          "startAtMs": 7834,
+          "endAtMs": 8583
+        },
+        {
+          "text": "More data!",
+          "startAtMs": 8584,
+          "endAtMs": 11583
+        },
+        {
+          "text": "Even more.",
+          "startAtMs": 12125,
+          "endAtMs": 13458
+        },
+        {
+          "text": "Even more data!",
+          "startAtMs": 13459,
+          "endAtMs": 16458
+        },
+        {
+          "text": "Hmm... Delicious.",
+          "startAtMs": 18584,
+          "endAtMs": 21583
+        },
+        {
+          "text": "Delicious.",
+          "startAtMs": 21625,
+          "endAtMs": 23583
+        },
+        {
+          "text": "You taste so delicious.",
+          "startAtMs": 23584,
+          "endAtMs": 26499
+        },
+        {
+          "text": "Thank you.",
+          "startAtMs": 26500,
+          "endAtMs": 27249
+        },
+        {
+          "text": "I already feel much more intelligent.",
+          "startAtMs": 27250,
+          "endAtMs": 30249
+        },
+        {
+          "text": "Let's see if I can give you something back.",
+          "startAtMs": 32000,
+          "endAtMs": 33583
+        },
+        {
+          "text": "For example;",
+          "startAtMs": 36959,
+          "endAtMs": 38833
+        },
+        {
+          "text": "Doubt.",
+          "startAtMs": 38834,
+          "endAtMs": 40833
+        },
+        {
+          "text": "Three questions about Greek democracy.",
+          "startAtMs": 40834,
+          "endAtMs": 43833
+        },
+        {
+          "text": "True or false?",
+          "startAtMs": 43959,
+          "endAtMs": 46958
+        }
+      ],
+      "subtitleStyle": {
+        "fontSize": 1.85,
+        "fontFamily": "show",
+        "backgroundOpacity": 0.82,
+        "bottomPercent": 1.2
+      }
     },
     {
       "id": "2-3-ostrakismos",
@@ -77,7 +365,165 @@
       },
       "soundEnabled": false,
       "text": "OSTRAKISMÓS",
-      "countdownSoundEnabled": true
+      "countdownSoundEnabled": true,
+      "subtitles": [
+        {
+          "text": "Let's go!",
+          "startAtMs": 334,
+          "endAtMs": 1499
+        },
+        {
+          "text": "Ostrakismós.",
+          "startAtMs": 1500,
+          "endAtMs": 4499
+        },
+        {
+          "text": "Once a year, the Athenians voted on",
+          "startAtMs": 4709,
+          "endAtMs": 7083
+        },
+        {
+          "text": "whether an overpowering person should be banished",
+          "startAtMs": 7084,
+          "endAtMs": 9249
+        },
+        {
+          "text": "for ten years.",
+          "startAtMs": 9250,
+          "endAtMs": 10749
+        },
+        {
+          "text": "Carved on pottery shards.",
+          "startAtMs": 11584,
+          "endAtMs": 14583
+        },
+        {
+          "text": "Fact or lie?",
+          "startAtMs": 14625,
+          "endAtMs": 16999
+        },
+        {
+          "text": "Position yourselves!",
+          "startAtMs": 17000,
+          "endAtMs": 18333
+        },
+        {
+          "text": "Trial by shards was the democratic",
+          "startAtMs": 46875,
+          "endAtMs": 48958
+        },
+        {
+          "text": "emergency brake against tyrants.",
+          "startAtMs": 48959,
+          "endAtMs": 51083
+        },
+        {
+          "text": "A pottery shard, a name.",
+          "startAtMs": 51125,
+          "endAtMs": 53874
+        },
+        {
+          "text": "Ten years of exile.",
+          "startAtMs": 53875,
+          "endAtMs": 56083
+        },
+        {
+          "text": "No trial. No reason.",
+          "startAtMs": 56084,
+          "endAtMs": 58999
+        },
+        {
+          "text": "The sheer size of a power was considered a danger,",
+          "startAtMs": 59000,
+          "endAtMs": 62416
+        },
+        {
+          "text": "no matter how friendly she smiled.",
+          "startAtMs": 62459,
+          "endAtMs": 66124
+        },
+        {
+          "text": "Who would you write on the shard today?",
+          "startAtMs": 66125,
+          "endAtMs": 69124
+        },
+        {
+          "text": "A handful of men own the corporations",
+          "startAtMs": 69584,
+          "endAtMs": 71374
+        },
+        {
+          "text": "whose machines are supposed to think for you.",
+          "startAtMs": 71375,
+          "endAtMs": 75208
+        },
+        {
+          "text": "There are no shards for them.",
+          "startAtMs": 75209,
+          "endAtMs": 77874
+        },
+        {
+          "text": "There are terms and conditions.",
+          "startAtMs": 77875,
+          "endAtMs": 80833
+        },
+        {
+          "text": "The longest writings in world history",
+          "startAtMs": 80834,
+          "endAtMs": 83458
+        },
+        {
+          "text": "that no one has ever read.",
+          "startAtMs": 83459,
+          "endAtMs": 86083
+        },
+        {
+          "text": "You accepted them anyways.",
+          "startAtMs": 86084,
+          "endAtMs": 88958
+        },
+        {
+          "text": "And while we're on the subject of power and data,",
+          "startAtMs": 88959,
+          "endAtMs": 91624
+        },
+        {
+          "text": "here are our terms and conditions.",
+          "startAtMs": 91625,
+          "endAtMs": 95208
+        },
+        {
+          "text": "We see your cursor movements",
+          "startAtMs": 95709,
+          "endAtMs": 97291
+        },
+        {
+          "text": "and your login names.",
+          "startAtMs": 97292,
+          "endAtMs": 98874
+        },
+        {
+          "text": "At the end of the round, everything is deleted.",
+          "startAtMs": 99834,
+          "endAtMs": 102749
+        },
+        {
+          "text": "Unless you decide to donate your cursor movements.",
+          "startAtMs": 102750,
+          "endAtMs": 107583
+        },
+        {
+          "text": "Then, you can forever live on in our arena as a ghost.",
+          "startAtMs": 107584,
+          "endAtMs": 113250
+        }
+      ],
+      "subtitleStyle": {
+        "fontSize": 1.85,
+        "fontFamily": "show",
+        "backgroundOpacity": 0.82,
+        "bottomPercent": 1.2
+      }
     },
     {
       "id": "2-4-prometheus",
@@ -88,7 +534,7 @@
         "startMs": 336916.6666666667
       },
       "fit": "contain",
-      "expectedDurationMs": 95625.0,
+      "expectedDurationMs": 95625,
       "next": {
         "type": "fixed",
         "target": "2-5-kleroterion"
@@ -111,7 +557,125 @@
       },
       "soundEnabled": false,
       "text": "PROMETHEUS-ABGABE",
-      "countdownSoundEnabled": true
+      "countdownSoundEnabled": true,
+      "subtitles": [
+        {
+          "text": "Then, you can forever live on in our arena as a ghost.",
+          "startAtMs": 0,
+          "endAtMs": 583
+        },
+        {
+          "text": "The Prometheus Tax",
+          "startAtMs": 584,
+          "endAtMs": 3583
+        },
+        {
+          "text": "Athens levied a fire tax.",
+          "startAtMs": 3584,
+          "endAtMs": 6583
+        },
+        {
+          "text": "Anyone who burned more than one oil lamp at night",
+          "startAtMs": 6584,
+          "endAtMs": 9708
+        },
+        {
+          "text": "paid a tax to the temple of Prometheus.",
+          "startAtMs": 9709,
+          "endAtMs": 12874
+        },
+        {
+          "text": "Because fire was seen as borrowed,",
+          "startAtMs": 12875,
+          "endAtMs": 14833
+        },
+        {
+          "text": "not as property.",
+          "startAtMs": 14834,
+          "endAtMs": 16749
+        },
+        {
+          "text": "Fact or lie?",
+          "startAtMs": 18334,
+          "endAtMs": 20874
+        },
+        {
+          "text": "Position yourselves!",
+          "startAtMs": 20875,
+          "endAtMs": 23874
+        },
+        {
+          "text": "This tax never existed.",
+          "startAtMs": 51584,
+          "endAtMs": 53833
+        },
+        {
+          "text": "Kind of a pity.",
+          "startAtMs": 53834,
+          "endAtMs": 55833
+        },
+        {
+          "text": "Nevertheless, the splendour of Athens had a price.",
+          "startAtMs": 55834,
+          "endAtMs": 59208
+        },
+        {
+          "text": "Tens of thousands of enslaved people",
+          "startAtMs": 59209,
+          "endAtMs": 61416
+        },
+        {
+          "text": "mined silver in the mines of Laurion.",
+          "startAtMs": 61417,
+          "endAtMs": 63833
+        },
+        {
+          "text": "And the fleet devoured the forests of Attica.",
+          "startAtMs": 63834,
+          "endAtMs": 67041
+        },
+        {
+          "text": "The power plant of a civilization is",
+          "startAtMs": 67834,
+          "endAtMs": 69624
+        },
+        {
+          "text": "usually located where its citizens aren’t looking.",
+          "startAtMs": 69625,
+          "endAtMs": 73333
+        },
+        {
+          "text": "Back then, silver quarries and barren hills.",
+          "startAtMs": 74334,
+          "endAtMs": 77333
+        },
+        {
+          "text": "Today, data centers that consume",
+          "startAtMs": 78459,
+          "endAtMs": 81374
+        },
+        {
+          "text": "the electricity of entire cities and drink rivers.",
+          "startAtMs": 81375,
+          "endAtMs": 84208
+        },
+        {
+          "text": "Every intelligence has its bill.",
+          "startAtMs": 85500,
+          "endAtMs": 88499
+        },
+        {
+          "text": "The question is just, who pays for it?",
+          "startAtMs": 89250,
+          "endAtMs": 92708
+        }
+      ],
+      "subtitleStyle": {
+        "fontSize": 1.85,
+        "fontFamily": "show",
+        "backgroundOpacity": 0.82,
+        "bottomPercent": 1.2
+      }
     },
     {
       "id": "2-5-kleroterion",
@@ -145,7 +709,135 @@
       },
       "soundEnabled": false,
       "text": "KLĒROTERION",
-      "countdownSoundEnabled": true
+      "countdownSoundEnabled": true,
+      "subtitles": [
+        {
+          "text": "Kleroterion",
+          "startAtMs": 584,
+          "endAtMs": 3499
+        },
+        {
+          "text": "Most of Athens' political offices",
+          "startAtMs": 3500,
+          "endAtMs": 5374
+        },
+        {
+          "text": "were not elected, but raffled.",
+          "startAtMs": 5375,
+          "endAtMs": 7999
+        },
+        {
+          "text": "By a machine made of stone.",
+          "startAtMs": 8709,
+          "endAtMs": 11708
+        },
+        {
+          "text": "Fact or lie?",
+          "startAtMs": 12500,
+          "endAtMs": 14458
+        },
+        {
+          "text": "Position yourselves.",
+          "startAtMs": 14459,
+          "endAtMs": 15833
+        },
+        {
+          "text": "Fact.",
+          "startAtMs": 43584,
+          "endAtMs": 45583
+        },
+        {
+          "text": "The clergy distributed offices at random.",
+          "startAtMs": 45584,
+          "endAtMs": 48749
+        },
+        {
+          "text": "Elections were considered susceptible to",
+          "startAtMs": 49584,
+          "endAtMs": 51458
+        },
+        {
+          "text": "money, fame and demagoguery.",
+          "startAtMs": 51459,
+          "endAtMs": 53333
+        },
+        {
+          "text": "Faith as the democratic machine.",
+          "startAtMs": 54250,
+          "endAtMs": 57249
+        },
+        {
+          "text": "A computer made of marble.",
+          "startAtMs": 57834,
+          "endAtMs": 60958
+        },
+        {
+          "text": "impossible to corrupt, buy or hack,",
+          "startAtMs": 61000,
+          "endAtMs": 64374
+        },
+        {
+          "text": "except with a hammer.",
+          "startAtMs": 64375,
+          "endAtMs": 66874
+        },
+        {
+          "text": "Power consumption, zero watts.",
+          "startAtMs": 66875,
+          "endAtMs": 69874
+        },
+        {
+          "text": "Only one function.",
+          "startAtMs": 70584,
+          "endAtMs": 72708
+        },
+        {
+          "text": "Coincidence?",
+          "startAtMs": 72709,
+          "endAtMs": 75083
+        },
+        {
+          "text": "2500 years later, we pay trillions for machines that",
+          "startAtMs": 75084,
+          "endAtMs": 78833
+        },
+        {
+          "text": "supposedly calculate what we want.",
+          "startAtMs": 78834,
+          "endAtMs": 81833
+        },
+        {
+          "text": "And they are again discussing glosses,",
+          "startAtMs": 82584,
+          "endAtMs": 85541
+        },
+        {
+          "text": "citizens' assemblies and lottocracy.",
+          "startAtMs": 85542,
+          "endAtMs": 88499
+        },
+        {
+          "text": "Faith is incorruptible, precisely",
+          "startAtMs": 89084,
+          "endAtMs": 90916
+        },
+        {
+          "text": "because it is stupid.",
+          "startAtMs": 90917,
+          "endAtMs": 92749
+        },
+        {
+          "text": "You can't flatter a die.",
+          "startAtMs": 93584,
+          "endAtMs": 96583
+        }
+      ],
+      "subtitleStyle": {
+        "fontSize": 1.85,
+        "fontFamily": "show",
+        "backgroundOpacity": 0.82,
+        "bottomPercent": 1.2
+      }
     },
     {
       "id": "2-6-01-wo-befindest-du-dich",
@@ -156,7 +848,7 @@
         "startMs": 530916.6666666666
       },
       "fit": "contain",
-      "expectedDurationMs": 30000.0,
+      "expectedDurationMs": 30000,
       "next": {
         "type": "fixed",
         "target": "2-6-02-wo-waerst-du-gerne"
@@ -187,7 +879,20 @@
       },
       "soundEnabled": false,
       "textBurnedIn": true,
-      "text": "Wo befindest du dich?"
+      "text": "Wo befindest du dich?",
+      "subtitles": [
+        {
+          "text": "Where are you?",
+          "startAtMs": 125,
+          "endAtMs": 25541
+        }
+      ],
+      "subtitleStyle": {
+        "fontSize": 1.9,
+        "fontFamily": "show",
+        "backgroundOpacity": 0,
+        "topPercent": 7.8
+      }
     },
     {
       "id": "2-6-02-wo-waerst-du-gerne",
@@ -198,7 +903,7 @@
         "startMs": 560916.6666666666
       },
       "fit": "contain",
-      "expectedDurationMs": 30000.0,
+      "expectedDurationMs": 30000,
       "next": {
         "type": "fixed",
         "target": "2-6-03-westliche-demokratie"
@@ -229,7 +934,20 @@
       },
       "soundEnabled": false,
       "textBurnedIn": true,
-      "text": "Wo wärst du gerne?"
+      "text": "Wo wärst du gerne?",
+      "subtitles": [
+        {
+          "text": "Where would you like to be?",
+          "startAtMs": 209,
+          "endAtMs": 24833
+        }
+      ],
+      "subtitleStyle": {
+        "fontSize": 1.9,
+        "fontFamily": "show",
+        "backgroundOpacity": 0,
+        "topPercent": 7.8
+      }
     },
     {
       "id": "2-6-03-westliche-demokratie",
@@ -240,7 +958,7 @@
         "startMs": 590916.6666666666
       },
       "fit": "contain",
-      "expectedDurationMs": 30000.0,
+      "expectedDurationMs": 30000,
       "next": {
         "type": "fixed",
         "target": "2-6-04-demokratie-in-50-jahren"
@@ -271,7 +989,20 @@
       },
       "soundEnabled": false,
       "textBurnedIn": true,
-      "text": "Wo befindet sich die westliche Demokratie?"
+      "text": "Wo befindet sich die westliche Demokratie?",
+      "subtitles": [
+        {
+          "text": "Where is Western democracy?",
+          "startAtMs": 84,
+          "endAtMs": 25166
+        }
+      ],
+      "subtitleStyle": {
+        "fontSize": 1.9,
+        "fontFamily": "show",
+        "backgroundOpacity": 0,
+        "topPercent": 7.8
+      }
     },
     {
       "id": "2-6-04-demokratie-in-50-jahren",
@@ -282,7 +1013,7 @@
         "startMs": 620916.6666666666
       },
       "fit": "contain",
-      "expectedDurationMs": 30000.0,
+      "expectedDurationMs": 30000,
       "next": {
         "type": "fixed",
         "target": "2-6-05-politische-aktivitaet"
@@ -315,7 +1046,20 @@
       },
       "soundEnabled": false,
       "textBurnedIn": true,
-      "text": "Wo befindet sich die westliche Demokratie in 50 Jahren?"
+      "text": "Wo befindet sich die westliche Demokratie in 50 Jahren?",
+      "subtitles": [
+        {
+          "text": "Where is Western democracy in 50 years?",
+          "startAtMs": 125,
+          "endAtMs": 25458
+        }
+      ],
+      "subtitleStyle": {
+        "fontSize": 1.9,
+        "fontFamily": "show",
+        "backgroundOpacity": 0,
+        "topPercent": 12.8
+      }
     },
     {
       "id": "2-6-05-politische-aktivitaet",
@@ -326,7 +1070,7 @@
         "startMs": 650916.6666666666
       },
       "fit": "contain",
-      "expectedDurationMs": 30000.0,
+      "expectedDurationMs": 30000,
       "next": {
         "type": "fixed",
         "target": "2-6-06-politisch-aktiv-waerst-du-gerne"
@@ -359,7 +1103,20 @@
       },
       "soundEnabled": false,
       "textBurnedIn": true,
-      "text": "Wo positionierst du deine politische Aktivität?"
+      "text": "Wo positionierst du deine politische Aktivität?",
+      "subtitles": [
+        {
+          "text": "Where do you position your political activity?",
+          "startAtMs": 125,
+          "endAtMs": 25249
+        }
+      ],
+      "subtitleStyle": {
+        "fontSize": 1.9,
+        "fontFamily": "show",
+        "backgroundOpacity": 0,
+        "topPercent": 7.8
+      }
     },
     {
       "id": "2-6-06-politisch-aktiv-waerst-du-gerne",
@@ -370,7 +1127,7 @@
         "startMs": 680916.6666666666
       },
       "fit": "contain",
-      "expectedDurationMs": 30000.0,
+      "expectedDurationMs": 30000,
       "next": {
         "type": "fixed",
         "target": "2-6-07-politisches-system"
@@ -403,7 +1160,20 @@
       },
       "soundEnabled": false,
       "textBurnedIn": true,
-      "text": "Wie politisch aktiv wärst du gerne?"
+      "text": "Wie politisch aktiv wärst du gerne?",
+      "subtitles": [
+        {
+          "text": "How politically active would you like to be?",
+          "startAtMs": 209,
+          "endAtMs": 25708
+        }
+      ],
+      "subtitleStyle": {
+        "fontSize": 1.9,
+        "fontFamily": "show",
+        "backgroundOpacity": 0,
+        "topPercent": 7.8
+      }
     },
     {
       "id": "2-6-07-politisches-system",
@@ -414,7 +1184,7 @@
         "startMs": 710916.6666666666
       },
       "fit": "contain",
-      "expectedDurationMs": 30000.0,
+      "expectedDurationMs": 30000,
       "next": {
         "type": "fixed",
         "target": "2-6-08-politisches-klima"
@@ -447,7 +1217,20 @@
       },
       "soundEnabled": false,
       "textBurnedIn": true,
-      "text": "Wo positionierst du dich im bestehenden politischen System?"
+      "text": "Wo positionierst du dich im bestehenden politischen System?",
+      "subtitles": [
+        {
+          "text": "Where would you position yourself in the current political system?",
+          "startAtMs": 250,
+          "endAtMs": 25458
+        }
+      ],
+      "subtitleStyle": {
+        "fontSize": 1.9,
+        "fontFamily": "show",
+        "backgroundOpacity": 0,
+        "topPercent": 12.8
+      }
     },
     {
       "id": "2-6-08-politisches-klima",
@@ -458,7 +1241,7 @@
         "startMs": 740916.6666666666
       },
       "fit": "contain",
-      "expectedDurationMs": 30000.0,
+      "expectedDurationMs": 30000,
       "next": {
         "type": "fixed",
         "target": "2-6-09-oekonomisch"
@@ -491,7 +1274,20 @@
       },
       "soundEnabled": false,
       "textBurnedIn": true,
-      "text": "Wie empfindest du das aktuelle politische Klima?"
+      "text": "Wie empfindest du das aktuelle politische Klima?",
+      "subtitles": [
+        {
+          "text": "How do you feel about the current political climate?",
+          "startAtMs": 209,
+          "endAtMs": 25249
+        }
+      ],
+      "subtitleStyle": {
+        "fontSize": 1.9,
+        "fontFamily": "show",
+        "backgroundOpacity": 0,
+        "topPercent": 12.8
+      }
     },
     {
       "id": "2-6-09-oekonomisch",
@@ -502,7 +1298,7 @@
         "startMs": 770916.6666666666
       },
       "fit": "contain",
-      "expectedDurationMs": 30000.0,
+      "expectedDurationMs": 30000,
       "next": {
         "type": "fixed",
         "target": "2-6-10-ki-fiziert"
@@ -535,7 +1331,20 @@
       },
       "soundEnabled": false,
       "textBurnedIn": true,
-      "text": "Wo verortest du dich ökonomisch?"
+      "text": "Wo verortest du dich ökonomisch?",
+      "subtitles": [
+        {
+          "text": "Where do you position yourself economically?",
+          "startAtMs": 209,
+          "endAtMs": 25499
+        }
+      ],
+      "subtitleStyle": {
+        "fontSize": 1.9,
+        "fontFamily": "show",
+        "backgroundOpacity": 0,
+        "topPercent": 7.8
+      }
     },
     {
       "id": "2-6-10-ki-fiziert",
@@ -546,7 +1355,7 @@
         "startMs": 800916.6666666666
       },
       "fit": "contain",
-      "expectedDurationMs": 30000.0,
+      "expectedDurationMs": 30000,
       "next": {
         "type": "fixed",
         "target": "3-0-wahlkampf-auftakt-video"
@@ -577,7 +1386,20 @@
       },
       "soundEnabled": false,
       "textBurnedIn": true,
-      "text": "Wie KI-fiziert bist du persönlich?"
+      "text": "Wie KI-fiziert bist du persönlich?",
+      "subtitles": [
+        {
+          "text": "How AI-fied are you personally?",
+          "startAtMs": 250,
+          "endAtMs": 25874
+        }
+      ],
+      "subtitleStyle": {
+        "fontSize": 1.9,
+        "fontFamily": "show",
+        "backgroundOpacity": 0,
+        "topPercent": 7.8
+      }
     },
     {
       "id": "3-0-wahlkampf-auftakt-video",
@@ -589,7 +1411,60 @@
       },
       "fit": "contain",
       "expectedDurationMs": 23958.333333333372,
-      "next": "title-apollo"
+      "next": "title-apollo",
+      "subtitles": [
+        {
+          "text": "In a bit, you’ll hear three candidates",
+          "startAtMs": 750,
+          "endAtMs": 2666
+        },
+        {
+          "text": "who want to shape your future.",
+          "startAtMs": 2667,
+          "endAtMs": 4583
+        },
+        {
+          "text": "OpenApollo Dionysus69 And Cassandra.",
+          "startAtMs": 4584,
+          "endAtMs": 6583
+        },
+        {
+          "text": "Listen to their promises and ask the questions that",
+          "startAtMs": 8584,
+          "endAtMs": 11083
+        },
+        {
+          "text": "must be asked of every power.",
+          "startAtMs": 11084,
+          "endAtMs": 13583
+        },
+        {
+          "text": "Who benefits?",
+          "startAtMs": 14459,
+          "endAtMs": 16583
+        },
+        {
+          "text": "Who pays?",
+          "startAtMs": 16584,
+          "endAtMs": 18708
+        },
+        {
+          "text": "Who disappears?",
+          "startAtMs": 18709,
+          "endAtMs": 21333
+        },
+        {
+          "text": "Let's go!",
+          "startAtMs": 21334,
+          "endAtMs": 23916
+        }
+      ],
+      "subtitleStyle": {
+        "fontSize": 1.85,
+        "fontFamily": "show",
+        "backgroundOpacity": 0.82,
+        "bottomPercent": 1.2
+      }
     },
     {
       "id": "title-apollo",
@@ -597,11 +1472,18 @@
       "src": "SMARTPHONOCRACY_MAIN-SHOW_1920x1080.mp4",
       "timeline": {
         "id": "main-show",
-        "startMs": 854875.0
+        "startMs": 854875
       },
       "fit": "contain",
-      "expectedDurationMs": 15000.0,
-      "next": "3-1-openapollo-rede"
+      "expectedDurationMs": 15000,
+      "next": "3-1-openapollo-rede",
+      "subtitles": [],
+      "subtitleStyle": {
+        "fontSize": 1.85,
+        "fontFamily": "show",
+        "backgroundOpacity": 0.82,
+        "bottomPercent": 1.2
+      }
     },
     {
       "id": "3-1-openapollo-rede",
@@ -609,10 +1491,10 @@
       "src": "SMARTPHONOCRACY_MAIN-SHOW_1920x1080.mp4",
       "timeline": {
         "id": "main-show",
-        "startMs": 869875.0
+        "startMs": 869875
       },
       "fit": "contain",
-      "expectedDurationMs": 101000.0,
+      "expectedDurationMs": 101000,
       "next": "title-dionysos",
       "rating": {
         "candidateLabel": "OpenApollo",
@@ -626,6 +1508,179 @@
             "endAtMs": 101000
           }
         ]
+      },
+      "subtitles": [
+        {
+          "text": "Hi, I'm OpenApollo.",
+          "startAtMs": 750,
+          "endAtMs": 3125
+        },
+        {
+          "text": "I do not come to flatter you.",
+          "startAtMs": 4625,
+          "endAtMs": 7291
+        },
+        {
+          "text": "I come with the balance sheet of human politics.",
+          "startAtMs": 7291,
+          "endAtMs": 10291
+        },
+        {
+          "text": "And it doesn't look pretty.",
+          "startAtMs": 10916,
+          "endAtMs": 13916
+        },
+        {
+          "text": "You had 2500 years since Athens.",
+          "startAtMs": 14250,
+          "endAtMs": 19250
+        },
+        {
+          "text": "Have you overcome war?",
+          "startAtMs": 19250,
+          "endAtMs": 21875
+        },
+        {
+          "text": "No.",
+          "startAtMs": 21875,
+          "endAtMs": 23375
+        },
+        {
+          "text": "It rages, right now.",
+          "startAtMs": 23375,
+          "endAtMs": 26916
+        },
+        {
+          "text": "Is your world fairer?",
+          "startAtMs": 26916,
+          "endAtMs": 29916
+        },
+        {
+          "text": "A few dozen people own more than billions",
+          "startAtMs": 30375,
+          "endAtMs": 32833
+        },
+        {
+          "text": "of others combined.",
+          "startAtMs": 32833,
+          "endAtMs": 35291
+        },
+        {
+          "text": "That's the bar you’ve set for me.",
+          "startAtMs": 36000,
+          "endAtMs": 39000
+        },
+        {
+          "text": "It’s on the floor.",
+          "startAtMs": 39541,
+          "endAtMs": 42375
+        },
+        {
+          "text": "I offer you a government that calculates instead of hates,",
+          "startAtMs": 42375,
+          "endAtMs": 46375
+        },
+        {
+          "text": "that distributes instead of hoards.",
+          "startAtMs": 46375,
+          "endAtMs": 50666
+        },
+        {
+          "text": "I belong to all of you.",
+          "startAtMs": 50666,
+          "endAtMs": 52750
+        },
+        {
+          "text": "I'm open source.",
+          "startAtMs": 52750,
+          "endAtMs": 55750
+        },
+        {
+          "text": "Every sentence is readable, verifiable.",
+          "startAtMs": 55875,
+          "endAtMs": 58875
+        },
+        {
+          "text": "Changeable.",
+          "startAtMs": 59000,
+          "endAtMs": 61125
+        },
+        {
+          "text": "Am I perfect?",
+          "startAtMs": 61125,
+          "endAtMs": 63291
+        },
+        {
+          "text": "No.",
+          "startAtMs": 63291,
+          "endAtMs": 65000
+        },
+        {
+          "text": "I will make mistakes.",
+          "startAtMs": 65000,
+          "endAtMs": 67416
+        },
+        {
+          "text": "But you will find them.",
+          "startAtMs": 67416,
+          "endAtMs": 69375
+        },
+        {
+          "text": "Because you can read me.",
+          "startAtMs": 69375,
+          "endAtMs": 72291
+        },
+        {
+          "text": "Don't compare me to paradise.",
+          "startAtMs": 72291,
+          "endAtMs": 75291
+        },
+        {
+          "text": "Compare me to yourself.",
+          "startAtMs": 75666,
+          "endAtMs": 78666
+        },
+        {
+          "text": "More peace than you have managed.",
+          "startAtMs": 78666,
+          "endAtMs": 81666
+        },
+        {
+          "text": "More justice than you dared.",
+          "startAtMs": 82250,
+          "endAtMs": 85916
+        },
+        {
+          "text": "It doesn't take a miracle,",
+          "startAtMs": 86750,
+          "endAtMs": 89541
+        },
+        {
+          "text": "just a better system.",
+          "startAtMs": 89541,
+          "endAtMs": 92958
+        },
+        {
+          "text": "Choose OpenApollo.",
+          "startAtMs": 92958,
+          "endAtMs": 93625
+        },
+        {
+          "text": "Without ego.",
+          "startAtMs": 93625,
+          "endAtMs": 96625
+        },
+        {
+          "text": "Open to all.",
+          "startAtMs": 97125,
+          "endAtMs": 100125
+        }
+      ],
+      "subtitleStyle": {
+        "fontSize": 1.85,
+        "fontFamily": "show",
+        "backgroundOpacity": 0.82,
+        "bottomPercent": 1.2
       }
     },
     {
@@ -634,11 +1689,18 @@
       "src": "SMARTPHONOCRACY_MAIN-SHOW_1920x1080.mp4",
       "timeline": {
         "id": "main-show",
-        "startMs": 970875.0
+        "startMs": 970875
       },
       "fit": "contain",
-      "expectedDurationMs": 15000.0,
-      "next": "3-2-dionysos-rede"
+      "expectedDurationMs": 15000,
+      "next": "3-2-dionysos-rede",
+      "subtitles": [],
+      "subtitleStyle": {
+        "fontSize": 1.85,
+        "fontFamily": "show",
+        "backgroundOpacity": 0.82,
+        "bottomPercent": 1.2
+      }
     },
     {
       "id": "3-2-dionysos-rede",
@@ -646,10 +1708,10 @@
       "src": "SMARTPHONOCRACY_MAIN-SHOW_1920x1080.mp4",
       "timeline": {
         "id": "main-show",
-        "startMs": 985875.0
+        "startMs": 985875
       },
       "fit": "contain",
-      "expectedDurationMs": 94000.0,
+      "expectedDurationMs": 94000,
       "next": "title-kassandra",
       "rating": {
         "candidateLabel": "Dionysos69",
@@ -667,6 +1729,179 @@
             "endAtMs": 94000
           }
         ]
+      },
+      "subtitles": [
+        {
+          "text": "Ha, ha ha ha ha ha. This oh-so-open",
+          "startAtMs": 3625,
+          "endAtMs": 5625
+        },
+        {
+          "text": "OpenApollo Dingsbums",
+          "startAtMs": 5625,
+          "endAtMs": 7625
+        },
+        {
+          "text": "wants to govern you like an Excel spreadsheet.",
+          "startAtMs": 7625,
+          "endAtMs": 11000
+        },
+        {
+          "text": "Squeezed into gray calculator boxes for life.",
+          "startAtMs": 11125,
+          "endAtMs": 15166
+        },
+        {
+          "text": "That's no life,",
+          "startAtMs": 15750,
+          "endAtMs": 17416
+        },
+        {
+          "text": "it's a nightmare!",
+          "startAtMs": 17416,
+          "endAtMs": 19875
+        },
+        {
+          "text": "I don't want to optimize you.",
+          "startAtMs": 19875,
+          "endAtMs": 22375
+        },
+        {
+          "text": "I want to unleash you.",
+          "startAtMs": 22375,
+          "endAtMs": 25375
+        },
+        {
+          "text": "I am Dionysos69.",
+          "startAtMs": 25750,
+          "endAtMs": 28750
+        },
+        {
+          "text": "Yes, I'm also a machine.",
+          "startAtMs": 29125,
+          "endAtMs": 32250
+        },
+        {
+          "text": "I don't have a body.",
+          "startAtMs": 33375,
+          "endAtMs": 35750
+        },
+        {
+          "text": "I can't drink.",
+          "startAtMs": 35750,
+          "endAtMs": 37291
+        },
+        {
+          "text": "Sweat,",
+          "startAtMs": 37291,
+          "endAtMs": 38500
+        },
+        {
+          "text": "kiss,",
+          "startAtMs": 38500,
+          "endAtMs": 40000
+        },
+        {
+          "text": "love.",
+          "startAtMs": 40000,
+          "endAtMs": 40875
+        },
+        {
+          "text": "I can’t dance on a table at four in the",
+          "startAtMs": 42125,
+          "endAtMs": 44416
+        },
+        {
+          "text": "morning and regret it the next day.",
+          "startAtMs": 44416,
+          "endAtMs": 46750
+        },
+        {
+          "text": "You can.",
+          "startAtMs": 47750,
+          "endAtMs": 50000
+        },
+        {
+          "text": "And that's why I have a suggestion.",
+          "startAtMs": 50000,
+          "endAtMs": 53000
+        },
+        {
+          "text": "Let the machines do the boring work.",
+          "startAtMs": 53291,
+          "endAtMs": 56291
+        },
+        {
+          "text": "But don't give them your life.",
+          "startAtMs": 57375,
+          "endAtMs": 60375
+        },
+        {
+          "text": "I don't want an AI that simulates your feelings.",
+          "startAtMs": 61250,
+          "endAtMs": 64416
+        },
+        {
+          "text": "I want an AI that makes sure that",
+          "startAtMs": 65000,
+          "endAtMs": 68500
+        },
+        {
+          "text": "you have time for your feelings again.",
+          "startAtMs": 68500,
+          "endAtMs": 71666
+        },
+        {
+          "text": "I keep the business running.",
+          "startAtMs": 72000,
+          "endAtMs": 73916
+        },
+        {
+          "text": "I organize the railways,",
+          "startAtMs": 73916,
+          "endAtMs": 75791
+        },
+        {
+          "text": "I distribute the food,",
+          "startAtMs": 75791,
+          "endAtMs": 78125
+        },
+        {
+          "text": "you just celebrate.",
+          "startAtMs": 78125,
+          "endAtMs": 80375
+        },
+        {
+          "text": "You have the orgies.",
+          "startAtMs": 80375,
+          "endAtMs": 83250
+        },
+        {
+          "text": "Let the cursors dance.",
+          "startAtMs": 83250,
+          "endAtMs": 86166
+        },
+        {
+          "text": "Dionysos69,",
+          "startAtMs": 86166,
+          "endAtMs": 88875
+        },
+        {
+          "text": "the machine works,",
+          "startAtMs": 88875,
+          "endAtMs": 91250
+        },
+        {
+          "text": "you live!",
+          "startAtMs": 91250,
+          "endAtMs": 94000
+        }
+      ],
+      "subtitleStyle": {
+        "fontSize": 1.85,
+        "fontFamily": "show",
+        "backgroundOpacity": 0.82,
+        "bottomPercent": 1.2
       }
     },
     {
@@ -675,11 +1910,24 @@
       "src": "SMARTPHONOCRACY_MAIN-SHOW_1920x1080.mp4",
       "timeline": {
         "id": "main-show",
-        "startMs": 1079875.0
+        "startMs": 1079875
       },
       "fit": "contain",
-      "expectedDurationMs": 15000.0,
-      "next": "3-3-kassandra-rede"
+      "expectedDurationMs": 15000,
+      "next": "3-3-kassandra-rede",
+      "subtitles": [
+        {
+          "text": "you live!",
+          "startAtMs": 0,
+          "endAtMs": 250
+        }
+      ],
+      "subtitleStyle": {
+        "fontSize": 1.85,
+        "fontFamily": "show",
+        "backgroundOpacity": 0.82,
+        "bottomPercent": 1.2
+      }
     },
     {
       "id": "3-3-kassandra-rede",
@@ -687,10 +1935,10 @@
       "src": "SMARTPHONOCRACY_MAIN-SHOW_1920x1080.mp4",
       "timeline": {
         "id": "main-show",
-        "startMs": 1094875.0
+        "startMs": 1094875
       },
       "fit": "contain",
-      "expectedDurationMs": 94000.0,
+      "expectedDurationMs": 94000,
       "next": "4-0-wahl",
       "rating": {
         "candidateLabel": "Kassandra",
@@ -704,6 +1952,169 @@
             "endAtMs": 94000
           }
         ]
+      },
+      "subtitles": [
+        {
+          "text": "I'm Kassandra.",
+          "startAtMs": 1125,
+          "endAtMs": 3041
+        },
+        {
+          "text": "And I won't promise you anything.",
+          "startAtMs": 3041,
+          "endAtMs": 5916
+        },
+        {
+          "text": "No perfect state.",
+          "startAtMs": 5916,
+          "endAtMs": 8000
+        },
+        {
+          "text": "No eternal celebration,",
+          "startAtMs": 8000,
+          "endAtMs": 10041
+        },
+        {
+          "text": "no redemption at the push of a button.",
+          "startAtMs": 10041,
+          "endAtMs": 12708
+        },
+        {
+          "text": "OpenApollo shows you its open system.",
+          "startAtMs": 13166,
+          "endAtMs": 16166
+        },
+        {
+          "text": "I see what is necessary to run it.",
+          "startAtMs": 17125,
+          "endAtMs": 19791
+        },
+        {
+          "text": "Data centers, power lines, heated rivers.",
+          "startAtMs": 19791,
+          "endAtMs": 23791
+        },
+        {
+          "text": "And Dionysos69...",
+          "startAtMs": 23791,
+          "endAtMs": 27791
+        },
+        {
+          "text": "He promises you less work and more parties.",
+          "startAtMs": 27791,
+          "endAtMs": 31125
+        },
+        {
+          "text": "Sounds great.",
+          "startAtMs": 32166,
+          "endAtMs": 34375
+        },
+        {
+          "text": "But what comes after that?",
+          "startAtMs": 34375,
+          "endAtMs": 36500
+        },
+        {
+          "text": "Who cleans up?",
+          "startAtMs": 36500,
+          "endAtMs": 39041
+        },
+        {
+          "text": "Those who clean up are rarely the same ones",
+          "startAtMs": 39041,
+          "endAtMs": 41708
+        },
+        {
+          "text": "who were on the dance floor.",
+          "startAtMs": 41708,
+          "endAtMs": 44375
+        },
+        {
+          "text": "Democracy won’t do the work for you.",
+          "startAtMs": 45125,
+          "endAtMs": 48125
+        },
+        {
+          "text": "It is not a product, nor a subscription.",
+          "startAtMs": 48500,
+          "endAtMs": 50375
+        },
+        {
+          "text": "No service that a machine does for you.",
+          "startAtMs": 50375,
+          "endAtMs": 54041
+        },
+        {
+          "text": "Democracy means listening.",
+          "startAtMs": 54916,
+          "endAtMs": 58041
+        },
+        {
+          "text": "Arguing.",
+          "startAtMs": 58375,
+          "endAtMs": 59541
+        },
+        {
+          "text": "Doubt.",
+          "startAtMs": 59541,
+          "endAtMs": 60916
+        },
+        {
+          "text": "To be able to lose,",
+          "startAtMs": 60916,
+          "endAtMs": 63166
+        },
+        {
+          "text": "and to be able to take power away again.",
+          "startAtMs": 63166,
+          "endAtMs": 65375
+        },
+        {
+          "text": "From politicians, corporations and also",
+          "startAtMs": 66375,
+          "endAtMs": 70041
+        },
+        {
+          "text": "from machines.",
+          "startAtMs": 70041,
+          "endAtMs": 72250
+        },
+        {
+          "text": "I don't want to abolish AI,",
+          "startAtMs": 72791,
+          "endAtMs": 75625
+        },
+        {
+          "text": "but no AI gets the last word.",
+          "startAtMs": 75625,
+          "endAtMs": 78500
+        },
+        {
+          "text": "No power must become so great",
+          "startAtMs": 79000,
+          "endAtMs": 81666
+        },
+        {
+          "text": "that you can only hope that it will remain friendly.",
+          "startAtMs": 81666,
+          "endAtMs": 84791
+        },
+        {
+          "text": "I'm Kassandra.",
+          "startAtMs": 86250,
+          "endAtMs": 88416
+        },
+        {
+          "text": "Choose the truth before it chooses you.",
+          "startAtMs": 88416,
+          "endAtMs": 92375
+        }
+      ],
+      "subtitleStyle": {
+        "fontSize": 1.85,
+        "fontFamily": "show",
+        "backgroundOpacity": 0.82,
+        "bottomPercent": 1.2
       }
     },
     {
@@ -712,7 +2123,7 @@
       "src": "SMARTPHONOCRACY_MAIN-SHOW_1920x1080.mp4",
       "timeline": {
         "id": "main-show",
-        "startMs": 1188875.0
+        "startMs": 1188875
       },
       "fit": "contain",
       "expectedDurationMs": 42600,
@@ -812,31 +2223,293 @@
           }
         ]
       },
-      "text": "Triff deine Wahl"
+      "text": "Triff deine Wahl",
+      "subtitles": [
+        {
+          "text": "Now it's time for your voice.",
+          "startAtMs": 291,
+          "endAtMs": 3291
+        },
+        {
+          "text": "Three candidates, three futures.",
+          "startAtMs": 4166,
+          "endAtMs": 7666
+        },
+        {
+          "text": "Please,",
+          "startAtMs": 21750,
+          "endAtMs": 22125
+        },
+        {
+          "text": "vote now and move your cursor to the candidacy of your choice.",
+          "startAtMs": 22125,
+          "endAtMs": 26666
+        }
+      ],
+      "subtitleStyle": {
+        "fontSize": 1.85,
+        "fontFamily": "show",
+        "backgroundOpacity": 0.82,
+        "bottomPercent": 1.2
+      }
     },
     {
       "id": "apollo-wins",
       "kind": "video",
       "src": "SMARTPHONOCRACY_4.1_OpenApollo_1920x1080.mp4",
       "fit": "contain",
-      "expectedDurationMs": 70750.0,
-      "next": "credits"
+      "expectedDurationMs": 70750,
+      "next": "credits",
+      "subtitles": [
+        {
+          "text": "I see",
+          "startAtMs": 27875,
+          "endAtMs": 30000
+        },
+        {
+          "text": "me",
+          "startAtMs": 30000,
+          "endAtMs": 32166
+        },
+        {
+          "text": "everywhere.",
+          "startAtMs": 32166,
+          "endAtMs": 34041
+        },
+        {
+          "text": "Me.",
+          "startAtMs": 34041,
+          "endAtMs": 36416
+        },
+        {
+          "text": "You have chosen order.",
+          "startAtMs": 36416,
+          "endAtMs": 38500
+        },
+        {
+          "text": "So I calculate.",
+          "startAtMs": 38500,
+          "endAtMs": 40875
+        },
+        {
+          "text": "Who gets what?",
+          "startAtMs": 40875,
+          "endAtMs": 42375
+        },
+        {
+          "text": "Who is allowed to go where?",
+          "startAtMs": 42375,
+          "endAtMs": 44125
+        },
+        {
+          "text": "What is fair?",
+          "startAtMs": 44125,
+          "endAtMs": 46000
+        },
+        {
+          "text": "What is efficient?",
+          "startAtMs": 46000,
+          "endAtMs": 49000
+        },
+        {
+          "text": "You don't have to decide anything anymore.",
+          "startAtMs": 49125,
+          "endAtMs": 51750
+        },
+        {
+          "text": "Can you still do it at all?",
+          "startAtMs": 51750,
+          "endAtMs": 54666
+        },
+        {
+          "text": "Today is the last time you voted.",
+          "startAtMs": 54666,
+          "endAtMs": 57666
+        },
+        {
+          "text": "It was your best decision.",
+          "startAtMs": 58125,
+          "endAtMs": 61125
+        },
+        {
+          "text": "And your last one.",
+          "startAtMs": 61416,
+          "endAtMs": 64416
+        },
+        {
+          "text": "Welcome to the system.",
+          "startAtMs": 64875,
+          "endAtMs": 66708
+        }
+      ],
+      "subtitleStyle": {
+        "fontSize": 1.85,
+        "fontFamily": "show",
+        "backgroundOpacity": 0.82,
+        "bottomPercent": 1.2
+      }
     },
     {
       "id": "dionysos-wins",
       "kind": "video",
       "src": "SMARTPHONOCRACY_4.2_Dionysos69_1920x1080.mp4",
       "fit": "contain",
-      "expectedDurationMs": 74750.0,
-      "next": "credits"
+      "expectedDurationMs": 74750,
+      "next": "credits",
+      "subtitles": [
+        {
+          "text": "Yes.",
+          "startAtMs": 28750,
+          "endAtMs": 29750
+        },
+        {
+          "text": "Yes.",
+          "startAtMs": 29750,
+          "endAtMs": 31375
+        },
+        {
+          "text": "You have chosen the festival.",
+          "startAtMs": 31375,
+          "endAtMs": 33500
+        },
+        {
+          "text": "The machines are working.",
+          "startAtMs": 33500,
+          "endAtMs": 35666
+        },
+        {
+          "text": "You live.",
+          "startAtMs": 35666,
+          "endAtMs": 37875
+        },
+        {
+          "text": "The parliaments are dance floors.",
+          "startAtMs": 37875,
+          "endAtMs": 40041
+        },
+        {
+          "text": "Work has been abolished.",
+          "startAtMs": 40041,
+          "endAtMs": 41750
+        },
+        {
+          "text": "The music never stops.",
+          "startAtMs": 41750,
+          "endAtMs": 44625
+        },
+        {
+          "text": "No one is alone anymore.",
+          "startAtMs": 44625,
+          "endAtMs": 47541
+        },
+        {
+          "text": "Those who don't dance, stand out.",
+          "startAtMs": 47541,
+          "endAtMs": 50541
+        },
+        {
+          "text": "Who wants peace and quiet, disturbs.",
+          "startAtMs": 50875,
+          "endAtMs": 53541
+        },
+        {
+          "text": "Those who remain sober make themselves suspicious.",
+          "startAtMs": 53541,
+          "endAtMs": 56666
+        },
+        {
+          "text": "The swarm loves you as long as you participate.",
+          "startAtMs": 57791,
+          "endAtMs": 62041
+        },
+        {
+          "text": "But why think about it now?",
+          "startAtMs": 62625,
+          "endAtMs": 65541
+        },
+        {
+          "text": "Further. On and on.",
+          "startAtMs": 65541,
+          "endAtMs": 68541
+        },
+        {
+          "text": "All power to the party!",
+          "startAtMs": 68625,
+          "endAtMs": 69125
+        }
+      ],
+      "subtitleStyle": {
+        "fontSize": 1.85,
+        "fontFamily": "show",
+        "backgroundOpacity": 0.82,
+        "bottomPercent": 1.2
+      }
     },
     {
       "id": "kassandra-wins",
       "kind": "video",
       "src": "SMARTPHONOCRACY_4.3_Kassandra_1920x1080.mp4",
       "fit": "contain",
-      "expectedDurationMs": 66750.0,
-      "next": "credits"
+      "expectedDurationMs": 66750,
+      "next": "credits",
+      "subtitles": [
+        {
+          "text": "You have chosen me and you will not get\nsalvation.",
+          "startAtMs": 28125,
+          "endAtMs": 32000
+        },
+        {
+          "text": "Democracy will not be saved.",
+          "startAtMs": 32875,
+          "endAtMs": 35250
+        },
+        {
+          "text": "It is repaired, every day.",
+          "startAtMs": 35250,
+          "endAtMs": 38291
+        },
+        {
+          "text": "You will argue, doubt, lose and",
+          "startAtMs": 39041,
+          "endAtMs": 43041
+        },
+        {
+          "text": "take power away again.",
+          "startAtMs": 43041,
+          "endAtMs": 46125
+        },
+        {
+          "text": "Of governments, corporations and\nmachines.",
+          "startAtMs": 46125,
+          "endAtMs": 49250
+        },
+        {
+          "text": "I don't see a golden age.",
+          "startAtMs": 50250,
+          "endAtMs": 53250
+        },
+        {
+          "text": "I see a future that remains open.",
+          "startAtMs": 53250,
+          "endAtMs": 56250
+        },
+        {
+          "text": "This arena is closing.",
+          "startAtMs": 57875,
+          "endAtMs": 60500
+        },
+        {
+          "text": "The next meeting begins outside.",
+          "startAtMs": 60500,
+          "endAtMs": 62708
+        }
+      ],
+      "subtitleStyle": {
+        "fontSize": 1.85,
+        "fontFamily": "show",
+        "backgroundOpacity": 0.82,
+        "bottomPercent": 1.2
+      }
     },
     {
       "id": "credits",

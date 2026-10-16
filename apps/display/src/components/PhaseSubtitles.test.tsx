@@ -30,6 +30,7 @@ describe("PhaseSubtitles", () => {
       audioSrc: "voice.mp3",
       expectedDurationMs: 10_000,
       next: "idle",
+      subtitleStyle: { color: "#ff0000", fontSize: 3, bottomPercent: 12, backgroundOpacity: 0.5 },
       subtitles: [{ text: "A narrated still", startAtMs: 1_000, endAtMs: 2_000 }],
       scenarioVersion: "show-1",
       startedAt: 5_000,
@@ -45,5 +46,16 @@ describe("PhaseSubtitles", () => {
     now = 6_100;
     await act(async () => vi.advanceTimersByTime(100));
     expect(document.querySelector(".phase-subtitles")?.textContent).toBe("A narrated still");
+    const overlay = document.querySelector<HTMLElement>(".phase-subtitles")!;
+    expect(overlay.style.bottom).toBe("12%");
+    expect(overlay.querySelector("p")!.style.color).toBe("rgb(255, 0, 0)");
+    expect(overlay.querySelector("p")!.style.whiteSpace).toBe("pre-line");
+    await act(async () => root?.render(<PhaseSubtitles phase={{ ...phase, subtitleStyle: { topPercent: 7.8, fontFamily: "sans-serif", backgroundOpacity: 0 } }} clock={clock} />));
+    expect(document.querySelector<HTMLElement>(".phase-subtitles")!.style.top).toBe("7.8%");
+    expect(document.querySelector<HTMLElement>(".phase-subtitles")!.style.bottom).toBe("auto");
+    expect(document.querySelector<HTMLElement>(".phase-subtitles p")!.style.fontFamily).toContain("Arial");
+    now = 7_000;
+    await act(async () => vi.advanceTimersByTime(100));
+    expect(document.querySelector(".phase-subtitles")).toBeNull();
   });
 });

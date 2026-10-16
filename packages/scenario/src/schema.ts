@@ -239,6 +239,17 @@ export const ratingConfigSchema = z.object({
   })).optional(),
 });
 
+export const subtitleStyleSchema = z.object({
+  fontSize: z.number().min(1).max(6).optional(),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  background: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  backgroundOpacity: z.number().min(0).max(1).optional(),
+  bottomPercent: z.number().min(0).max(80).optional(),
+  topPercent: z.number().min(0).max(80).optional(),
+  fontFamily: z.enum(["show", "sans-serif"]).optional(),
+  textAlign: z.enum(["left", "center", "right"]).optional(),
+});
+
 export const subtitleSchema = z.object({
   text: z.string().min(1, "subtitle text must be non-empty"),
   startAtMs: z.number().int().nonnegative(),
@@ -277,6 +288,7 @@ export const videoPhaseSchema = z.object({
   showCursors: z.boolean().optional(),
   rating: ratingConfigSchema.optional(),
   subtitles: z.array(subtitleSchema).optional(),
+  subtitleStyle: subtitleStyleSchema.optional(),
 }).superRefine((phase, ctx) => {
   if (phase.fadeOutMs !== undefined && phase.fadeOutMs > phase.expectedDurationMs) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: "fade must fit within the phase", path: ["fadeOutMs"] });
@@ -373,6 +385,7 @@ const videoPositionQuestionBaseSchema = z.object({
   /** Optional applause/boo controls shown alongside the position spectrum. */
   rating: ratingConfigSchema.optional(),
   subtitles: z.array(subtitleSchema).optional(),
+  subtitleStyle: subtitleStyleSchema.optional(),
   closeCountdownSeconds: z.union([z.literal(5), z.literal(10)]).optional(),
 });
 

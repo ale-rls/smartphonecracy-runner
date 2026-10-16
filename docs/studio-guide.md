@@ -31,3 +31,28 @@ The checked-in example is `content/scenarios/dev.json` with `content/media-manif
 ## V1 acceptance record
 
 All §18 requirements are covered by adapter/unit/e2e regression tests: fixture import and canonical round-trip; runtime-validator-gated export; UI authoring; fixed, four-quadrant, and two-quadrant transitions with shared targets; unreachable/cycle diagnostics; all outcome presets; distinct-media and 2 GiB gates; reload-persistent drafts and corrupt-revision recovery; runtime/layout separation; and versioned reproducible exports. Studio has no production route or installation-control API, so publishing and active sessions remain outside it. The sole deferred item is multi-participant drag simulation (STEP-044); it is not an §18 acceptance-row omission.
+
+### Subtitle files and appearance
+
+Select a video or video + position question phase, then use **Subtitles → Upload
+subtitles** in the properties inspector. This also works for still image + MP3
+phases. Import a UTF-8 `.srt` or `.vtt` file (up to 1 MB and 5,000 cues). Imports
+replace that phase's cues only after the whole file validates. Existing manual
+cue editing remains available; use the normal Studio undo action to undo an import.
+
+Associate subtitles with the selected scene in the selected show, rather than by
+matching a filename. Cue times are relative to that phase's start, and must end
+within its duration. For continuous films split into phases, split and rebase the
+subtitle file to each phase before import. Overlapping cues and multiline text
+are supported. WebVTT comments, style blocks and region blocks are ignored; cue
+markup is flattened to plain text and cue positioning is replaced by show controls.
+WebVTT format reference: https://www.w3.org/TR/webvtt1/.
+
+The inspector controls subtitle text/background colors, opacity, size, bottom
+position and alignment. These validated settings are saved as `subtitleStyle`
+on the phase alongside its `subtitles`, so drafts, backups and deployment exports
+carry them with the show. The runtime uses its existing synchronized phase clock;
+subtitles do not require a separate player or uploaded asset at runtime. Phone
+subtitle text retains the existing phone design. Omitted styles retain the display's
+default treatment. Publish/deploy the edited show through the normal workflow to
+apply it to the installation.

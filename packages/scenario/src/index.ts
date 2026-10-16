@@ -79,3 +79,5 @@ export type { MediaKind } from "./media-kind.js";
 // Quadrant assignment (half-open boundary convention) is shared domain
 // logic; re-exported so scenario consumers need not import shared directly.
 export { quadrantOf } from "@smartphonecracy/shared";
+
+export { parseSubtitles } from "./subtitles.js";
