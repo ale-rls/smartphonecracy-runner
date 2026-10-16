@@ -245,6 +245,8 @@ export const subtitleStyleSchema = z.object({
   background: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
   backgroundOpacity: z.number().min(0).max(1).optional(),
   bottomPercent: z.number().min(0).max(80).optional(),
+  topPercent: z.number().min(0).max(80).optional(),
+  fontFamily: z.enum(["show", "sans-serif"]).optional(),
   textAlign: z.enum(["left", "center", "right"]).optional(),
 });
 

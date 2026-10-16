@@ -50,6 +50,10 @@ describe("PhaseSubtitles", () => {
     expect(overlay.style.bottom).toBe("12%");
     expect(overlay.querySelector("p")!.style.color).toBe("rgb(255, 0, 0)");
     expect(overlay.querySelector("p")!.style.whiteSpace).toBe("pre-line");
+    await act(async () => root?.render(<PhaseSubtitles phase={{ ...phase, subtitleStyle: { topPercent: 7.8, fontFamily: "sans-serif", backgroundOpacity: 0 } }} clock={clock} />));
+    expect(document.querySelector<HTMLElement>(".phase-subtitles")!.style.top).toBe("7.8%");
+    expect(document.querySelector<HTMLElement>(".phase-subtitles")!.style.bottom).toBe("auto");
+    expect(document.querySelector<HTMLElement>(".phase-subtitles p")!.style.fontFamily).toContain("Arial");
     now = 7_000;
     await act(async () => vi.advanceTimersByTime(100));
     expect(document.querySelector(".phase-subtitles")).toBeNull();

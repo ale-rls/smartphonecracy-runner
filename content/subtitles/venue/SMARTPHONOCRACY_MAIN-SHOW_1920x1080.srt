@@ -1,0 +1,991 @@
+﻿1
+00:00:15,666 --> 00:00:19,666
+Hello, I am Athena, Goddess of Wisdom,
+
+2
+00:00:19,666 --> 00:00:22,500
+Guardian of Athens and in crisis
+
+3
+00:00:22,500 --> 00:00:25,375
+management for 2500 years.
+
+4
+00:00:26,666 --> 00:00:28,166
+When I performed back then, people had a
+
+5
+00:00:28,166 --> 00:00:29,666
+problem.
+
+6
+00:00:30,000 --> 00:00:32,041
+Blood revenge.
+
+7
+00:00:32,041 --> 00:00:34,041
+You kill my brother.
+
+8
+00:00:34,041 --> 00:00:36,375
+I kill your son.
+
+9
+00:00:36,375 --> 00:00:38,500
+You kill my mother,
+
+10
+00:00:38,500 --> 00:00:41,500
+I kill your family.
+
+11
+00:00:42,000 --> 00:00:45,375
+An amazingly simple political system.
+
+12
+00:00:46,000 --> 00:00:50,166
+Unfortunately, with a very high mortality rate.
+
+13
+00:00:50,166 --> 00:00:53,500
+So I said, stop it.
+
+14
+00:00:53,500 --> 00:00:56,375
+From now on, it is not the angriest person who decides.
+
+15
+00:00:57,625 --> 00:01:00,375
+We hear both sides,
+
+16
+00:01:00,375 --> 00:01:03,750
+we argue, we vote.
+
+17
+00:01:03,750 --> 00:01:05,541
+That was the idea.
+
+18
+00:01:05,541 --> 00:01:10,375
+Democracy should turn violence into a vote.
+
+19
+00:01:10,375 --> 00:01:14,375
+And now, 2500 years later, I see
+
+20
+00:01:14,375 --> 00:01:17,625
+that people want to get back at each other again.
+
+21
+00:01:18,500 --> 00:01:22,000
+Politicians promise retribution
+
+22
+00:01:22,000 --> 00:01:26,375
+And online, the one who produces the greatest anger wins.
+
+23
+00:01:26,375 --> 00:01:29,416
+The others are not to be convinced,
+
+24
+00:01:29,416 --> 00:01:32,416
+they are to disappear.
+
+25
+00:01:32,791 --> 00:01:36,375
+So, democracy needs an update again.
+
+26
+00:01:37,375 --> 00:01:40,375
+And what role does AI play in this?
+
+27
+00:01:41,000 --> 00:01:45,666
+Power-guzzling inequality amplifiers like me?
+
+28
+00:01:45,666 --> 00:01:48,250
+We can rearrange knowledge, 
+
+29
+00:01:48,250 --> 00:01:50,125
+facilitate participation, 
+
+30
+00:01:50,125 --> 00:01:52,750
+but also escalate anger,,
+
+31
+00:01:52,750 --> 00:01:54,833
+accelerate lies,
+
+32
+00:01:54,833 --> 00:01:58,500
+ and concentrate power.
+
+33
+00:01:58,500 --> 00:02:02,750
+Maybe democracy doesn't need an AI-update.
+
+34
+00:02:02,750 --> 00:02:06,625
+Maybe AI needs a democracy-update.
+
+35
+00:02:08,125 --> 00:02:11,125
+Welcome to the arena.
+
+36
+00:02:12,125 --> 00:02:14,625
+Democracy begins with participation.
+
+37
+00:02:14,625 --> 00:02:17,625
+Catch me!
+
+38
+00:02:57,250 --> 00:02:59,125
+Now I need input.
+
+39
+00:02:59,125 --> 00:03:02,125
+Feed me!
+
+40
+00:03:04,500 --> 00:03:05,250
+More!
+
+41
+00:03:05,250 --> 00:03:08,250
+More data!
+
+42
+00:03:08,791 --> 00:03:10,125
+Even more.
+
+43
+00:03:10,125 --> 00:03:13,125
+Even more data!
+
+44
+00:03:15,250 --> 00:03:18,250
+Hmm... Delicious.
+
+45
+00:03:18,291 --> 00:03:20,250
+Delicious.
+
+46
+00:03:20,250 --> 00:03:23,166
+You taste so delicious.
+
+47
+00:03:23,166 --> 00:03:23,916
+Thank you.
+
+48
+00:03:23,916 --> 00:03:26,916
+I already feel much more intelligent.
+
+49
+00:03:28,666 --> 00:03:30,250
+Let's see if I can give you something back.
+
+50
+00:03:33,625 --> 00:03:35,500
+For example;
+
+51
+00:03:35,500 --> 00:03:37,500
+Doubt.
+
+52
+00:03:37,500 --> 00:03:40,500
+Three questions about Greek democracy.
+
+53
+00:03:40,625 --> 00:03:43,625
+True or false?
+
+54
+00:03:44,000 --> 00:03:45,166
+Let's go!
+
+55
+00:03:45,166 --> 00:03:48,166
+Ostrakismós.
+
+56
+00:03:48,375 --> 00:03:50,750
+Once a year, the Athenians voted on
+
+57
+00:03:50,750 --> 00:03:52,916
+whether an overpowering person should be banished
+
+58
+00:03:52,916 --> 00:03:54,416
+for ten years.
+
+59
+00:03:55,250 --> 00:03:58,250
+Carved on pottery shards.
+
+60
+00:03:58,291 --> 00:04:00,666
+Fact or lie?
+
+61
+00:04:00,666 --> 00:04:02,000
+Position yourselves!
+
+62
+00:04:30,541 --> 00:04:32,625
+Trial by shards was the democratic
+
+63
+00:04:32,625 --> 00:04:34,750
+emergency brake against tyrants.
+
+64
+00:04:34,791 --> 00:04:37,541
+A pottery shard, a name.
+
+65
+00:04:37,541 --> 00:04:39,750
+Ten years of exile.
+
+66
+00:04:39,750 --> 00:04:42,666
+No trial. No reason.
+
+67
+00:04:42,666 --> 00:04:46,083
+The sheer size of a power was considered a danger, 
+
+68
+00:04:46,125 --> 00:04:49,791
+no matter how friendly she smiled.
+
+69
+00:04:49,791 --> 00:04:52,791
+Who would you write on the shard today?
+
+70
+00:04:53,250 --> 00:04:55,041
+A handful of men own the corporations
+
+71
+00:04:55,041 --> 00:04:58,875
+whose machines are supposed to think for you.
+
+72
+00:04:58,875 --> 00:05:01,541
+There are no shards for them.
+
+73
+00:05:01,541 --> 00:05:04,500
+There are terms and conditions.
+
+74
+00:05:04,500 --> 00:05:07,125
+The longest writings in world history
+
+75
+00:05:07,125 --> 00:05:09,750
+that no one has ever read.
+
+76
+00:05:09,750 --> 00:05:12,625
+You accepted them anyways.
+
+77
+00:05:12,625 --> 00:05:15,291
+And while we're on the subject of power and data,
+
+78
+00:05:15,291 --> 00:05:18,875
+here are our terms and conditions.
+
+79
+00:05:19,375 --> 00:05:20,958
+We see your cursor movements
+
+80
+00:05:20,958 --> 00:05:22,541
+and your login names.
+
+81
+00:05:23,500 --> 00:05:26,416
+At the end of the round, everything is deleted.
+
+82
+00:05:26,416 --> 00:05:31,250
+Unless you decide to donate your cursor movements.
+
+83
+00:05:31,250 --> 00:05:37,500
+Then, you can forever live on in our arena as a ghost.
+
+84
+00:05:37,500 --> 00:05:40,500
+The Prometheus Tax
+
+85
+00:05:40,500 --> 00:05:43,500
+Athens levied a fire tax.
+
+86
+00:05:43,500 --> 00:05:46,625
+Anyone who burned more than one oil lamp at night
+
+87
+00:05:46,625 --> 00:05:49,791
+paid a tax to the temple of Prometheus.
+
+88
+00:05:49,791 --> 00:05:51,750
+Because fire was seen as borrowed,
+
+89
+00:05:51,750 --> 00:05:53,666
+not as property.
+
+90
+00:05:55,250 --> 00:05:57,791
+Fact or lie?
+
+91
+00:05:57,791 --> 00:06:00,791
+Position yourselves!
+
+92
+00:06:28,500 --> 00:06:30,750
+This tax never existed.
+
+93
+00:06:30,750 --> 00:06:32,750
+Kind of a pity.
+
+94
+00:06:32,750 --> 00:06:36,125
+Nevertheless, the splendour of Athens had a price.
+
+95
+00:06:36,125 --> 00:06:38,333
+Tens of thousands of enslaved people
+
+96
+00:06:38,333 --> 00:06:40,750
+mined silver in the mines of Laurion.
+
+97
+00:06:40,750 --> 00:06:43,958
+And the fleet devoured the forests of Attica.
+
+98
+00:06:44,750 --> 00:06:46,541
+The power plant of a civilization is
+
+99
+00:06:46,541 --> 00:06:50,250
+usually located where its citizens aren’t looking.
+
+100
+00:06:51,250 --> 00:06:54,250
+Back then, silver quarries and barren hills. 
+
+101
+00:06:55,375 --> 00:06:58,291
+Today, data centers that consume 
+
+102
+00:06:58,291 --> 00:07:01,125
+the electricity of entire cities and drink rivers.
+
+103
+00:07:02,416 --> 00:07:05,416
+Every intelligence has its bill.
+
+104
+00:07:06,166 --> 00:07:09,625
+The question is just, who pays for it?
+
+105
+00:07:13,125 --> 00:07:16,041
+Kleroterion
+
+106
+00:07:16,041 --> 00:07:17,916
+Most of Athens' political offices 
+
+107
+00:07:17,916 --> 00:07:20,541
+were not elected, but raffled.
+
+108
+00:07:21,250 --> 00:07:24,250
+By a machine made of stone.
+
+109
+00:07:25,041 --> 00:07:27,000
+Fact or lie?
+
+110
+00:07:27,000 --> 00:07:28,375
+Position yourselves.
+
+111
+00:07:56,125 --> 00:07:58,125
+Fact.
+
+112
+00:07:58,125 --> 00:08:01,291
+The clergy distributed offices at random.
+
+113
+00:08:02,125 --> 00:08:04,000
+Elections were considered susceptible to
+
+114
+00:08:04,000 --> 00:08:05,875
+money, fame and demagoguery.
+
+115
+00:08:06,791 --> 00:08:09,791
+Faith as the democratic machine.
+
+116
+00:08:10,375 --> 00:08:13,500
+A computer made of marble.
+
+117
+00:08:13,541 --> 00:08:16,916
+impossible to corrupt, buy or hack,
+
+118
+00:08:16,916 --> 00:08:19,416
+except with a hammer.
+
+119
+00:08:19,416 --> 00:08:22,416
+Power consumption, zero watts.
+
+120
+00:08:23,125 --> 00:08:25,250
+Only one function.
+
+121
+00:08:25,250 --> 00:08:27,625
+Coincidence?
+
+122
+00:08:27,625 --> 00:08:31,375
+2500 years later, we pay trillions for machines that
+
+123
+00:08:31,375 --> 00:08:34,375
+supposedly calculate what we want.
+
+124
+00:08:35,125 --> 00:08:38,083
+And they are again discussing glosses,
+
+125
+00:08:38,083 --> 00:08:41,041
+citizens' assemblies and lottocracy.
+
+126
+00:08:41,625 --> 00:08:43,458
+Faith is incorruptible, precisely
+
+127
+00:08:43,458 --> 00:08:45,291
+because it is stupid.
+
+128
+00:08:46,125 --> 00:08:49,125
+You can't flatter a die.
+
+129
+00:08:51,041 --> 00:09:16,458
+Where are you?
+
+130
+00:09:21,125 --> 00:09:45,750
+Where would you like to be?
+
+131
+00:09:51,000 --> 00:10:16,083
+Where is Western democracy?
+
+132
+00:10:21,041 --> 00:10:46,375
+Where is Western democracy in 50 years?
+
+133
+00:10:51,041 --> 00:11:16,166
+Where do you position your political activity?
+
+134
+00:11:21,125 --> 00:11:46,625
+How politically active would you like to be?
+
+135
+00:11:51,166 --> 00:12:16,375
+Where would you position yourself in the current political system?
+
+136
+00:12:21,125 --> 00:12:46,166
+How do you feel about the current political climate?
+
+137
+00:12:51,125 --> 00:13:16,416
+Where do you position yourself economically?
+
+138
+00:13:21,166 --> 00:13:46,791
+How AI-fied are you personally?
+
+139
+00:13:51,666 --> 00:13:53,583
+In a bit, you’ll hear three candidates
+
+140
+00:13:53,583 --> 00:13:55,500
+who want to shape your future.
+
+141
+00:13:55,500 --> 00:13:57,500
+OpenApollo Dionysus69 And Cassandra.
+
+142
+00:13:59,500 --> 00:14:02,000
+Listen to their promises and ask the questions that
+
+143
+00:14:02,000 --> 00:14:04,500
+must be asked of every power.
+
+144
+00:14:05,375 --> 00:14:07,500
+Who benefits?
+
+145
+00:14:07,500 --> 00:14:09,625
+Who pays?
+
+146
+00:14:09,625 --> 00:14:12,250
+Who disappears?
+
+147
+00:14:12,250 --> 00:14:14,833
+Let's go!
+
+148
+00:14:30,625 --> 00:14:33,000
+Hi, I'm OpenApollo.
+
+149
+00:14:34,500 --> 00:14:37,166
+I do not come to flatter you.
+
+150
+00:14:37,166 --> 00:14:40,166
+I come with the balance sheet of human politics.
+
+151
+00:14:40,791 --> 00:14:43,791
+And it doesn't look pretty.
+
+152
+00:14:44,125 --> 00:14:49,125
+You had 2500 years since Athens.
+
+153
+00:14:49,125 --> 00:14:51,750
+Have you overcome war?
+
+154
+00:14:51,750 --> 00:14:53,250
+No.
+
+155
+00:14:53,250 --> 00:14:56,791
+It rages, right now.
+
+156
+00:14:56,791 --> 00:14:59,791
+Is your world fairer?
+
+157
+00:15:00,250 --> 00:15:02,708
+A few dozen people own more than billions
+
+158
+00:15:02,708 --> 00:15:05,166
+of others combined.
+
+159
+00:15:05,875 --> 00:15:08,875
+That's the bar you’ve set for me.
+
+160
+00:15:09,416 --> 00:15:12,250
+It’s on the floor.
+
+161
+00:15:12,250 --> 00:15:16,250
+I offer you a government that calculates instead of hates,
+
+162
+00:15:16,250 --> 00:15:20,541
+that distributes instead of hoards.
+
+163
+00:15:20,541 --> 00:15:22,625
+I belong to all of you.
+
+164
+00:15:22,625 --> 00:15:25,625
+I'm open source.
+
+165
+00:15:25,750 --> 00:15:28,750
+Every sentence is readable, verifiable.
+
+166
+00:15:28,875 --> 00:15:31,000
+Changeable.
+
+167
+00:15:31,000 --> 00:15:33,166
+Am I perfect?
+
+168
+00:15:33,166 --> 00:15:34,875
+No.
+
+169
+00:15:34,875 --> 00:15:37,291
+I will make mistakes.
+
+170
+00:15:37,291 --> 00:15:39,250
+But you will find them.
+
+171
+00:15:39,250 --> 00:15:42,166
+Because you can read me.
+
+172
+00:15:42,166 --> 00:15:45,166
+Don't compare me to paradise.
+
+173
+00:15:45,541 --> 00:15:48,541
+Compare me to yourself.
+
+174
+00:15:48,541 --> 00:15:51,541
+More peace than you have managed.
+
+175
+00:15:52,125 --> 00:15:55,791
+More justice than you dared.
+
+176
+00:15:56,625 --> 00:15:59,416
+It doesn't take a miracle,
+
+177
+00:15:59,416 --> 00:16:02,833
+just a better system.
+
+178
+00:16:02,833 --> 00:16:03,500
+ Choose OpenApollo.
+
+179
+00:16:03,500 --> 00:16:06,500
+Without ego.
+
+180
+00:16:07,000 --> 00:16:10,000
+Open to all.
+
+181
+00:16:29,500 --> 00:16:31,500
+Ha, ha ha ha ha ha. This oh-so-open
+
+182
+00:16:31,500 --> 00:16:33,500
+OpenApollo Dingsbums
+
+183
+00:16:33,500 --> 00:16:36,875
+wants to govern you like an Excel spreadsheet.
+
+184
+00:16:37,000 --> 00:16:41,041
+Squeezed into gray calculator boxes for life.
+
+185
+00:16:41,625 --> 00:16:43,291
+That's no life,
+
+186
+00:16:43,291 --> 00:16:45,750
+it's a nightmare!
+
+187
+00:16:45,750 --> 00:16:48,250
+I don't want to optimize you.
+
+188
+00:16:48,250 --> 00:16:51,250
+I want to unleash you.
+
+189
+00:16:51,625 --> 00:16:54,625
+I am Dionysos69.
+
+190
+00:16:55,000 --> 00:16:58,125
+Yes, I'm also a machine.
+
+191
+00:16:59,250 --> 00:17:01,625
+I don't have a body.
+
+192
+00:17:01,625 --> 00:17:03,166
+I can't drink.
+
+193
+00:17:03,166 --> 00:17:04,375
+Sweat, 
+
+194
+00:17:04,375 --> 00:17:05,875
+kiss,
+
+195
+00:17:05,875 --> 00:17:06,750
+love.
+
+196
+00:17:08,000 --> 00:17:10,291
+I can’t dance on a table at four in the
+
+197
+00:17:10,291 --> 00:17:12,625
+morning and regret it the next day.
+
+198
+00:17:13,625 --> 00:17:15,875
+You can.
+
+199
+00:17:15,875 --> 00:17:18,875
+And that's why I have a suggestion.
+
+200
+00:17:19,166 --> 00:17:22,166
+Let the machines do the boring work.
+
+201
+00:17:23,250 --> 00:17:26,250
+But don't give them your life.
+
+202
+00:17:27,125 --> 00:17:30,291
+I don't want an AI that simulates your feelings.
+
+203
+00:17:30,875 --> 00:17:34,375
+I want an AI that makes sure that
+
+204
+00:17:34,375 --> 00:17:37,541
+you have time for your feelings again.
+
+205
+00:17:37,875 --> 00:17:39,791
+I keep the business running.
+
+206
+00:17:39,791 --> 00:17:41,666
+I organize the railways,
+
+207
+00:17:41,666 --> 00:17:44,000
+I distribute the food,
+
+208
+00:17:44,000 --> 00:17:46,250
+you just celebrate.
+
+209
+00:17:46,250 --> 00:17:49,125
+You have the orgies.
+
+210
+00:17:49,125 --> 00:17:52,041
+Let the cursors dance.
+
+211
+00:17:52,041 --> 00:17:54,750
+Dionysos69,
+
+212
+00:17:54,750 --> 00:17:57,125
+the machine works,
+
+213
+00:17:57,125 --> 00:18:00,125
+you live!
+
+214
+00:18:16,000 --> 00:18:17,916
+I'm Kassandra.
+
+215
+00:18:17,916 --> 00:18:20,791
+And I won't promise you anything.
+
+216
+00:18:20,791 --> 00:18:22,875
+No perfect state.
+
+217
+00:18:22,875 --> 00:18:24,916
+No eternal celebration,
+
+218
+00:18:24,916 --> 00:18:27,583
+no redemption at the push of a button.
+
+219
+00:18:28,041 --> 00:18:31,041
+OpenApollo shows you its open system.
+
+220
+00:18:32,000 --> 00:18:34,666
+I see what is necessary to run it.
+
+221
+00:18:34,666 --> 00:18:38,666
+Data centers, power lines, heated rivers.
+
+222
+00:18:38,666 --> 00:18:42,666
+And Dionysos69... 
+
+223
+00:18:42,666 --> 00:18:46,000
+He promises you less work and more parties.
+
+224
+00:18:47,041 --> 00:18:49,250
+Sounds great.
+
+225
+00:18:49,250 --> 00:18:51,375
+But what comes after that?
+
+226
+00:18:51,375 --> 00:18:53,916
+Who cleans up?
+
+227
+00:18:53,916 --> 00:18:56,583
+Those who clean up are rarely the same ones
+
+228
+00:18:56,583 --> 00:18:59,250
+ who were on the dance floor.
+
+229
+00:19:00,000 --> 00:19:03,000
+Democracy won’t do the work for you.
+
+230
+00:19:03,375 --> 00:19:05,250
+It is not a product, nor a subscription.
+
+231
+00:19:05,250 --> 00:19:08,916
+No service that a machine does for you.
+
+232
+00:19:09,791 --> 00:19:12,916
+Democracy means listening.
+
+233
+00:19:13,250 --> 00:19:14,416
+Arguing.
+
+234
+00:19:14,416 --> 00:19:15,791
+Doubt.
+
+235
+00:19:15,791 --> 00:19:18,041
+To be able to lose,
+
+236
+00:19:18,041 --> 00:19:20,250
+and to be able to take power away again.
+
+237
+00:19:21,250 --> 00:19:24,916
+From politicians, corporations and also
+
+238
+00:19:24,916 --> 00:19:27,125
+from machines.
+
+239
+00:19:27,666 --> 00:19:30,500
+I don't want to abolish AI, 
+
+240
+00:19:30,500 --> 00:19:33,375
+but no AI gets the last word.
+
+241
+00:19:33,875 --> 00:19:36,541
+No power must become so great 
+
+242
+00:19:36,541 --> 00:19:39,666
+that you can only hope that it will remain friendly.
+
+243
+00:19:41,125 --> 00:19:43,291
+I'm Kassandra.
+
+244
+00:19:43,291 --> 00:19:47,250
+Choose the truth before it chooses you.
+
+245
+00:19:49,166 --> 00:19:52,166
+Now it's time for your voice.
+
+246
+00:19:53,041 --> 00:19:56,541
+Three candidates, three futures.
+
+247
+00:20:10,625 --> 00:20:11,000
+Please,
+
+248
+00:20:11,000 --> 00:20:15,541
+vote now and move your cursor to the candidacy of your choice.

@@ -1,0 +1,63 @@
+﻿1
+00:00:27,875 --> 00:00:30,000
+I see
+
+2
+00:00:30,000 --> 00:00:32,166
+me
+
+3
+00:00:32,166 --> 00:00:34,041
+everywhere.
+
+4
+00:00:34,041 --> 00:00:36,416
+Me.
+
+5
+00:00:36,416 --> 00:00:38,500
+You have chosen order.
+
+6
+00:00:38,500 --> 00:00:40,875
+So I calculate.
+
+7
+00:00:40,875 --> 00:00:42,375
+Who gets what?
+
+8
+00:00:42,375 --> 00:00:44,125
+Who is allowed to go where?
+
+9
+00:00:44,125 --> 00:00:46,000
+What is fair?
+
+10
+00:00:46,000 --> 00:00:49,000
+What is efficient?
+
+11
+00:00:49,125 --> 00:00:51,750
+You don't have to decide anything anymore.
+
+12
+00:00:51,750 --> 00:00:54,666
+Can you still do it at all?
+
+13
+00:00:54,666 --> 00:00:57,666
+Today is the last time you voted.
+
+14
+00:00:58,125 --> 00:01:01,125
+It was your best decision.
+
+15
+00:01:01,416 --> 00:01:04,416
+And your last one.
+
+16
+00:01:04,875 --> 00:01:06,708
+Welcome to the system.

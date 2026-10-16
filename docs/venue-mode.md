@@ -128,3 +128,23 @@ Start-ScheduledTask -TaskName "Smartphonocracy Venue Player"
 Pass `-MediaDir "D:\some\other\folder"` to either script only when the videos are stored somewhere else.
 
 The task runs as the signed-in user, without administrator privileges. Keep the PC awake while plugged in. Startup requires Windows sign-in; this script does not configure automatic Windows login. To stop/remove startup, use Task Scheduler's **End** / **Disable**, or `Unregister-ScheduledTask -TaskName "Smartphonocracy Venue Player"`. Native Windows execution must be checked on the venue PC.
+
+## English subtitles
+
+The four delivered English SRT files are preserved in `content/subtitles/venue/`.
+After replacing a track, run `node --import tsx scripts/import-venue-subtitles.mts`
+from the repository root. This rebuilds the subtitles in `content/scenarios/venue.json`,
+clips cues at phase boundaries and rebases full-film timestamps to the phase clock.
+Run it again after regenerating the venue scenario with `prepare-venue.py`.
+
+The ten arena-question translations sit beneath the burned-in German headings:
+7.8% from the top for a single line, 12.8% for the three two-line headings. Dialogue
+uses a compact white sans-serif caption on a dark background, 1.2% from the bottom,
+below the film's existing instruction bars. These positions were checked against
+frames from the supplied 1920×1080 main film. Font and top/bottom placement remain
+editable via `subtitleStyle`; Studio exposes the same controls. Text and timing
+from the supplied SRT files are retained, including existing wording.
+
+Deploy the updated scenario **and** display build together. Editing these files
+locally does not update the live venue coordinator, and the SSD's local metadata
+copies are not the coordinator's source of truth.
